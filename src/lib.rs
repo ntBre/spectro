@@ -9,7 +9,7 @@ use symm::{Atom, Molecule};
 #[cfg(test)]
 mod tests;
 
-#[derive(Default)]
+#[derive(Default, Clone, Debug, PartialEq)]
 pub struct Spectro {
     pub header: Vec<usize>,
     pub geom: Molecule,
