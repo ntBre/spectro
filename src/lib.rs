@@ -64,7 +64,7 @@ impl Display for Spectro {
         }
         if !self.degmodes.is_empty() {
             writeln!(f, "# DEGMODE #############")?;
-            for curvil in &self.curvils {
+            for curvil in &self.degmodes {
                 for i in curvil {
                     write!(f, "{:5}", i)?;
                 }
