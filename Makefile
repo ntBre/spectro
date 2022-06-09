@@ -1,2 +1,4 @@
+ARGS =
+
 test:
-	cargo test -- --nocapture
+	cargo test -- --nocapture ${ARGS}

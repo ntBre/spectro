@@ -1,7 +1,9 @@
 use std::{
-    fmt::Display,
+    collections::HashMap,
+    fmt::{Debug, Display},
     fs::File,
     io::{BufRead, BufReader, Result},
+    str::FromStr,
 };
 
 use symm::{Atom, Molecule};
@@ -9,12 +11,59 @@ use symm::{Atom, Molecule};
 #[cfg(test)]
 mod tests;
 
+/// A `DummyVal` is either a literal `Value` or the index of the real `Atom` to
+/// take the value from
+#[derive(Copy, Clone, Debug, PartialEq)]
+enum DummyVal {
+    Value(f64),
+    Atom(usize),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Dummy {
+    x: DummyVal,
+    y: DummyVal,
+    z: DummyVal,
+}
+
+impl Dummy {
+    fn get_vals(&self, mol: &Molecule) -> [f64; 3] {
+        [
+            match self.x {
+                DummyVal::Value(v) => v,
+                DummyVal::Atom(i) => mol.atoms[i].x,
+            },
+            match self.y {
+                DummyVal::Value(v) => v,
+                DummyVal::Atom(i) => mol.atoms[i].y,
+            },
+            match self.z {
+                DummyVal::Value(v) => v,
+                DummyVal::Atom(i) => mol.atoms[i].z,
+            },
+        ]
+    }
+}
+
+impl From<Vec<DummyVal>> for Dummy {
+    fn from(vals: Vec<DummyVal>) -> Self {
+        assert_eq!(vals.len(), 3);
+        Self {
+            x: vals[0],
+            y: vals[1],
+            z: vals[2],
+        }
+    }
+}
+
 #[derive(Default, Clone, Debug, PartialEq)]
 pub struct Spectro {
     pub header: Vec<usize>,
     pub geom: Molecule,
     pub weights: Vec<(usize, f64)>,
     pub curvils: Vec<Vec<usize>>,
+    pub degmodes: Vec<Vec<usize>>,
+    pub dummies: Vec<Dummy>,
 }
 
 impl Display for Spectro {
@@ -27,12 +76,20 @@ impl Display for Spectro {
             writeln!(f)?;
         }
         writeln!(f, "# GEOM #############")?;
-        writeln!(f, "{:5}{:5}", self.geom.atoms.len(), 1)?;
+        writeln!(f, "{:5}{:5}", self.geom.atoms.len() + self.dummies.len(), 1)?;
         for atom in &self.geom.atoms {
             writeln!(
                 f,
                 "{:5.2}{:16.8}{:16.8}{:16.8}",
                 atom.atomic_number as f64, atom.x, atom.y, atom.z
+            )?;
+        }
+        for dummy in &self.dummies {
+            let atom = dummy.get_vals(&self.geom);
+            writeln!(
+                f,
+                "{:5.2}{:16.8}{:16.8}{:16.8}",
+                0.0, atom[0], atom[1], atom[2],
             )?;
         }
         writeln!(f, "# WEIGHT #############")?;
@@ -46,6 +103,15 @@ impl Display for Spectro {
                 write!(f, "{:5}", i)?;
             }
             writeln!(f)?;
+        }
+        if !self.degmodes.is_empty() {
+            writeln!(f, "# DEGMODE #############")?;
+            for curvil in &self.curvils {
+                for i in curvil {
+                    write!(f, "{:5}", i)?;
+                }
+                writeln!(f)?;
+            }
         }
         Ok(())
     }
@@ -66,8 +132,11 @@ impl Spectro {
             Geom,
             Weight,
             Curvil,
+            Degmode,
             None,
         }
+        // map of string coordinates to their atom number
+        let mut coord_map = HashMap::new();
         let mut state = State::None;
         let mut skip = 0;
         let mut ret = Spectro::default();
@@ -84,6 +153,8 @@ impl Spectro {
                 state = State::Weight;
             } else if line.contains("CURVIL") {
                 state = State::Curvil;
+            } else if line.contains("DEGMODE") {
+                state = State::Degmode;
             } else {
                 match state {
                     State::Header => {
@@ -93,16 +164,46 @@ impl Spectro {
                         );
                     }
                     State::Geom => {
-                        let fields =
-                            line.split_whitespace().collect::<Vec<_>>();
+                        let mut fields = line.split_whitespace();
                         let atomic_number =
-                            fields[0].parse::<f64>().unwrap() as usize;
-                        ret.geom.atoms.push(Atom {
-                            atomic_number,
-                            x: fields[1].parse().unwrap(),
-                            y: fields[2].parse().unwrap(),
-                            z: fields[3].parse().unwrap(),
-                        });
+                            fields.next().unwrap().parse::<f64>().unwrap()
+                                as usize;
+                        // collect after nexting off the first value
+                        let fields: Vec<_> = fields.collect();
+                        match atomic_number {
+                            0 => {
+                                let mut dummy_coords = Vec::new();
+                                for coord in fields {
+                                    dummy_coords.push(
+                                        if let Some(idx) = coord_map.get(coord)
+                                        {
+                                            DummyVal::Atom(*idx)
+                                        } else {
+                                            DummyVal::Value(
+                                                coord.parse().unwrap(),
+                                            )
+                                        },
+                                    );
+                                }
+                                ret.dummies.push(Dummy::from(dummy_coords));
+                            }
+                            _ => {
+                                let atom_index = ret.geom.atoms.len();
+                                for coord in &fields {
+                                    // don't mind overwriting another atom
+                                    // because that means their coordinates are
+                                    // the same
+                                    coord_map
+                                        .insert(coord.to_string(), atom_index);
+                                }
+                                ret.geom.atoms.push(Atom {
+                                    atomic_number,
+                                    x: fields[0].parse().unwrap(),
+                                    y: fields[1].parse().unwrap(),
+                                    z: fields[2].parse().unwrap(),
+                                });
+                            }
+                        }
                     }
                     State::Weight => {
                         let fields =
@@ -113,11 +214,16 @@ impl Spectro {
                         ));
                     }
                     State::Curvil => {
-                        ret.curvils.push(
-                            line.split_whitespace()
-                                .map(|s| s.parse::<usize>().unwrap())
-                                .collect::<Vec<_>>(),
-                        );
+                        let v = parse_line(&line);
+                        if !v.is_empty() {
+                            ret.curvils.push(v);
+                        }
+                    }
+                    State::Degmode => {
+                        let v = parse_line(&line);
+                        if !v.is_empty() {
+                            ret.degmodes.push(v);
+                        }
                     }
                     State::None => (),
                 }
@@ -132,4 +238,14 @@ impl Spectro {
         writeln!(f, "{}", self)?;
         Ok(())
     }
+}
+
+/// parse an entire `line` into a vector of the same type
+fn parse_line<T: FromStr>(line: &str) -> Vec<T>
+where
+    <T as FromStr>::Err: Debug,
+{
+    line.split_whitespace()
+        .map(|s| s.parse::<T>().unwrap())
+        .collect::<Vec<_>>()
 }
