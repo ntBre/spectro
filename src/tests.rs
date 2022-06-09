@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use symm::Molecule;
 
-use crate::{Dummy, DummyVal, Spectro};
+use crate::{dummy::Dummy, dummy::DummyVal, Spectro};
 
 #[test]
 fn load() {
