@@ -1,4 +1,6 @@
 ARGS =
 
+TESTFLAGS = -- --nocapture --test-threads=1
+
 test:
-	cargo test -- --nocapture ${ARGS}
+	cargo test ${TESTFLAGS} ${ARGS}

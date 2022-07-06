@@ -106,3 +106,9 @@ fn load_dummy() {
     assert_eq!(got.curvils, want.curvils);
     assert_eq!(got, want);
 }
+
+#[test]
+fn test_run() {
+    let spectro = Spectro::load("testfiles/h2o.in");
+    spectro.run();
+}
