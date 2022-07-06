@@ -1,9 +1,11 @@
 use std::{
     collections::HashMap,
     fmt::Debug,
-    fs::File,
+    fs::{read_to_string, File},
     io::{BufRead, BufReader, Result},
 };
+
+use intder::DMat;
 
 mod dummy;
 use dummy::{Dummy, DummyVal};
@@ -174,6 +176,15 @@ impl Spectro {
         }
     }
 
+    pub fn load_fc2(infile: &str, n3n: usize) -> DMat {
+        let data = read_to_string(infile).unwrap();
+        DMat::from_iterator(
+            n3n,
+            n3n,
+            data.split_whitespace().map(|s| s.parse().unwrap()),
+        )
+    }
+
     // run spectro
     pub fn run(mut self) {
         // assumes input geometry in bohr
@@ -181,6 +192,11 @@ impl Spectro {
         self.geom.normalize();
         self.geom.reorder();
 
-        println!("Molecule is {}", self.rotor_type());
+        let rotor = self.rotor_type();
+        println!("Molecule is {}", rotor);
+
+        let n3n = 3 * self.geom.atoms.len();
+
+        Self::load_fc2("testfiles/fort.15", n3n);
     }
 }
