@@ -152,45 +152,8 @@ impl Spectro {
     pub fn run(mut self) {
         // assumes input geometry in bohr
         self.geom.to_angstrom();
-
-        println!("\nMOLECULAR CARTESIAN GEOMETRY (IN A)\n");
-        println!("{}", self.geom);
-
-        println!("CENTER OF MASS COORDINATES");
-        let com = self.geom.com();
-        println!("{:.7}", com.transpose());
-
-        println!("CARTESIAN COORDINATES W.R.T. CENTER OF MASS\n");
-        self.geom.translate(-com);
-        println!("{}", self.geom);
-
-        // TODO this always uses default weights, add facility for supplying
-        // weights
-
-        println!("INERTIA TENSOR:");
-        println!("{:.7}", self.geom.moi());
-
-        println!("EIGENVECTORS OF INERTIA TENSOR:");
-        let axes = self.geom.principal_axes();
-        println!("{:.7}", axes);
-
-        println!("PRINCIPAL MOMENTS OF INERTIA (AMU.A^2");
-        let moms = self.geom.principal_moments();
-        println!("{:.7}", moms);
-
-        self.geom = self.geom.transform(axes.transpose());
+        self.geom.normalize();
         self.geom.reorder();
-
-        println!("\nMOLECULAR PRINCIPAL GEOMETRY (IN A)\n");
-        println!("{:.7}", self.geom);
-
-        println!("CENTER OF MASS COORDINATES");
-        let com = self.geom.com();
-        println!("{:.7}", com.transpose());
-
-        println!("inertia tensor:");
-        println!("{:.7}", self.geom.moi());
-
         // TODO if you need the top type take the principal moments and
         // determine the type using
         // https://en.wikipedia.org/wiki/Rotational_spectroscopy#Classification_of_molecular_rotors
