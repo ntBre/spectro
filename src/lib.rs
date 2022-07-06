@@ -9,7 +9,10 @@ mod dummy;
 use dummy::{Dummy, DummyVal};
 
 mod utils;
+use rotor::{Rotor, ROTOR_EPS};
 use utils::*;
+
+mod rotor;
 
 use symm::{Atom, Molecule};
 
@@ -148,14 +151,36 @@ impl Spectro {
         Ok(())
     }
 
+    /// compute the type of molecular rotor in `self.geom` assuming it has
+    /// already been normalized and reordered. These tests are taken from the
+    /// [Crawford Programming
+    /// Projects](https://github.com/CrawfordGroup/ProgrammingProjects/blob/master/Project%2301/hints/step7-solution.md)
+    fn rotor_type(&self) -> Rotor {
+        if self.geom.atoms.len() == 2 {
+            return Rotor::Diatomic;
+        }
+        let close = |a, b| f64::abs(a - b) < ROTOR_EPS;
+        let moms = self.geom.principal_moments();
+        if moms[0] < ROTOR_EPS {
+            Rotor::Linear
+        } else if close(moms[0], moms[1]) && close(moms[1], moms[2]) {
+            Rotor::SphericalTop
+        } else if close(moms[0], moms[1]) && !close(moms[1], moms[2]) {
+            Rotor::OblateSymmTop
+        } else if !close(moms[0], moms[1]) && close(moms[1], moms[2]) {
+            Rotor::ProlateSymmTop
+        } else {
+            Rotor::AsymmTop
+        }
+    }
+
     // run spectro
     pub fn run(mut self) {
         // assumes input geometry in bohr
         self.geom.to_angstrom();
         self.geom.normalize();
         self.geom.reorder();
-        // TODO if you need the top type take the principal moments and
-        // determine the type using
-        // https://en.wikipedia.org/wiki/Rotational_spectroscopy#Classification_of_molecular_rotors
+
+        println!("Molecule is {}", self.rotor_type());
     }
 }
