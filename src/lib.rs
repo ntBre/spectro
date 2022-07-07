@@ -11,6 +11,7 @@ mod dummy;
 use dummy::{Dummy, DummyVal};
 
 mod utils;
+use nalgebra::Matrix3;
 use rotor::{Rotor, ROTOR_EPS};
 use utils::*;
 
@@ -20,6 +21,8 @@ use symm::{Atom, Molecule};
 
 #[cfg(test)]
 mod tests;
+
+type Mat3 = Matrix3<f64>;
 
 #[derive(Default, Clone, Debug, PartialEq)]
 pub struct Spectro {
@@ -176,27 +179,66 @@ impl Spectro {
         }
     }
 
-    pub fn load_fc2(infile: &str, n3n: usize) -> DMat {
-        let data = read_to_string(infile).unwrap();
-        DMat::from_iterator(
-            n3n,
-            n3n,
-            data.split_whitespace().map(|s| s.parse().unwrap()),
-        )
+    pub fn natoms(&self) -> usize {
+        self.geom.atoms.len()
     }
 
     // run spectro
     pub fn run(mut self) {
         // assumes input geometry in bohr
         self.geom.to_angstrom();
+
         self.geom.normalize();
-        self.geom.reorder();
+        let axes = self.geom.reorder();
+
+        println!("{}", axes);
 
         let rotor = self.rotor_type();
         println!("Molecule is {}", rotor);
 
-        let n3n = 3 * self.geom.atoms.len();
+        let n3n = 3 * self.natoms();
 
-        Self::load_fc2("testfiles/fort.15", n3n);
+        let fc2 = load_fc2("testfiles/fort.15", n3n);
+        let fc2 = self.rot2nd(fc2, axes);
     }
+
+    /// rotate the force constants in `fx` to align with the principal axes in
+    /// `eg` used to align the geometry
+    pub fn rot2nd(&self, fx: DMat, eg: Mat3) -> DMat {
+        let (r, c) = fx.shape();
+        let mut ret = DMat::zeros(r, c);
+        let natom = self.natoms();
+        for i in 0..natom {
+            let ia = 3 * i;
+            for j in 0..natom {
+                let ib = 3 * j;
+                // TODO just slice fc2 to get this
+                let mut a = Mat3::zeros();
+                for ii in 0..3 {
+                    for jj in 0..3 {
+                        a[(ii, jj)] = fx[(ia + ii, ib + jj)];
+                    }
+                }
+                let temp1 = eg * a;
+                let temp2 = temp1 * eg.transpose();
+                // TODO either set this slice at once or construct a block
+                // matrix and do one mult for this whole routine
+                for ii in 0..3 {
+                    for jj in 0..3 {
+                        ret[(ia + ii, ib + jj)] = temp2[(ii, jj)];
+                    }
+                }
+            }
+        }
+        ret
+    }
+}
+
+pub fn load_fc2(infile: &str, n3n: usize) -> DMat {
+    let data = read_to_string(infile).unwrap();
+    DMat::from_iterator(
+        n3n,
+        n3n,
+        data.split_whitespace().map(|s| s.parse().unwrap()),
+    )
 }
