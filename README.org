@@ -84,7 +84,7 @@
   | multbf.f   |    50 |        |                                                               |
   | mxma.f     |    70 |        |                                                               |
   | mxmb.f     |    70 | x      | matrix multiply                                               |
-  | normfx.f   |   183 |        |                                                               |
+  | normfx.f   |   183 | x      | done minus unit stuff that doesn't seem used                  |
   | orthy.f    |    45 |        |                                                               |
   | parity.f   |     6 |        |                                                               |
   | pbinom.f   |    21 |        |                                                               |
@@ -120,7 +120,7 @@
   | rs.f       |    60 |        |                                                               |
   | rsfrm1.f   |   154 |        |                                                               |
   | rsfrm2.f   |   140 |        |                                                               |
-  | rsp.f      |    83 | x      | eigen decomposition                                          |
+  | rsp.f      |    83 | x      | eigen decomposition                                           |
   | sextic.f   |   743 |        |                                                               |
   | smxpy.f    |    25 |        |                                                               |
   | spectro.f  |    60 | x      | entry point, just calls mains                                 |
@@ -174,4 +174,4 @@
   #+end_src
 
   #+RESULTS:
-  : finished 1265/40693 = 3.1%
+  : finished 1448/40693 = 3.6%

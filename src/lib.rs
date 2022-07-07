@@ -11,7 +11,7 @@ mod dummy;
 use dummy::{Dummy, DummyVal};
 
 mod utils;
-use nalgebra::Matrix3;
+use nalgebra::{Matrix3, SymmetricEigen};
 use rotor::{Rotor, ROTOR_EPS};
 use utils::*;
 
@@ -23,9 +23,19 @@ use symm::{Atom, Molecule};
 mod tests;
 
 type Mat3 = Matrix3<f64>;
+type Dvec = nalgebra::DVector<f64>;
+type Dmat = nalgebra::DMatrix<f64>;
 
 /// HE / (AO * AO) from fortran. something about hartrees and AO is bohr radius
 const FACT2: f64 = 4.359813653 / (0.52917706 * 0.52917706);
+/// looks like cm-1 to mhz factor
+const CL: f64 = 2.99792458;
+/// avogadro's number
+const AVN: f64 = 6.022045;
+// pre-compute the sqrt and make const
+const SQRT_AVN: f64 = 2.4539855337796920273026076438896;
+// conversion to cm-1
+const WAVE: f64 = 1e4 * SQRT_AVN / (2.0 * std::f64::consts::PI * CL);
 
 #[derive(Default, Clone, Debug, PartialEq)]
 pub struct Spectro {
@@ -199,10 +209,15 @@ impl Spectro {
 
         let n3n = 3 * self.natoms();
 
+        // load the force constants, rotate them to the new axes, and convert
+        // them to the proper units
         let fc2 = load_fc2("testfiles/fort.15", n3n);
         let fc2 = self.rot2nd(fc2, axes);
-
         let fc2 = FACT2 * fc2;
+
+        let fxm = self.form_sec(fc2, n3n);
+        let (harms, lxm) = symm_eigen_decomp(fxm);
+        let harms = to_wavenumbers(harms);
     }
 
     /// formation of the secular equation
@@ -218,7 +233,7 @@ impl Spectro {
             }
         }
         fxm.fill_lower_triangle_with_upper_triangle();
-	fxm
+        fxm
     }
 
     /// rotate the force constants in `fx` to align with the principal axes in
@@ -238,6 +253,42 @@ impl Spectro {
         }
         ret
     }
+}
+
+/// convert harmonic frequencies to wavenumbers. not sure if this works on
+/// anything else
+pub fn to_wavenumbers(freqs: Dvec) -> Dvec {
+    Dvec::from_iterator(
+        freqs.len(),
+        freqs.iter().map(|f| {
+            if *f < 0.0 {
+                -1.0 * WAVE * f64::sqrt(-f)
+            } else {
+                WAVE * f64::sqrt(*f)
+            }
+        }),
+    )
+}
+
+/// compute the eigen decomposition of the symmetric matrix `mat` and return
+/// both the sorted eigenvalues and the corresponding eigenvectors in descending
+/// order
+pub fn symm_eigen_decomp(mat: Dmat) -> (Dvec, Dmat) {
+    let SymmetricEigen {
+        eigenvectors: vecs,
+        eigenvalues: vals,
+    } = SymmetricEigen::new(mat);
+    let mut pairs: Vec<_> = vals.iter().enumerate().collect();
+    pairs.sort_by(|(_, a), (_, b)| b.partial_cmp(&a).unwrap());
+    let (rows, cols) = vecs.shape();
+    let mut ret = Dmat::zeros(rows, cols);
+    for i in 0..cols {
+        ret.set_column(i, &vecs.column(pairs[i].0));
+    }
+    (
+        Dvec::from_iterator(vals.len(), pairs.iter().map(|a| a.1.clone())),
+        ret,
+    )
 }
 
 pub fn load_fc2(infile: &str, n3n: usize) -> DMat {
