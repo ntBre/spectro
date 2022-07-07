@@ -205,29 +205,16 @@ impl Spectro {
     /// rotate the force constants in `fx` to align with the principal axes in
     /// `eg` used to align the geometry
     pub fn rot2nd(&self, fx: DMat, eg: Mat3) -> DMat {
-        let (r, c) = fx.shape();
-        let mut ret = DMat::zeros(r, c);
+        let mut ret = fx.clone();
         let natom = self.natoms();
-        for i in 0..natom {
-            let ia = 3 * i;
-            for j in 0..natom {
-                let ib = 3 * j;
-                // TODO just slice fc2 to get this
-                let mut a = Mat3::zeros();
-                for ii in 0..3 {
-                    for jj in 0..3 {
-                        a[(ii, jj)] = fx[(ia + ii, ib + jj)];
-                    }
-                }
-                let temp1 = eg * a;
-                let temp2 = temp1 * eg.transpose();
-                // TODO either set this slice at once or construct a block
-                // matrix and do one mult for this whole routine
-                for ii in 0..3 {
-                    for jj in 0..3 {
-                        ret[(ia + ii, ib + jj)] = temp2[(ii, jj)];
-                    }
-                }
+        for ia in (0..3 * natom).step_by(3) {
+            for ib in (0..3 * natom).step_by(3) {
+                // grab 3x3 blocks of FX into A, perform Eg × A × Egᵀ and set
+                // that block in the return matrix
+                let a = fx.fixed_slice::<3, 3>(ia, ib);
+                let temp2 = (eg * a) * eg.transpose();
+                let mut targ = ret.fixed_slice_mut::<3, 3>(ia, ib);
+                targ.copy_from(&temp2);
             }
         }
         ret
