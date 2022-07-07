@@ -7,6 +7,7 @@ use crate::Spectro;
 
 impl Display for Spectro {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use crate::Curvil::*;
         writeln!(f, "# SPECTRO #############")?;
         for chunk in self.header.chunks(15) {
             for i in chunk {
@@ -38,8 +39,10 @@ impl Display for Spectro {
         }
         writeln!(f, "# CURVIL #############")?;
         for curvil in &self.curvils {
-            for i in curvil {
-                write!(f, "{:5}", i)?;
+            match curvil {
+                Bond(i, j) => write!(f, "{:5}{:5}", i, j)?,
+                Bend(i, j, k) => write!(f, "{:5}{:5}{:5}", i, j, k)?,
+                Tors(i, j, k, l) => write!(f, "{:5}{:5}{:5}{:5}", i, j, k, l)?,
             }
             writeln!(f)?;
         }

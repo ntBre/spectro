@@ -31,18 +31,27 @@ const FACT2: f64 = 4.359813653 / (0.52917706 * 0.52917706);
 /// looks like cm-1 to mhz factor
 const CL: f64 = 2.99792458;
 /// avogadro's number
-const AVN: f64 = 6.022045;
+// const AVN: f64 = 6.022045;
 // pre-compute the sqrt and make const
 const SQRT_AVN: f64 = 2.4539855337796920273026076438896;
 // conversion to cm-1
 const WAVE: f64 = 1e4 * SQRT_AVN / (2.0 * std::f64::consts::PI * CL);
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum Curvil {
+    Bond(usize, usize),
+
+    Bend(usize, usize, usize),
+
+    Tors(usize, usize, usize, usize),
+}
 
 #[derive(Default, Clone, Debug, PartialEq)]
 pub struct Spectro {
     pub header: Vec<usize>,
     pub geom: Molecule,
     pub weights: Vec<(usize, f64)>,
-    pub curvils: Vec<Vec<usize>>,
+    pub curvils: Vec<Curvil>,
     pub degmodes: Vec<Vec<usize>>,
     pub dummies: Vec<Dummy>,
 }
@@ -144,9 +153,18 @@ impl Spectro {
                         ));
                     }
                     State::Curvil => {
+                        use crate::Curvil::*;
                         let v = parse_line(&line);
-                        if !v.is_empty() {
-                            ret.curvils.push(v);
+                        // TODO differentiate between other curvils with 4
+                        // coordinates. probably by requiring them to be written
+                        // out like in intder so they don't have to be specified
+                        // at the top too
+                        match v.len() {
+                            2 => ret.curvils.push(Bond(v[0], v[1])),
+                            3 => ret.curvils.push(Bend(v[0], v[1], v[2])),
+                            4 => ret.curvils.push(Tors(v[0], v[1], v[2], v[3])),
+                            0 => (),
+                            _ => todo!("unrecognized number of curvils"),
                         }
                     }
                     State::Degmode => {
@@ -215,16 +233,27 @@ impl Spectro {
         let fc2 = self.rot2nd(fc2, axes);
         let fc2 = FACT2 * fc2;
 
-        let fxm = self.form_sec(fc2, n3n);
+        // form the secular equations and decompose them to get harmonic
+        // frequencies and the LXM matrix
+        let w = self.geom.weights();
+        let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
+        let fxm = self.form_sec(fc2, n3n, &sqm);
         let (harms, lxm) = symm_eigen_decomp(fxm);
-        let harms = to_wavenumbers(harms);
+        let _harms = to_wavenumbers(harms);
+
+        // form the LX matrix
+        let mut lx = Dmat::zeros(n3n, n3n);
+        for i in 0..n3n {
+            let ii = i / 3;
+            for j in 0..n3n {
+                lx[(i, j)] = sqm[ii] * lxm[(i, j)];
+            }
+        }
     }
 
     /// formation of the secular equation
-    pub fn form_sec(&self, fx: DMat, n3n: usize) -> DMat {
+    pub fn form_sec(&self, fx: DMat, n3n: usize, sqm: &[f64]) -> DMat {
         let mut fxm = fx.clone();
-        let w = self.geom.weights();
-        let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
         for i in 0..n3n {
             let ii = i / 3;
             for j in i..n3n {

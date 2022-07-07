@@ -3,6 +3,7 @@ use std::str::FromStr;
 use approx::assert_abs_diff_eq;
 use symm::Molecule;
 
+use crate::Curvil::*;
 use crate::*;
 
 use na::{dmatrix, dvector};
@@ -33,15 +34,15 @@ fn load() {
             (5, 1.007825),
         ],
         curvils: vec![
-            vec![2, 3],
-            vec![1, 2],
-            vec![1, 3],
-            vec![2, 4],
-            vec![3, 5],
-            vec![2, 4, 1],
-            vec![3, 5, 1],
-            vec![4, 2, 1, 3],
-            vec![5, 3, 1, 2],
+            Bond(2, 3),
+            Bond(1, 2),
+            Bond(1, 3),
+            Bond(2, 4),
+            Bond(3, 5),
+            Bend(2, 4, 1),
+            Bend(3, 5, 1),
+            Tors(4, 2, 1, 3),
+            Tors(5, 3, 1, 2),
         ],
         degmodes: vec![],
         dummies: vec![],
@@ -77,11 +78,11 @@ fn load_dummy() {
             (8, 0.00),
         ],
         curvils: vec![
-            vec![1, 2],
-            vec![2, 3],
-            vec![3, 4],
-            vec![2, 1, 3],
-            vec![3, 2, 4],
+            Bond(1, 2),
+            Bond(2, 3),
+            Bond(3, 4),
+            Bend(2, 1, 3),
+            Bend(3, 2, 4),
         ],
         degmodes: vec![vec![3, 2, 0], vec![1, 2, 3], vec![4, 6], vec![5, 7]],
         dummies: vec![
@@ -183,7 +184,9 @@ fn test_sec() {
     let fc2 = spectro.rot2nd(fc2, axes);
     let fc2 = FACT2 * fc2;
     let n3n = 3 * spectro.natoms();
-    let got = spectro.form_sec(fc2, n3n);
+    let w = spectro.geom.weights();
+    let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
+    let got = spectro.form_sec(fc2, n3n, &sqm);
     let mut want = dmatrix![
     5.7857638, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
     3.6305606, 3.3705523, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
@@ -209,7 +212,9 @@ fn test_normfx() {
     let fc2 = spectro.rot2nd(fc2, axes);
     let fc2 = FACT2 * fc2;
     let n3n = 3 * spectro.natoms();
-    let fxm = spectro.form_sec(fc2, n3n);
+    let w = spectro.geom.weights();
+    let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
+    let fxm = spectro.form_sec(fc2, n3n, &sqm);
     let (harms, lxm) = symm_eigen_decomp(fxm);
     // factorization isn't unique so test against mine after visually inspecting
     let want_lxm = dmatrix![
