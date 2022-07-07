@@ -1,8 +1,9 @@
 use std::str::FromStr;
 
+use approx::assert_abs_diff_eq;
 use symm::Molecule;
 
-use crate::{dummy::Dummy, dummy::DummyVal, load_fc2, Spectro};
+use crate::{dummy::Dummy, dummy::DummyVal, load_fc2, Spectro, FACT2};
 
 use na::dmatrix;
 use nalgebra as na;
@@ -170,6 +171,32 @@ fn test_rot2nd() {
      2.7999999999999998e-09, 3.2416100000000003e-05;
            ];
     assert_eq!(got, want);
+}
+
+#[test]
+fn test_sec() {
+    let mut spectro = Spectro::load("testfiles/h2o.in");
+    spectro.geom.to_angstrom();
+    spectro.geom.normalize();
+    let axes = spectro.geom.reorder();
+    let fc2 = load_fc2("testfiles/fort.15", 9);
+    let fc2 = spectro.rot2nd(fc2, axes);
+    let fc2 = FACT2 * fc2;
+    let n3n = 3 * spectro.natoms();
+    let got = spectro.form_sec(fc2, n3n);
+    let mut want = dmatrix![
+    5.7857638, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
+    3.6305606, 3.3705523, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
+    0.0000000, 0.0000000, 0.0005008, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
+    -1.3313595, -1.0327573, 0.0000000, 0.6683836, 0.0, 0.0, 0.0, 0.0, 0.0;
+    -0.7899088, -0.8911964, 0.0000000, 0.0000000, 0.4474074, 0.0, 0.0, 0.0, 0.0;
+    0.0000000, -0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000620, 0.0, 0.0, 0.0;
+    -0.4818694, 0.4837450, 0.0000000, -1.3313595, 0.7899088, 0.0000000, 5.7857638, 0.0, 0.0;
+    -0.4837450, 0.1798181, 0.0000000, 1.0327573, -0.8911964, 0.0000000, -3.6305607, 3.3705523, 0.0;
+    0.0000000, 0.0000000, 0.0000000, 0.0000000, 0.0000000, -0.0001193, 0.0000000, 0.0000000, 0.0005008;
+       ];
+    want.fill_upper_triangle_with_lower_triangle();
+    assert_abs_diff_eq!(got, want, epsilon = 1e-7);
 }
 
 #[test]

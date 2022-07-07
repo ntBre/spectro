@@ -24,6 +24,9 @@ mod tests;
 
 type Mat3 = Matrix3<f64>;
 
+/// HE / (AO * AO) from fortran. something about hartrees and AO is bohr radius
+const FACT2: f64 = 4.359813653 / (0.52917706 * 0.52917706);
+
 #[derive(Default, Clone, Debug, PartialEq)]
 pub struct Spectro {
     pub header: Vec<usize>,
@@ -191,8 +194,6 @@ impl Spectro {
         self.geom.normalize();
         let axes = self.geom.reorder();
 
-        println!("{}", axes);
-
         let rotor = self.rotor_type();
         println!("Molecule is {}", rotor);
 
@@ -200,6 +201,24 @@ impl Spectro {
 
         let fc2 = load_fc2("testfiles/fort.15", n3n);
         let fc2 = self.rot2nd(fc2, axes);
+
+        let fc2 = FACT2 * fc2;
+    }
+
+    /// formation of the secular equation
+    pub fn form_sec(&self, fx: DMat, n3n: usize) -> DMat {
+        let mut fxm = fx.clone();
+        let w = self.geom.weights();
+        let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
+        for i in 0..n3n {
+            let ii = i / 3;
+            for j in i..n3n {
+                let jj = j / 3;
+                fxm[(i, j)] = sqm[ii] * fx[(i, j)] * sqm[jj];
+            }
+        }
+        fxm.fill_lower_triangle_with_upper_triangle();
+	fxm
     }
 
     /// rotate the force constants in `fx` to align with the principal axes in
