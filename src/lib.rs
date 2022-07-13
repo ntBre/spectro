@@ -46,6 +46,15 @@ pub enum Curvil {
     Tors(usize, usize, usize, usize),
 }
 
+/// struct containing the fields to describe a Spectro input file:
+/// ```
+/// header: Vec<usize>: the input options
+/// geom: Molecule: the geometry
+/// weights: Vec<(usize, f64)>: atom index - weight pairs
+/// curvils: Vec<Curvil>: curvilinear coordinates
+/// degmodes: Vec<Vec<usize>>: degenerate modes
+/// dummies: Vec<Dummy>: dummy atoms
+/// ```
 #[derive(Default, Clone, Debug, PartialEq)]
 pub struct Spectro {
     pub header: Vec<usize>,
