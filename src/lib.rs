@@ -47,7 +47,7 @@ pub enum Curvil {
 }
 
 /// struct containing the fields to describe a Spectro input file:
-/// ```
+/// ```text
 /// header: Vec<usize>: the input options
 /// geom: Molecule: the geometry
 /// weights: Vec<(usize, f64)>: atom index - weight pairs
@@ -55,7 +55,7 @@ pub enum Curvil {
 /// degmodes: Vec<Vec<usize>>: degenerate modes
 /// dummies: Vec<Dummy>: dummy atoms
 /// ```
-#[derive(Default, Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Spectro {
     pub header: Vec<usize>,
     pub geom: Molecule,
@@ -66,6 +66,25 @@ pub struct Spectro {
 }
 
 impl Spectro {
+    /// return a ready-to-use spectro without a template
+    pub fn nocurvil(geom: Molecule) -> Self {
+        Self {
+            // only important fields are 1=Ncart to ignore curvils, 2=Isotop to
+            // use default weights, 8=Nderiv to do a QFF, and 21=Iaverg to get
+            // vibrationally averaged coordinates (that one might not be
+            // important)
+            header: vec![
+                99, 1, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+                0, 0, 0, 0, 0, 0, 0, 0, 0,
+            ],
+            geom,
+            weights: Default::default(),
+            curvils: Default::default(),
+            degmodes: Default::default(),
+            dummies: Default::default(),
+        }
+    }
+
     pub fn load(filename: &str) -> Self {
         let f = match File::open(filename) {
             Ok(f) => f,
