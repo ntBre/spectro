@@ -67,7 +67,7 @@ pub struct Spectro {
 
 impl Spectro {
     /// return a ready-to-use spectro without a template
-    pub fn nocurvil(geom: Molecule) -> Self {
+    pub fn nocurvil() -> Self {
         Self {
             // only important fields are 1=Ncart to ignore curvils, 2=Isotop to
             // use default weights, 8=Nderiv to do a QFF, and 21=Iaverg to get
@@ -77,11 +77,7 @@ impl Spectro {
                 99, 1, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
                 0, 0, 0, 0, 0, 0, 0, 0, 0,
             ],
-            geom,
-            weights: Default::default(),
-            curvils: Default::default(),
-            degmodes: Default::default(),
-            dummies: Default::default(),
+            ..Self::default()
         }
     }
 
