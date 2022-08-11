@@ -24,7 +24,7 @@
   | dcopy.f    |    12 |        |                                                                 |
   | ddot.f     |    40 |        |                                                                 |
   | decide.f   |   316 |        |                                                                 |
-  | define.f   |   367 |        |                                                                 |
+  | define.f   |   367 | x      | skip without curvils                                            |
   | degnl.f    |   394 |        |                                                                 |
   | denom.f    |    30 |        |                                                                 |
   | dipolq.f   |   450 |        |                                                                 |
@@ -72,7 +72,7 @@
   | jmfudg1.f  |    24 |        |                                                                 |
   | locate.f   |    35 |        |                                                                 |
   | lsqrs.f    |   358 |        |                                                                 |
-  | ltensr.f   |  2450 |        |                                                                 |
+  | ltensr.f   |  2450 | x      | skip without curvils                                            |
   | lu.f       |    46 |        |                                                                 |
   | lus.f      |    34 |        |                                                                 |
   | m01ajf.f   |    19 |        |                                                                 |
@@ -124,7 +124,7 @@
   | sextic.f   |   743 |        |                                                                 |
   | smxpy.f    |    25 |        |                                                                 |
   | spectro.f  |    60 | x      | entry point, just calls mains                                   |
-  | sqhamp.f   |    78 |        |                                                                 |
+  | sqhamp.f   |    78 | x      | skip without curvils                                            |
   | square.f   |    20 |        |                                                                 |
   | squr.f     |    20 |        |                                                                 |
   | subres.f   |    28 |        |                                                                 |
@@ -143,7 +143,7 @@
   | tred3.f    |   120 |        |                                                                 |
   | triple.f   |    14 |        |                                                                 |
   | trnsfm.f   |   662 |        |                                                                 |
-  | umatrx.f   |   255 |        |                                                                 |
+  | umatrx.f   |   255 | x      | skip without curvils                                            |
   | vcross.f   |    13 |        |                                                                 |
   | vecsum.f   |     9 |        |                                                                 |
   | vecz.f     |    16 |        |                                                                 |
@@ -174,4 +174,4 @@
   #+end_src
 
   #+RESULTS:
-  : finished 1704/40693 = 4.2%
+  : finished 4854/40693 = 11.9%
