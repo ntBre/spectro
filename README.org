@@ -1,167 +1,167 @@
 # -*- org-confirm-babel-evaluate: nil; -*-
 * Line survey
   #+name: lines
-  | File       | Lines | Status | Description                                                     |
-  |------------+-------+--------+-----------------------------------------------------------------|
-  | adegnl.f   |   101 |        |                                                                 |
-  | alphaa.f   |   347 |        |                                                                 |
-  | alphas.f   |   770 |        |                                                                 |
-  | ammvib.f   |   133 |        |                                                                 |
-  | anhout.f   |    29 |        |                                                                 |
-  | anhprt.f   |    32 |        |                                                                 |
-  | atunit.f   |   629 |        |                                                                 |
-  | balanc.f   |   171 |        |                                                                 |
-  | balbak.f   |    75 |        |                                                                 |
-  | bdegnl.f   |   256 |        |                                                                 |
-  | bmtrx.f    |   821 |        |                                                                 |
-  | buildz.f   |   155 |        |                                                                 |
-  | cmxma.f    |    72 |        |                                                                 |
-  | corcup.f   |  1234 |        |                                                                 |
-  | curveq.f   |   205 |        |                                                                 |
-  | czgen.f    |    13 |        |                                                                 |
-  | darla.f    |    92 |        |                                                                 |
-  | darls.f    |   162 |        |                                                                 |
-  | dcopy.f    |    12 |        |                                                                 |
-  | ddot.f     |    40 |        |                                                                 |
-  | decide.f   |   316 |        |                                                                 |
-  | define.f   |   367 | x      | skip without curvils                                            |
-  | degnl.f    |   394 |        |                                                                 |
-  | denom.f    |    30 |        |                                                                 |
-  | dipolq.f   |   450 |        |                                                                 |
-  | diptrn.f   |   342 |        |                                                                 |
-  | dist.f     |   811 | x      | com, moi alignment                                              |
-  | dlstge.f   |    13 |        |                                                                 |
-  | dlstlt.f   |    13 |        |                                                                 |
-  | dp2nrm.f   |   411 |        |                                                                 |
-  | elmhes.f   |    99 |        |                                                                 |
-  | eltran.f   |    78 |        |                                                                 |
-  | engval.f   |   113 |        |                                                                 |
-  | enrgy.f    |   561 |        |                                                                 |
-  | f02aaf.f   |    12 |        |                                                                 |
-  | f02abf.f   |    15 |        |                                                                 |
-  | f02agf.f   |    66 |        |                                                                 |
-  | f04aef.f   |    16 |        |                                                                 |
-  | f04arf.f   |    12 |        |                                                                 |
-  | f04atf.f   |    19 |        |                                                                 |
-  | f05aaf.f   |    53 |        |                                                                 |
-  | find3.f    |    15 |        |                                                                 |
-  | find3r.f   |    11 |        |                                                                 |
-  | find4.f    |    19 |        |                                                                 |
-  | find4t.f   |    12 |        |                                                                 |
-  | force3.f   |   288 |        |                                                                 |
-  | force4.f   |   361 |        |                                                                 |
-  | frqout.f   |    31 |        |                                                                 |
-  | gdarla.f   |    63 |        |                                                                 |
-  | gen1.f     |    47 |        |                                                                 |
-  | gen2.f     |   224 |        |                                                                 |
-  | gen4.f     |    14 |        |                                                                 |
-  | genrsa.f   |   258 |        |                                                                 |
-  | gfslv.f    |   561 |        |                                                                 |
-  | hqr2.f     |   416 |        |                                                                 |
-  | hqr.f      |   223 |        |                                                                 |
-  | hraman.f   |   453 |        |                                                                 |
-  | iadtwp.f   |     4 |        |                                                                 |
-  | indexx.f   |    51 |        |                                                                 |
-  | inert.f    |   249 |        |                                                                 |
-  | inidnm.f   |    37 |        |                                                                 |
-  | inocda.f   |   206 |        |                                                                 |
-  | inten.f    |  1347 |        |                                                                 |
-  | intenr.f   |   879 |        |                                                                 |
-  | iterat.f   |   621 |        |                                                                 |
-  | izero.f    |    10 |        |                                                                 |
-  | jmfudg1.f  |    24 |        |                                                                 |
-  | locate.f   |    35 |        |                                                                 |
-  | lsqrs.f    |   358 |        |                                                                 |
-  | ltensr.f   |  2450 | x      | skip without curvils                                            |
-  | lu.f       |    46 |        |                                                                 |
-  | lus.f      |    34 |        |                                                                 |
-  | m01ajf.f   |    19 |        |                                                                 |
-  | m01akf.f   |    32 |        |                                                                 |
-  | mains.f    |  2416 |        |                                                                 |
-  | matout.f   |    30 |        |                                                                 |
-  | mtxmpy.f   |    56 |        |                                                                 |
-  | multbf2.f  |   224 |        |                                                                 |
-  | multbf.f   |    50 |        |                                                                 |
-  | mxma.f     |    70 |        |                                                                 |
-  | mxmb.f     |    70 | x      | matrix multiply                                                 |
-  | normfx.f   |   183 | x      | done minus unit stuff that doesn't seem used                    |
-  | orthy.f    |    45 |        |                                                                 |
-  | parity.f   |     6 |        |                                                                 |
-  | pbinom.f   |    21 |        |                                                                 |
-  | plsym.f    |   171 |        |                                                                 |
-  | polar.f    |   410 |        |                                                                 |
-  | print.f    |    32 |        |                                                                 |
-  | printout.f |   178 |        |                                                                 |
-  | projec.f   |    41 |        |                                                                 |
-  | prout.f    |    65 |        |                                                                 |
-  | pxcals.f   |   861 |        |                                                                 |
-  | qcent.f    |   517 |        |                                                                 |
-  | ramanq.f   |  2072 |        |                                                                 |
-  | readw.f    |   207 |        |                                                                 |
-  | res2a.f    |   284 |        |                                                                 |
-  | res3a.f    |   183 |        |                                                                 |
-  | resona.f   |   167 |        |                                                                 |
-  | restst.f   |  1535 |        |                                                                 |
-  | rfile.f    |    13 |        |                                                                 |
-  | rg.f       |    73 |        |                                                                 |
-  | rot1st.f   |    29 |        |                                                                 |
-  | rot2nd.f   |    43 | x      | rotate fc2 to new axes                                          |
-  | rot3rd.f   |    62 |        |                                                                 |
-  | rot4th.f   |    69 |        |                                                                 |
-  | rota.f     |   711 |        |                                                                 |
-  | rotater.f  |   112 |        |                                                                 |
-  | rotdp1.f   |    28 |        |                                                                 |
-  | rotdp2.f   |    33 |        |                                                                 |
-  | rotdp3.f   |    34 |        |                                                                 |
-  | rotnew.f   |    44 |        |                                                                 |
-  | rotrn2.f   |   198 | x      | project out rot/trans from carts, skipping since we never use   |
-  | rotrn3.f   |    87 |        |                                                                 |
-  | rots.f     |   514 |        |                                                                 |
-  | rs.f       |    60 |        |                                                                 |
-  | rsfrm1.f   |   154 |        |                                                                 |
-  | rsfrm2.f   |   140 |        |                                                                 |
-  | rsp.f      |    83 | x      | eigen decomposition                                             |
-  | sextic.f   |   743 |        |                                                                 |
-  | smxpy.f    |    25 |        |                                                                 |
-  | spectro.f  |    60 | x      | entry point, just calls mains                                   |
-  | sqhamp.f   |    78 | x      | skip without curvils                                            |
-  | square.f   |    20 |        |                                                                 |
-  | squr.f     |    20 |        |                                                                 |
-  | subres.f   |    28 |        |                                                                 |
-  | sxmpy.f    |    26 |        |                                                                 |
-  | threej.f   |    28 |        |                                                                 |
-  | thrj.f     |    62 |        |                                                                 |
-  | tmtrx.f    |   150 |        |                                                                 |
-  | tonorm.f   |   846 |        |                                                                 |
-  | tql2.f     |   177 |        |                                                                 |
-  | tqlrat.f   |   136 |        |                                                                 |
-  | trans33.f  |    88 |        |                                                                 |
-  | trans44.f  |   110 |        |                                                                 |
-  | trbak3.f   |    84 |        |                                                                 |
-  | tred1.f    |   119 |        |                                                                 |
-  | tred2.f    |   143 |        |                                                                 |
-  | tred3.f    |   120 |        |                                                                 |
-  | triple.f   |    14 |        |                                                                 |
-  | trnsfm.f   |   662 |        |                                                                 |
-  | umatrx.f   |   255 | x      | skip without curvils                                            |
-  | vcross.f   |    13 |        |                                                                 |
-  | vecsum.f   |     9 |        |                                                                 |
-  | vecz.f     |    16 |        |                                                                 |
-  | vibavg.f   |   303 |        |                                                                 |
-  | vibfx.f    |   256 | x      | done minus degmode alignment for symm tops and linear molecules |
-  | vprodz.f   |     9 |        |                                                                 |
-  | w0cal.f    |   106 |        |                                                                 |
-  | wcals.f    |   427 |        |                                                                 |
-  | wpadti.f   |     4 |        |                                                                 |
-  | wreadw.f   |    34 |        |                                                                 |
-  | xcalc.f    |   404 |        |                                                                 |
-  | xcals.f    |   984 |        |                                                                 |
-  | xtcalc.f   |   509 |        |                                                                 |
-  | xtcals.f   |  1635 |        |                                                                 |
-  | zero.f     |    10 |        |                                                                 |
-  | zeta.f     |   576 |        |                                                                 |
-  | zgen.f     |    14 |        |                                                                 |
-  | zmat.f     |    71 |        |                                                                 |
+  | File       | Lines | Status | Description                                                            |
+  |------------+-------+--------+------------------------------------------------------------------------|
+  | adegnl.f   |   101 |        |                                                                        |
+  | alphaa.f   |   347 |        |                                                                        |
+  | alphas.f   |   770 |        |                                                                        |
+  | ammvib.f   |   133 |        |                                                                        |
+  | anhout.f   |    29 |        |                                                                        |
+  | anhprt.f   |    32 |        |                                                                        |
+  | atunit.f   |   629 |        |                                                                        |
+  | balanc.f   |   171 |        |                                                                        |
+  | balbak.f   |    75 |        |                                                                        |
+  | bdegnl.f   |   256 |        |                                                                        |
+  | bmtrx.f    |   821 |        |                                                                        |
+  | buildz.f   |   155 |        |                                                                        |
+  | cmxma.f    |    72 |        |                                                                        |
+  | corcup.f   |  1234 |        |                                                                        |
+  | curveq.f   |   205 |        |                                                                        |
+  | czgen.f    |    13 |        |                                                                        |
+  | darla.f    |    92 |        |                                                                        |
+  | darls.f    |   162 |        |                                                                        |
+  | dcopy.f    |    12 |        |                                                                        |
+  | ddot.f     |    40 |        |                                                                        |
+  | decide.f   |   316 |        |                                                                        |
+  | define.f   |   367 | x      | skip without curvils                                                   |
+  | degnl.f    |   394 |        |                                                                        |
+  | denom.f    |    30 |        |                                                                        |
+  | dipolq.f   |   450 |        |                                                                        |
+  | diptrn.f   |   342 |        |                                                                        |
+  | dist.f     |   811 | x      | com, moi alignment                                                     |
+  | dlstge.f   |    13 |        |                                                                        |
+  | dlstlt.f   |    13 |        |                                                                        |
+  | dp2nrm.f   |   411 |        |                                                                        |
+  | elmhes.f   |    99 |        |                                                                        |
+  | eltran.f   |    78 |        |                                                                        |
+  | engval.f   |   113 |        |                                                                        |
+  | enrgy.f    |   561 |        |                                                                        |
+  | f02aaf.f   |    12 |        |                                                                        |
+  | f02abf.f   |    15 |        |                                                                        |
+  | f02agf.f   |    66 |        |                                                                        |
+  | f04aef.f   |    16 |        |                                                                        |
+  | f04arf.f   |    12 |        |                                                                        |
+  | f04atf.f   |    19 |        |                                                                        |
+  | f05aaf.f   |    53 |        |                                                                        |
+  | find3.f    |    15 |        |                                                                        |
+  | find3r.f   |    11 |        |                                                                        |
+  | find4.f    |    19 |        |                                                                        |
+  | find4t.f   |    12 |        |                                                                        |
+  | force3.f   |   288 |        |                                                                        |
+  | force4.f   |   361 |        |                                                                        |
+  | frqout.f   |    31 |        |                                                                        |
+  | gdarla.f   |    63 |        |                                                                        |
+  | gen1.f     |    47 |        |                                                                        |
+  | gen2.f     |   224 |        |                                                                        |
+  | gen4.f     |    14 |        |                                                                        |
+  | genrsa.f   |   258 |        |                                                                        |
+  | gfslv.f    |   561 |        |                                                                        |
+  | hqr2.f     |   416 |        |                                                                        |
+  | hqr.f      |   223 |        |                                                                        |
+  | hraman.f   |   453 |        |                                                                        |
+  | iadtwp.f   |     4 |        |                                                                        |
+  | indexx.f   |    51 |        |                                                                        |
+  | inert.f    |   249 |        |                                                                        |
+  | inidnm.f   |    37 |        |                                                                        |
+  | inocda.f   |   206 |        |                                                                        |
+  | inten.f    |  1347 |        |                                                                        |
+  | intenr.f   |   879 |        |                                                                        |
+  | iterat.f   |   621 |        |                                                                        |
+  | izero.f    |    10 |        |                                                                        |
+  | jmfudg1.f  |    24 |        |                                                                        |
+  | locate.f   |    35 |        |                                                                        |
+  | lsqrs.f    |   358 |        |                                                                        |
+  | ltensr.f   |  2450 | x      | skip without curvils                                                   |
+  | lu.f       |    46 |        |                                                                        |
+  | lus.f      |    34 |        |                                                                        |
+  | m01ajf.f   |    19 |        |                                                                        |
+  | m01akf.f   |    32 |        |                                                                        |
+  | mains.f    |  2416 |        |                                                                        |
+  | matout.f   |    30 |        |                                                                        |
+  | mtxmpy.f   |    56 |        |                                                                        |
+  | multbf2.f  |   224 |        |                                                                        |
+  | multbf.f   |    50 |        |                                                                        |
+  | mxma.f     |    70 |        |                                                                        |
+  | mxmb.f     |    70 | x      | matrix multiply                                                        |
+  | normfx.f   |   183 | x      | done minus unit stuff that doesn't seem used                           |
+  | orthy.f    |    45 |        |                                                                        |
+  | parity.f   |     6 |        |                                                                        |
+  | pbinom.f   |    21 |        |                                                                        |
+  | plsym.f    |   171 |        |                                                                        |
+  | polar.f    |   410 |        |                                                                        |
+  | print.f    |    32 |        |                                                                        |
+  | printout.f |   178 |        |                                                                        |
+  | projec.f   |    41 |        |                                                                        |
+  | prout.f    |    65 |        |                                                                        |
+  | pxcals.f   |   861 |        |                                                                        |
+  | qcent.f    |   517 | x      | skipping rest for now, apparently just quartic distortion coefficients |
+  | ramanq.f   |  2072 |        |                                                                        |
+  | readw.f    |   207 |        |                                                                        |
+  | res2a.f    |   284 |        |                                                                        |
+  | res3a.f    |   183 |        |                                                                        |
+  | resona.f   |   167 |        |                                                                        |
+  | restst.f   |  1535 |        |                                                                        |
+  | rfile.f    |    13 |        |                                                                        |
+  | rg.f       |    73 |        |                                                                        |
+  | rot1st.f   |    29 |        |                                                                        |
+  | rot2nd.f   |    43 | x      | rotate fc2 to new axes                                                 |
+  | rot3rd.f   |    62 | x      | rotate fc3 to new axes                                                 |
+  | rot4th.f   |    69 |        |                                                                        |
+  | rota.f     |   711 |        |                                                                        |
+  | rotater.f  |   112 |        |                                                                        |
+  | rotdp1.f   |    28 |        |                                                                        |
+  | rotdp2.f   |    33 |        |                                                                        |
+  | rotdp3.f   |    34 |        |                                                                        |
+  | rotnew.f   |    44 |        |                                                                        |
+  | rotrn2.f   |   198 | x      | project out rot/trans from carts, skipping since we never use          |
+  | rotrn3.f   |    87 | x      | project out rot/trans for cubics, skipping since we never use          |
+  | rots.f     |   514 |        |                                                                        |
+  | rs.f       |    60 |        |                                                                        |
+  | rsfrm1.f   |   154 |        |                                                                        |
+  | rsfrm2.f   |   140 |        |                                                                        |
+  | rsp.f      |    83 | x      | eigen decomposition                                                    |
+  | sextic.f   |   743 |        |                                                                        |
+  | smxpy.f    |    25 |        |                                                                        |
+  | spectro.f  |    60 | x      | entry point, just calls mains                                          |
+  | sqhamp.f   |    78 | x      | skip without curvils                                                   |
+  | square.f   |    20 |        |                                                                        |
+  | squr.f     |    20 |        |                                                                        |
+  | subres.f   |    28 |        |                                                                        |
+  | sxmpy.f    |    26 |        |                                                                        |
+  | threej.f   |    28 |        |                                                                        |
+  | thrj.f     |    62 |        |                                                                        |
+  | tmtrx.f    |   150 |        |                                                                        |
+  | tonorm.f   |   846 |        |                                                                        |
+  | tql2.f     |   177 |        |                                                                        |
+  | tqlrat.f   |   136 |        |                                                                        |
+  | trans33.f  |    88 |        |                                                                        |
+  | trans44.f  |   110 |        |                                                                        |
+  | trbak3.f   |    84 |        |                                                                        |
+  | tred1.f    |   119 |        |                                                                        |
+  | tred2.f    |   143 |        |                                                                        |
+  | tred3.f    |   120 |        |                                                                        |
+  | triple.f   |    14 |        |                                                                        |
+  | trnsfm.f   |   662 |        |                                                                        |
+  | umatrx.f   |   255 | x      | skip without curvils                                                   |
+  | vcross.f   |    13 |        |                                                                        |
+  | vecsum.f   |     9 |        |                                                                        |
+  | vecz.f     |    16 |        |                                                                        |
+  | vibavg.f   |   303 |        |                                                                        |
+  | vibfx.f    |   256 | x      | done minus degmode alignment for symm tops and linear molecules        |
+  | vprodz.f   |     9 |        |                                                                        |
+  | w0cal.f    |   106 |        |                                                                        |
+  | wcals.f    |   427 |        |                                                                        |
+  | wpadti.f   |     4 |        |                                                                        |
+  | wreadw.f   |    34 |        |                                                                        |
+  | xcalc.f    |   404 |        |                                                                        |
+  | xcals.f    |   984 |        |                                                                        |
+  | xtcalc.f   |   509 |        |                                                                        |
+  | xtcals.f   |  1635 |        |                                                                        |
+  | zero.f     |    10 |        |                                                                        |
+  | zeta.f     |   576 | x      | done but skipped sum rules checks                                      |
+  | zgen.f     |    14 |        |                                                                        |
+  | zmat.f     |    71 |        |                                                                        |
 
   #+begin_src awk :stdin lines
     NR > 1 {
@@ -174,4 +174,28 @@
   #+end_src
 
   #+RESULTS:
-  : finished 4854/40693 = 11.9%
+  : finished 6096/40693 = 15.0%
+* Extra code
+** first sum rule test from zeta.f
+   #+begin_src rust
+     // sum rules to test the form of the wilson A and Zeta matrices. NOTE:
+     // skip this if linear. fortran just returns in this case
+     static TOL: f64 = 1e-6;
+     // first look at A(X, X, K)²
+     let primat = self.geom.principal_moments();
+     for ixyz in 0..2 {
+	 for jxyz in 0..=ixyz {
+	     let kxyz = ixyz + jxyz - 1;
+	     let fourp = 4.0 * primat[kxyz];
+	     let fourp = 0.0;
+	     let ijxyz = ioff(ixyz.min(jxyz) + ixyz.max(jxyz));
+	     let mut sum = 0.0;
+	     for k in 0..nvib {
+		 sum += wila[(k, ijxyz)].powi(2);
+	     }
+	     if sum - fourp > TOL {
+		 eprintln!("sum rule not obeyed!");
+	     }
+	 }
+     }
+   #+end_src

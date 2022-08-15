@@ -1,3 +1,4 @@
+#![allow(unused)]
 use std::{
     collections::HashMap,
     fmt::Debug,
@@ -13,6 +14,7 @@ use dummy::{Dummy, DummyVal};
 mod utils;
 use nalgebra::{Matrix3, SymmetricEigen};
 use rotor::{Rotor, ROTOR_EPS};
+use tensor::{Tensor3, Tensor4};
 use utils::*;
 
 mod rotor;
@@ -28,6 +30,7 @@ type Dmat = nalgebra::DMatrix<f64>;
 
 /// HE / (AO * AO) from fortran. something about hartrees and AO is bohr radius
 const FACT2: f64 = 4.359813653 / (0.52917706 * 0.52917706);
+const FACT3: f64 = 4.359813653 / (0.52917706 * 0.52917706 * 0.52917706);
 /// looks like cm-1 to mhz factor
 const CL: f64 = 2.99792458;
 /// avogadro's number
@@ -63,6 +66,7 @@ pub struct Spectro {
     pub curvils: Vec<Curvil>,
     pub degmodes: Vec<Vec<usize>>,
     pub dummies: Vec<Dummy>,
+    pub is_linear: Option<bool>,
 }
 
 impl Spectro {
@@ -249,7 +253,18 @@ impl Spectro {
         let rotor = self.rotor_type();
         println!("Molecule is {}", rotor);
 
-        let n3n = 3 * self.natoms();
+        let natom = self.natoms();
+        let n3n = 3 * natom;
+        let i3n3n = n3n * (n3n + 1) * (n3n + 2) / 6;
+        let i4n3n = n3n * (n3n + 1) * (n3n + 2) * (n3n + 3) / 24;
+        let nvib = n3n - 6
+            + if let Rotor::Linear = rotor {
+                self.is_linear = Some(true);
+                1
+            } else {
+                self.is_linear = Some(false);
+                0
+            };
 
         // load the force constants, rotate them to the new axes, and convert
         // them to the proper units
@@ -263,16 +278,178 @@ impl Spectro {
         let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
         let fxm = self.form_sec(fc2, n3n, &sqm);
         let (harms, lxm) = symm_eigen_decomp(fxm);
-        let _harms = to_wavenumbers(harms);
+        let harms = to_wavenumbers(harms);
 
-        // form the LX matrix
-        let mut lx = Dmat::zeros(n3n, n3n);
-        for i in 0..n3n {
-            let ii = i / 3;
-            for j in 0..n3n {
-                lx[(i, j)] = sqm[ii] * lxm[(i, j)];
+        // form the LX matrix, not used so far
+        let lx = self.make_lx(n3n, &sqm, &lxm);
+
+        // not used yet
+        let (zmat, biga, wila) = self.zeta(natom, nvib, &lxm, &w);
+
+        // only for the quartic distortion coefficients, doesn't appear to touch
+        // anything else
+        self.qcent(nvib, &harms, &wila);
+
+        // start of cubic analysis
+        let f3x = load_fc3("testfiles/fort.30", n3n);
+        let f3x = self.rot3rd(n3n, natom, f3x, axes);
+    }
+
+    /// Calculate the zeta, big A and Wilson A and J matrices. Zeta is for the
+    /// coriolis coupling constants
+    fn zeta(
+        &self,
+        natom: usize,
+        nvib: usize,
+        lxm: &Dmat,
+        w: &[f64],
+    ) -> (Tensor3, Tensor3, Dmat) {
+        // calculate the zeta matrix for the coriolis coupling constants
+        let mut zmat = Tensor3::zeros(nvib, nvib, 3);
+        let mut biga = Tensor3::zeros(nvib, nvib, 6);
+        for k in 0..nvib {
+            for l in 0..nvib {
+                let mut valux = 0.0;
+                let mut valuy = 0.0;
+                let mut valuz = 0.0;
+                let mut valuxx = 0.0;
+                let mut valuyy = 0.0;
+                let mut valuxy = 0.0;
+                let mut valuxz = 0.0;
+                let mut valuyz = 0.0;
+                let mut valuzz = 0.0;
+                for i in 0..natom {
+                    let ix = 3 * i;
+                    let iy = ix + 1;
+                    let iz = iy + 1;
+                    // TODO use add assign here after writing a test. also
+                    // consider adding directly to the tensors instead of these
+                    // intermediate values. might be a lot of array accesses,
+                    // but it simplifies the code at least. a benchmark might
+                    // help decide
+                    valux = valux + lxm[(iy, k)] * lxm[(iz, l)]
+                        - lxm[(iz, k)] * lxm[(iy, l)];
+                    valuy = valuy + lxm[(iz, k)] * lxm[(ix, l)]
+                        - lxm[(ix, k)] * lxm[(iz, l)];
+                    valuz = valuz + lxm[(ix, k)] * lxm[(iy, l)]
+                        - lxm[(iy, k)] * lxm[(ix, l)];
+                    valuxx = valuxx
+                        + lxm[(iy, k)] * lxm[(iy, l)]
+                        + lxm[(iz, k)] * lxm[(iz, l)];
+                    valuyy = valuyy
+                        + lxm[(ix, k)] * lxm[(ix, l)]
+                        + lxm[(iz, k)] * lxm[(iz, l)];
+                    valuzz = valuzz
+                        + lxm[(ix, k)] * lxm[(ix, l)]
+                        + lxm[(iy, k)] * lxm[(iy, l)];
+                    valuxy = valuxy - lxm[(ix, k)] * lxm[(iy, l)];
+                    valuxz = valuxz - lxm[(ix, k)] * lxm[(iz, l)];
+                    valuyz = valuyz - lxm[(iy, k)] * lxm[(iz, l)];
+                }
+                zmat[(k, l, 0)] = valux;
+                zmat[(k, l, 1)] = valuy;
+                zmat[(k, l, 2)] = valuz;
+                biga[(k, l, 0)] = valuxx;
+                biga[(k, l, 1)] = valuxy;
+                biga[(k, l, 2)] = valuyy;
+                biga[(k, l, 3)] = valuxz;
+                biga[(k, l, 4)] = valuyz;
+                biga[(k, l, 5)] = valuzz;
             }
         }
+        let mut wila = Dmat::zeros(nvib, 6);
+        // calculate the A vectors. says only half is formed since it's
+        // symmetric
+        for k in 0..nvib {
+            let mut valuxx = 0.0;
+            let mut valuyy = 0.0;
+            let mut valuzz = 0.0;
+            let mut valuxy = 0.0;
+            let mut valuxz = 0.0;
+            let mut valuyx = 0.0;
+            let mut valuzx = 0.0;
+            let mut valuzy = 0.0;
+            let mut valuyz = 0.0;
+            for i in 0..natom {
+                let ix = 3 * i;
+                let iy = ix + 1;
+                let iz = iy + 1;
+                let xcm = self.geom.atoms[i].x;
+                let ycm = self.geom.atoms[i].y;
+                let zcm = self.geom.atoms[i].z;
+                let rmass = w[i].sqrt();
+                valuxx =
+                    valuxx + rmass * (ycm * lxm[(iy, k)] + zcm * lxm[(iz, k)]);
+                valuyy =
+                    valuyy + rmass * (xcm * lxm[(ix, k)] + zcm * lxm[(iz, k)]);
+                valuzz =
+                    valuzz + rmass * (xcm * lxm[(ix, k)] + ycm * lxm[(iy, k)]);
+                valuxy = valuxy - rmass * xcm * lxm[(iy, k)];
+                valuxz = valuxz - rmass * xcm * lxm[(iz, k)];
+                valuyz = valuyz - rmass * ycm * lxm[(iz, k)];
+                valuyx = valuyx - rmass * ycm * lxm[(ix, k)];
+                valuzx = valuzx - rmass * zcm * lxm[(ix, k)];
+                valuzy = valuzy - rmass * zcm * lxm[(iy, k)];
+            }
+            wila[(k, 0)] = 2.0 * valuxx;
+            wila[(k, 1)] = 2.0 * valuxy;
+            wila[(k, 2)] = 2.0 * valuyy;
+            wila[(k, 3)] = 2.0 * valuxz;
+            wila[(k, 4)] = 2.0 * valuyz;
+            wila[(k, 5)] = 2.0 * valuzz;
+        }
+        (zmat, biga, wila)
+    }
+
+    /// calculate the quartic centrifugal distortion constants. TODO this will
+    /// be the first test for the output of zeta
+    fn qcent(&self, nvib: usize, freq: &Dvec, wila: &Dmat) {
+        // convert to cm-1 from the biggest mess you've ever seen
+        const CONST1: f64 = 3.833384078e04;
+        // convert to mhz from cm-1
+        const CONST2: f64 = 2.99792458e04;
+
+        let maxcor = if self.is_linear.unwrap() { 2 } else { 3 };
+        let primat = self.geom.principal_moments();
+
+        let mut tau = Tensor4::zeros(maxcor, maxcor, maxcor, maxcor);
+        for ixyz in 0..maxcor {
+            for jxyz in 0..maxcor {
+                for kxyz in 0..maxcor {
+                    for lxyz in 0..maxcor {
+                        let ijxyz = ioff(ixyz.max(jxyz) + 1) + ixyz.min(jxyz);
+                        let klxyz = ioff(kxyz.max(lxyz) + 1) + kxyz.min(lxyz);
+                        let mut sum = 0.0;
+                        for k in 0..nvib {
+                            let div = freq[k].powi(2)
+                                * primat[ixyz]
+                                * primat[jxyz]
+                                * primat[kxyz]
+                                * primat[lxyz];
+                            sum += wila[(k, ijxyz)] * wila[(k, klxyz)] / div;
+                        }
+                        tau[(ixyz, jxyz, kxyz, lxyz)] = -0.5 * CONST1 * sum;
+                        // println!(
+                        //     "{ixyz:5}{jxyz:5}{kxyz:5}{lxyz:5}{:15.8}",
+                        //     tau[(ixyz, jxyz, kxyz, lxyz)]
+                        // );
+                    }
+                }
+            }
+        }
+
+        // form tau prime in wavenumbers
+        let mut taupcm = Dmat::zeros(maxcor, maxcor);
+        for ijxyz in 0..maxcor {
+            for klxyz in 0..maxcor {
+                taupcm[(ijxyz, klxyz)] = tau[(ijxyz, ijxyz, klxyz, klxyz)];
+                if ijxyz != klxyz {
+                    taupcm[(ijxyz, klxyz)] +=
+                        2.0 * tau[(ijxyz, klxyz, ijxyz, klxyz)];
+                }
+            }
+        }
+        // TODO resume at line 175 of qcent.f
     }
 
     /// formation of the secular equation
@@ -289,8 +466,8 @@ impl Spectro {
         fxm
     }
 
-    /// rotate the force constants in `fx` to align with the principal axes in
-    /// `eg` used to align the geometry
+    /// rotate the harmonic force constants in `fx` to align with the principal
+    /// axes in `eg` used to align the geometry
     pub fn rot2nd(&self, fx: DMat, eg: Mat3) -> DMat {
         let mut ret = fx.clone();
         let natom = self.natoms();
@@ -299,13 +476,90 @@ impl Spectro {
                 // grab 3x3 blocks of FX into A, perform Eg × A × Egᵀ and set
                 // that block in the return matrix
                 let a = fx.fixed_slice::<3, 3>(ia, ib);
-                let temp2 = (eg * a) * eg.transpose();
+                let temp2 = eg * a * eg.transpose();
                 let mut targ = ret.fixed_slice_mut::<3, 3>(ia, ib);
                 targ.copy_from(&temp2);
             }
         }
         ret
     }
+
+    /// rotate the cubic force constants in `fx` to align with the principal
+    /// axes in `eg` used to align the geometry
+    pub fn rot3rd(
+        &self,
+        n3n: usize,
+        natom: usize,
+        f3x: Tensor3,
+        eg: Mat3,
+    ) -> Tensor3 {
+        let (a, b, c) = f3x.shape();
+        let mut ret = Tensor3::zeros(a, b, c);
+        // TODO could try slice impl like in rot2nd, but it will be harder with
+        // tensors
+        for i in 0..n3n {
+            for j in 0..natom {
+                let ib = j * 3;
+                for k in 0..natom {
+                    let ic = k * 3;
+                    let mut a = Matrix3::zeros();
+                    for jj in 0..3 {
+                        for kk in 0..3 {
+                            a[(jj, kk)] = f3x[(ib + jj, ic + kk, i)];
+                        }
+                    }
+                    let temp2 = eg * a * eg.transpose();
+                    for jj in 0..3 {
+                        for kk in 0..3 {
+                            ret[(ib + jj, ic + kk, i)] = temp2[(jj, kk)];
+                        }
+                    }
+                }
+            }
+        }
+
+	// have to use the transpose to get the same indices as the fortran
+	// version
+	let eg = eg.transpose();
+        for j in 0..n3n {
+            for k in 0..n3n {
+                for i in 0..natom {
+                    let ia = i * 3;
+                    let mut val = [0.0; 3];
+                    for ii in 0..3 {
+                        val[ii] = ret[(j, k, ia)] * eg[(0, ii)]
+                            + ret[(j, k, ia + 1)] * eg[(1, ii)]
+                            + ret[(j, k, ia + 2)] * eg[(2, ii)];
+                    }
+
+                    for ii in 0..3 {
+                        ret[(j, k, ia + ii)] = val[ii];
+                    }
+                }
+            }
+        }
+        ret
+    }
+
+    /// make the LX matrix
+    fn make_lx(&self, n3n: usize, sqm: &[f64], lxm: &Dmat) -> Dmat {
+        let mut lx = Dmat::zeros(n3n, n3n);
+        for i in 0..n3n {
+            let ii = i / 3;
+            for j in 0..n3n {
+                lx[(i, j)] = sqm[ii] * lxm[(i, j)];
+            }
+        }
+        lx
+    }
+}
+
+pub fn ioff(n: usize) -> usize {
+    let mut sum = 0;
+    for i in 0..n {
+        sum += i;
+    }
+    sum
 }
 
 /// convert harmonic frequencies to wavenumbers. not sure if this works on
@@ -351,4 +605,32 @@ pub fn load_fc2(infile: &str, n3n: usize) -> DMat {
         n3n,
         data.split_whitespace().map(|s| s.parse().unwrap()),
     )
+}
+
+pub fn load_fc3(infile: &str, n3n: usize) -> Tensor3 {
+    let mut f3x = Tensor3::zeros(n3n, n3n, n3n);
+    let f33 = load_fc34("testfiles/fort.30");
+    let mut labc = 0;
+    for iabc in 0..n3n {
+        for jabc in 0..=iabc {
+            for kabc in 0..=jabc {
+                let val = f33[labc];
+                f3x[(iabc, jabc, kabc)] = val;
+                f3x[(iabc, kabc, jabc)] = val;
+                f3x[(jabc, iabc, kabc)] = val;
+                f3x[(jabc, kabc, iabc)] = val;
+                f3x[(kabc, iabc, jabc)] = val;
+                f3x[(kabc, jabc, iabc)] = val;
+                labc += 1;
+            }
+        }
+    }
+    f3x
+}
+
+pub fn load_fc34(infile: &str) -> Vec<f64> {
+    let data = read_to_string(infile).unwrap();
+    data.split_whitespace()
+        .map(|s| s.parse().unwrap())
+        .collect()
 }
