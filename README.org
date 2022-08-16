@@ -44,11 +44,11 @@
   | f04arf.f   |    12 |        |                                                                        |
   | f04atf.f   |    19 |        |                                                                        |
   | f05aaf.f   |    53 |        |                                                                        |
-  | find3.f    |    15 |        |                                                                        |
-  | find3r.f   |    11 |        |                                                                        |
+  | find3.f    |    15 | x      | not used unless inorm on                                               |
+  | find3r.f   |    11 | x      | cubic index                                                            |
   | find4.f    |    19 |        |                                                                        |
   | find4t.f   |    12 |        |                                                                        |
-  | force3.f   |   288 |        |                                                                        |
+  | force3.f   |   288 | x      | finished the part we use                                               |
   | force4.f   |   361 |        |                                                                        |
   | frqout.f   |    31 |        |                                                                        |
   | gdarla.f   |    63 |        |                                                                        |
@@ -174,7 +174,7 @@
   #+end_src
 
   #+RESULTS:
-  : finished 6096/40693 = 15.0%
+  : finished 6410/40693 = 15.8%
 * Extra code
 ** first sum rule test from zeta.f
    #+begin_src rust
