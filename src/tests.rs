@@ -431,7 +431,9 @@ fn test_funds() {
     let f4x = load_fc4("testfiles/fort.40", n3n);
     let mut f4x = spectro.rot4th(n3n, natom, f4x, axes);
     let f4qcm = force4(n3n, &mut f4x, &lx, nvib, &freq, i4vib);
-    let xcnst = xcalc(nvib, &f4qcm, &freq, &f3qcm, &zmat);
+    let moments = spectro.geom.principal_moments();
+    let rotcon: Vec<_> = moments.iter().map(|m| CONST / m).collect();
+    let xcnst = xcalc(nvib, &f4qcm, &freq, &f3qcm, &zmat, &rotcon);
     let got = funds(&freq, nvib, &xcnst);
     let want = vec![3753.166, 3656.537, 1598.516];
     assert_abs_diff_eq!(Dvec::from(got), Dvec::from(want), epsilon = 1e-3);

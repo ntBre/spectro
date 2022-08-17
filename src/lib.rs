@@ -43,6 +43,8 @@ const ELMASS: f64 = 0.91095344e-30;
 /// looks like cm-1 to mhz factor
 const CL: f64 = 2.99792458;
 const ALAM: f64 = 4.0e-2 * (PI * PI * CL) / (PH * AVN);
+/// constant for converting moments of inertia to rotational constants
+const CONST: f64 = 1.0e+02 * (PH * AVN) / (8.0e+00 * PI * PI * CL);
 /// planck's constant in atomic units?
 const PH: f64 = 6.626176;
 /// pre-computed sqrt of ALAM
@@ -52,6 +54,7 @@ const FACT4: f64 = 1.0e6 / (ALAM * ALAM * PH * CL);
 
 /// avogadro's number
 const AVN: f64 = 6.022045;
+const PARA: f64 = 1.0 / AVN;
 // pre-compute the sqrt and make const
 const SQRT_AVN: f64 = 2.4539855337796920273026076438896;
 // conversion to cm-1
@@ -589,6 +592,9 @@ impl Spectro {
         self.geom.normalize();
         let axes = self.geom.reorder();
 
+        let moments = self.geom.principal_moments();
+        let rotcon: Vec<_> = moments.iter().map(|m| CONST / m).collect();
+
         let rotor = self.rotor_type();
         println!("Molecule is {}", rotor);
 
@@ -643,9 +649,8 @@ impl Spectro {
         let mut f4x = self.rot4th(n3n, natom, f4x, axes);
         let f4qcm = force4(n3n, &mut f4x, &lx, nvib, &freq, i4vib);
 
-        let xcnst = xcalc(nvib, &f4qcm, &freq, &f3qcm, &zmat);
+        let xcnst = xcalc(nvib, &f4qcm, &freq, &f3qcm, &zmat, &rotcon);
 
         let fund = funds(&freq, nvib, &xcnst);
     }
 }
-

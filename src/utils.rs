@@ -404,6 +404,7 @@ pub fn xcalc(
     freq: &Dvec,
     f3qcm: &[f64],
     zmat: &Tensor3,
+    rotcon: &[f64],
 ) -> Dmat {
     // TODO filled by loading fermi resonances
     let ifrmchk = Tensor3::zeros(30, 30, 30);
@@ -465,12 +466,6 @@ pub fn xcalc(
             }
             let val5 = freq[k] / freq[l];
             let val6 = freq[l] / freq[k];
-            // TODO actually compute these rotational constants
-            let rotcon = vec![
-                27.280988597962384,
-                14.576838043259453,
-                9.5005064610993717,
-            ];
             let val7 = rotcon[0] * zmat[(k, l, 0)].powi(2)
                 + rotcon[1] * zmat[(k, l, 1)].powi(2)
                 + rotcon[2] * zmat[(k, l, 2)].powi(2);
