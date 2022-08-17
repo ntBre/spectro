@@ -3,7 +3,7 @@ use std::{
     collections::HashMap,
     f64::consts::PI,
     fmt::Debug,
-    fs::{read_to_string, File},
+    fs::File,
     io::{BufRead, BufReader, Result},
 };
 
@@ -13,7 +13,7 @@ mod dummy;
 use dummy::{Dummy, DummyVal};
 
 mod utils;
-use nalgebra::{Matrix3, SymmetricEigen};
+use nalgebra::Matrix3;
 use rotor::{Rotor, ROTOR_EPS};
 use tensor::{Tensor3, Tensor4};
 use utils::*;
@@ -29,6 +29,8 @@ type Mat3 = Matrix3<f64>;
 type Dvec = nalgebra::DVector<f64>;
 type Dmat = nalgebra::DMatrix<f64>;
 
+const HE: f64 = 4.359813653;
+const A0: f64 = 0.52917706;
 /// HE / (AO * AO) from fortran. something about hartrees and AO is bohr radius
 const FACT2: f64 = 4.359813653 / (0.52917706 * 0.52917706);
 const FUNIT3: f64 = 4.359813653 / (0.52917706 * 0.52917706 * 0.52917706);
@@ -577,6 +579,10 @@ impl Spectro {
     }
 
     pub fn run(mut self) {
+        // TODO consider moving some of this stuff into `load`. probably even up
+        // to the i4vib line could just be included there and stored in fields
+        // on self
+
         // assumes input geometry in bohr
         self.geom.to_angstrom();
 
@@ -615,7 +621,7 @@ impl Spectro {
         let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
         let fxm = self.form_sec(fc2, n3n, &sqm);
         let (harms, lxm) = symm_eigen_decomp(fxm);
-        let harms = to_wavenumbers(harms);
+        let freq = to_wavenumbers(harms);
 
         // form the LX matrix, not used so far
         let lx = self.make_lx(n3n, &sqm, &lxm);
@@ -625,21 +631,21 @@ impl Spectro {
 
         // only for the quartic distortion coefficients, doesn't appear to touch
         // anything else
-        self.qcent(nvib, &harms, &wila);
+        self.qcent(nvib, &freq, &wila);
 
         // start of cubic analysis
         let f3x = load_fc3("testfiles/fort.30", n3n);
         let mut f3x = self.rot3rd(n3n, natom, f3x, axes);
-
-        // TODO not sure what is supposed to come out of this yet
-        force3(n3n, &mut f3x, &lx, nvib, &harms, i3vib);
+        let f3qcm = force3(n3n, &mut f3x, &lx, nvib, &freq, i3vib);
 
         // start of quartic analysis
         let f4x = load_fc4("testfiles/fort.40", n3n);
         let mut f4x = self.rot4th(n3n, natom, f4x, axes);
+        let f4qcm = force4(n3n, &mut f4x, &lx, nvib, &freq, i4vib);
 
-        // begin force4
-        force4(n3n, &mut f4x, &lx, nvib, &harms, i4vib);
+        let xcnst = xcalc(nvib, &f4qcm, &freq, &f3qcm, &zmat);
+
+        let fund = funds(&freq, nvib, &xcnst);
     }
 }
 

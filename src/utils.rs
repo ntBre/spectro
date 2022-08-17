@@ -73,19 +73,31 @@ where
         .collect::<Vec<_>>()
 }
 
+/// helper for sorting the find3r and find4t indices
+fn sort_indices<const N: usize>(mut indices: [usize; N]) -> [usize; N] {
+    indices.sort();
+    indices
+}
+
 /// cubic force constant indexing formula. I think it relies on the fortran
 /// numbering though, so I need to add one initially and then subtract one at
-/// the end
-fn find3r(i: usize, j: usize, k: usize) -> usize {
-    let (i, j, k) = (i + 1, j + 1, k + 1);
-    (i - 1) * i * (i + 1) / 6 + (j - 1) * j / 2 + k - 1
+/// the end. this returns *indices* so it doesn't work directly for computing
+/// lengths. For example, `find3r(3, 3, 3) = 19` and `find3r(2, 2, 2) = 9`, so
+/// to get the length of the cubic force constant vector for water you have to
+/// do `find3r(2, 2, 2) + 1`, where 2 is `nvib-1`
+pub(crate) fn find3r(i: usize, j: usize, k: usize) -> usize {
+    let [i, j, k] = sort_indices([i + 1, j + 1, k + 1]);
+    i + (j - 1) * j / 2 + (k - 1) * k * (k + 1) / 6 - 1
 }
 
 /// quartic force constant indexing formula. it relies on the fortran numbering,
 /// so I need to add one initially and then subtract one at the end
-fn find4t(i: usize, j: usize, k: usize, l: usize) -> usize {
-    let (i, j, k, l) = (i + 1, j + 1, k + 1, l + 1);
-    (i - 1) * i * (i + 1) * (i + 2) / 24 + find3r(j - 1, k - 1, l - 1)
+pub(crate) fn find4t(i: usize, j: usize, k: usize, l: usize) -> usize {
+    let [i, j, k, l] = sort_indices([i + 1, j + 1, k + 1, l + 1]);
+    i + (j - 1) * j / 2
+        + (k - 1) * k * (k + 1) / 6
+        + (l - 1) * l * (l + 1) * (l + 2) / 24
+        - 1
 }
 
 pub fn ioff(n: usize) -> usize {
@@ -356,27 +368,7 @@ pub fn force4(
                     frq4[(jj, ii, ivib, jvib)] = f4x[(jj, ii, ivib, jvib)];
                     frq4[(jj, ii, jvib, ivib)] = f4x[(jj, ii, jvib, ivib)];
                     frq4[(ii, jj, jvib, ivib)] = f4x[(ii, jj, jvib, ivib)];
-                    let ijkl = if ivib > ii {
-                        if jvib > ii {
-                            find4t(ivib, jvib, ii, jj)
-                        } else {
-                            if jvib > jj {
-                                find4t(ivib, ii, jvib, jj)
-                            } else {
-                                find4t(ivib, ii, jj, jvib)
-                            }
-                        }
-                    } else {
-                        if ivib > jj {
-                            if jvib > jj {
-                                find4t(ii, ivib, jvib, jj)
-                            } else {
-                                find4t(ii, ivib, jj, jvib)
-                            }
-                        } else {
-                            find4t(ii, jj, ivib, jvib)
-                        }
-                    };
+                    let ijkl = find4t(ivib, jvib, ii, jj);
                     f4qcm[ijkl] = dd[(ii, jj)];
                 }
             }
@@ -405,9 +397,118 @@ fn quartic_sum_facs(i4vib: usize, nvib: usize) -> Vec<f64> {
     facts4
 }
 
+/// calculate the anharmonic constants
+pub fn xcalc(
+    nvib: usize,
+    f4qcm: &[f64],
+    freq: &Dvec,
+    f3qcm: &[f64],
+    zmat: &Tensor3,
+) -> Dmat {
+    // TODO filled by loading fermi resonances
+    let ifrmchk = Tensor3::zeros(30, 30, 30);
+    let mut xcnst = Dmat::zeros(nvib, nvib);
+    // diagonal contributions to the anharmonic constants
+    for k in 0..nvib {
+        let kkkk = find4t(k, k, k, k);
+        let val1 = f4qcm[kkkk] / 16.0;
+        let wk = freq[k].powi(2);
+        let mut valu = 0.0;
+        let mut ifrmck = false; // probably a bool
+        for l in 0..nvib {
+            let kkl = find3r(k, k, l);
+            let val2 = f3qcm[kkl].powi(2);
+            if ifrmchk[(k, k, l)] != 0.0 {
+                ifrmck = true;
+                todo!();
+            } else {
+                let wl = freq[l].powi(2);
+                let val3 = 8.0 * wk - 3.0 * wl;
+                let val4 = 16.0 * freq[l] * (4.0 * wk - wl);
+                valu -= val2 * val3 / val4;
+            }
+        }
+        let value = val1 + valu;
+        xcnst[(k, k)] = value;
+    }
+    // off-diagonal contributions to the anharmonic constants
+    for k in 1..nvib {
+        for l in 0..k {
+            let kkll = find4t(k, k, l, l);
+            let val1 = f4qcm[kkll] / 4.0;
+            let mut val2 = 0.0;
+            for m in 0..nvib {
+                let kkm = find3r(k, k, m);
+                let llm = find3r(l, l, m);
+                val2 -= f3qcm[kkm] * f3qcm[llm] / (4.0 * freq[m]);
+            }
+
+            let mut valu = 0.0;
+            let mut ifrmck = false;
+            for m in 0..nvib {
+                let lm = ioff(l.max(m)) + l.min(m);
+                let km = ioff(k.max(m)) + k.min(m);
+                let d1 = freq[k] + freq[l] + freq[m];
+                let d2 = freq[k] - freq[l] + freq[m];
+                let d3 = freq[k] + freq[l] - freq[m];
+                let d4 = -freq[k] + freq[l] + freq[m];
+                let klm = find3r(k, l, m);
+                // TODO fermi check stuff
+                // if ifrmchk[(l, m, k)] != 0.0 && m != l {
+                // 	ifrmck = true;
+                // 	todo!();
+                // }
+                let delta = -d1 * d2 * d3 * d4;
+                let val3 = freq[m].powi(2) - freq[k].powi(2) - freq[l].powi(2);
+                valu -= 0.5 * f3qcm[klm].powi(2) * freq[m] * val3 / delta;
+                valu;
+            }
+            let val5 = freq[k] / freq[l];
+            let val6 = freq[l] / freq[k];
+            // TODO actually compute these rotational constants
+            let rotcon = vec![
+                27.280988597962384,
+                14.576838043259453,
+                9.5005064610993717,
+            ];
+            let val7 = rotcon[0] * zmat[(k, l, 0)].powi(2)
+                + rotcon[1] * zmat[(k, l, 1)].powi(2)
+                + rotcon[2] * zmat[(k, l, 2)].powi(2);
+            let val8 = (val5 + val6) * val7;
+            let value = val1 + val2 + valu + val8;
+            xcnst[(k, l)] = value;
+            xcnst[(l, k)] = value;
+        }
+    }
+    xcnst
+}
+
+/// compute the fundamental frequencies from the harmonic frequencies and the
+/// anharmonic constants
+pub fn funds(freq: &Dvec, nvib: usize, xcnst: &Dmat) -> Vec<f64> {
+    let mut fund = Vec::with_capacity(freq.len());
+    for i in 0..nvib {
+        let mut val = freq[i] + 2.0 * xcnst[(i, i)];
+        for j in 0..nvib {
+            if j != i {
+                val += 0.5 * xcnst[(i, j)];
+            }
+        }
+        fund.push(val);
+    }
+    fund
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_find3r() {
+        let got = find3r(2, 2, 2);
+        let want = 9;
+        assert_eq!(got, want);
+    }
 
     #[test]
     fn test_quartic_sum_facs() {

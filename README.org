@@ -8,7 +8,7 @@
   | alphas.f   |   770 |        |                                                                        |
   | ammvib.f   |   133 |        |                                                                        |
   | anhout.f   |    29 |        |                                                                        |
-  | anhprt.f   |    32 |        |                                                                        |
+  | anhprt.f   |    32 | x      | print anharmonic constants                                             |
   | atunit.f   |   629 |        |                                                                        |
   | balanc.f   |   171 |        |                                                                        |
   | balbak.f   |    75 |        |                                                                        |
@@ -174,7 +174,7 @@
   #+end_src
 
   #+RESULTS:
-  : finished 6936/40693 = 17.0%
+  : finished 6968/40693 = 17.1%
 * Extra code
 ** first sum rule test from zeta.f
    #+begin_src rust
