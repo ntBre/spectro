@@ -397,7 +397,7 @@ fn quartic_sum_facs(i4vib: usize, nvib: usize) -> Vec<f64> {
     facts4
 }
 
-/// calculate the anharmonic constants
+/// calculate the anharmonic constants and E_0
 pub fn xcalc(
     nvib: usize,
     f4qcm: &[f64],
@@ -405,7 +405,7 @@ pub fn xcalc(
     f3qcm: &[f64],
     zmat: &Tensor3,
     rotcon: &[f64],
-) -> Dmat {
+) -> (Dmat, f64) {
     // TODO filled by loading fermi resonances
     let ifrmchk = Tensor3::zeros(30, 30, 30);
     let mut xcnst = Dmat::zeros(nvib, nvib);
@@ -475,7 +475,68 @@ pub fn xcalc(
             xcnst[(l, k)] = value;
         }
     }
-    xcnst
+    // NOTE: took out some weird IA stuff here and reproduced their results.
+    // maybe my signs are actually right and theirs are wrong.
+    let mut f4k = 0.0;
+    let mut f3k = 0.0;
+    let mut f3kkl = 0.0;
+    for k in 0..nvib {
+        // kkkk and kkk terms
+        let kkk = find3r(k, k, k);
+        let kkkk = find4t(k, k, k, k);
+        let mut fiqcm = f4qcm[kkkk];
+        f4k += fiqcm / 64.0;
+        f3k -= 7.0 * f3qcm[kkk].powi(2) / (576.0 * freq[k]);
+        let wk = freq[k].powi(2);
+
+        // kkl terms
+        let ifrmck = false;
+        for l in 0..nvib {
+            let kkl = find3r(k, k, l);
+            if k == l {
+                continue;
+            }
+            let wl = freq[l].powi(2);
+            let zval1 = f3qcm[kkl].powi(2);
+            // TODO fermi goto stuff
+            let znum1 = freq[l];
+            let delta = 4.0 * wk - wl;
+            f3kkl += 3.0 * zval1 * znum1 / (64.0 * delta);
+        }
+    }
+
+    // klm terms
+    let mut f3klm = 0.0;
+    let mut ifrmck = false;
+    for k in 0..nvib {
+        for l in 0..nvib {
+            // TODO just start l at k? lol
+            if k <= l {
+                continue;
+            }
+            for m in 0..nvib {
+                // TODO see above
+                if l <= m {
+                    continue;
+                }
+                let klm = find3r(k, l, m);
+                let zval3 = f3qcm[klm].powi(2);
+                let xklm = freq[k] * freq[l] * freq[m];
+                let wm = freq[m].powi(2);
+                let km = ioff(k.max(m)) + k.min(m);
+                let lm = ioff(l.max(m)) + l.min(m);
+                // TODO resonance stuff
+                let d1 = freq[k] + freq[l] + freq[m];
+                let d2 = freq[k] - freq[l] + freq[m];
+                let d3 = freq[k] + freq[l] - freq[m];
+                let d4 = freq[k] - freq[l] - freq[m];
+                let delta2 = d1 * d2 * d3 * d4;
+                f3klm -= zval3 * xklm / (4.0 * delta2);
+            }
+        }
+    }
+    let e0 = f4k + f3k + f3kkl + f3klm;
+    (xcnst, e0)
 }
 
 /// compute the fundamental frequencies from the harmonic frequencies and the

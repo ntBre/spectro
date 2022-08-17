@@ -649,7 +649,7 @@ impl Spectro {
         let mut f4x = self.rot4th(n3n, natom, f4x, axes);
         let f4qcm = force4(n3n, &mut f4x, &lx, nvib, &freq, i4vib);
 
-        let xcnst = xcalc(nvib, &f4qcm, &freq, &f3qcm, &zmat, &rotcon);
+        let (xcnst, e0) = xcalc(nvib, &f4qcm, &freq, &f3qcm, &zmat, &rotcon);
 
         let fund = funds(&freq, nvib, &xcnst);
     }

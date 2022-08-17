@@ -154,7 +154,7 @@
   | wcals.f    |   427 |        |                                                                        |
   | wpadti.f   |     4 |        |                                                                        |
   | wreadw.f   |    34 |        |                                                                        |
-  | xcalc.f    |   404 |        |                                                                        |
+  | xcalc.f    |   404 | x      | done until resonances                                                  |
   | xcals.f    |   984 |        |                                                                        |
   | xtcalc.f   |   509 |        |                                                                        |
   | xtcals.f   |  1635 |        |                                                                        |
@@ -174,7 +174,7 @@
   #+end_src
 
   #+RESULTS:
-  : finished 6968/40693 = 17.1%
+  : finished 7372/40693 = 18.1%
 * Extra code
 ** first sum rule test from zeta.f
    #+begin_src rust

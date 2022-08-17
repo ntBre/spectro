@@ -396,7 +396,7 @@ fn test_force4() {
 }
 
 #[test]
-fn test_funds() {
+fn test_funds_and_e0() {
     let mut spectro = Spectro::load("testfiles/h2o.in");
     spectro.geom.to_angstrom();
     spectro.geom.normalize();
@@ -433,7 +433,9 @@ fn test_funds() {
     let f4qcm = force4(n3n, &mut f4x, &lx, nvib, &freq, i4vib);
     let moments = spectro.geom.principal_moments();
     let rotcon: Vec<_> = moments.iter().map(|m| CONST / m).collect();
-    let xcnst = xcalc(nvib, &f4qcm, &freq, &f3qcm, &zmat, &rotcon);
+    let (xcnst, e0) = xcalc(nvib, &f4qcm, &freq, &f3qcm, &zmat, &rotcon);
+    let wante0 = 20.057563725859055;
+    assert_abs_diff_eq!(e0, wante0, epsilon = 6e-8);
     let got = funds(&freq, nvib, &xcnst);
     let want = vec![3753.166, 3656.537, 1598.516];
     assert_abs_diff_eq!(Dvec::from(got), Dvec::from(want), epsilon = 1e-3);
