@@ -210,14 +210,15 @@ fn load_fc34(infile: &str) -> Vec<f64> {
         .collect()
 }
 
+/// freq is the vector of harmonic frequencies
 pub fn force3(
     n3n: usize,
     f3x: &mut Tensor3,
     lx: &Dmat,
     nvib: usize,
-    harms: &Dvec,
+    freq: &Dvec,
     i3vib: usize,
-) {
+) -> Vec<f64> {
     let mut dd = Dmat::zeros(n3n, n3n);
     for kabc in 0..n3n {
         for i in 0..n3n {
@@ -247,11 +248,11 @@ pub fn force3(
     }
     let mut frq3 = Tensor3::zeros(nvib, nvib, nvib);
     for ivib in 0..nvib {
-        let wk = harms[ivib];
+        let wk = freq[ivib];
         for ii in 0..nvib {
-            let wi = harms[ii];
+            let wi = freq[ii];
             for jj in 0..nvib {
-                let wj = harms[jj];
+                let wj = freq[jj];
                 let wijk = wi * wj * wk;
                 let sqws = wijk.sqrt();
                 let fact = FACT3 / sqws;
@@ -275,6 +276,21 @@ pub fn force3(
             facts3[ijj] = 2.0;
         }
     }
+    let mut f3qcm =
+        Vec::with_capacity(find3r(nvib - 1, nvib - 1, nvib - 1) + 1);
+    for i in 0..nvib {
+        let wi = freq[(i)];
+        for j in 0..=i {
+            let wj = freq[(j)];
+            for k in 0..=j {
+                let wk = freq[(k)];
+                let wijk = wi * wj * wk;
+                let fact = FACT3 / wijk.sqrt();
+                f3qcm.push(f3q[(i, j, k)] * fact);
+            }
+        }
+    }
+    f3qcm
 }
 
 pub fn force4(
@@ -284,7 +300,7 @@ pub fn force4(
     nvib: usize,
     harms: &Dvec,
     i4vib: usize,
-) {
+) -> Vec<f64> {
     let mut f4q = Tensor4::zeros(n3n, n3n, n3n, n3n);
     for kabc in 0..n3n {
         for labc in 0..n3n {
@@ -320,6 +336,8 @@ pub fn force4(
         }
     }
     let mut frq4 = Tensor4::zeros(nvib, nvib, nvib, nvib);
+    let n = nvib - 1;
+    let mut f4qcm = vec![0.0; find4t(n, n, n, n) + 1];
     for ivib in 0..nvib {
         let wk = harms[ivib];
         for jvib in 0..=ivib {
@@ -338,11 +356,34 @@ pub fn force4(
                     frq4[(jj, ii, ivib, jvib)] = f4x[(jj, ii, ivib, jvib)];
                     frq4[(jj, ii, jvib, ivib)] = f4x[(jj, ii, jvib, ivib)];
                     frq4[(ii, jj, jvib, ivib)] = f4x[(ii, jj, jvib, ivib)];
+                    let ijkl = if ivib > ii {
+                        if jvib > ii {
+                            find4t(ivib, jvib, ii, jj)
+                        } else {
+                            if jvib > jj {
+                                find4t(ivib, ii, jvib, jj)
+                            } else {
+                                find4t(ivib, ii, jj, jvib)
+                            }
+                        }
+                    } else {
+                        if ivib > jj {
+                            if jvib > jj {
+                                find4t(ii, ivib, jvib, jj)
+                            } else {
+                                find4t(ii, ivib, jj, jvib)
+                            }
+                        } else {
+                            find4t(ii, jj, ivib, jvib)
+                        }
+                    };
+                    f4qcm[ijkl] = dd[(ii, jj)];
                 }
             }
         }
     }
     let facts4 = quartic_sum_facs(i4vib, nvib);
+    f4qcm
 }
 
 fn quartic_sum_facs(i4vib: usize, nvib: usize) -> Vec<f64> {

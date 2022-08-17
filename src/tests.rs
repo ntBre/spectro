@@ -289,3 +289,108 @@ fn test_zeta() {
     assert_abs_diff_eq!(got, want, epsilon = 1e-6);
 }
 
+#[test]
+fn test_force3() {
+    let mut spectro = Spectro::load("testfiles/h2o.in");
+    spectro.geom.to_angstrom();
+    spectro.geom.normalize();
+    let axes = spectro.geom.reorder();
+    let rotor = spectro.rotor_type();
+    let natom = spectro.natoms();
+    let n3n = 3 * natom;
+    let nvib = n3n - 6
+        + if let Rotor::Linear = rotor {
+            spectro.is_linear = Some(true);
+            1
+        } else {
+            spectro.is_linear = Some(false);
+            0
+        };
+    let i3vib = nvib * (nvib + 1) * (nvib + 2) / 6;
+    let fc2 = load_fc2("testfiles/fort.15", n3n);
+    let fc2 = spectro.rot2nd(fc2, axes);
+    let fc2 = FACT2 * fc2;
+    let w = spectro.geom.weights();
+    let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
+    let fxm = spectro.form_sec(fc2, n3n, &sqm);
+    let (harms, lxm) = symm_eigen_decomp(fxm);
+    let freq = to_wavenumbers(harms);
+    let lx = spectro.make_lx(n3n, &sqm, &lxm);
+    let (_zmat, _biga, wila) = spectro.zeta(natom, nvib, &lxm, &w);
+    spectro.qcent(nvib, &freq, &wila);
+    let f3x = load_fc3("testfiles/fort.30", n3n);
+    let mut f3x = spectro.rot3rd(n3n, natom, f3x, axes);
+    let got = force3(n3n, &mut f3x, &lx, nvib, &freq, i3vib);
+    // signs are different from fortran version, but I think that's okay. mostly
+    // a regression test anyway
+    let want = vec![
+        0.00028013699326642446,
+        1822.24785969789,
+        -8.833731114767919e-5,
+        1820.1092348470625,
+        266.1186010180256,
+        -4.814160093191156e-5,
+        75.42085160498344,
+        -0.0003478413270064172,
+        -310.8977456046787,
+        -269.0192202516248,
+    ];
+    assert_eq!(got, want);
+}
+
+#[test]
+fn test_force4() {
+    let mut spectro = Spectro::load("testfiles/h2o.in");
+    spectro.geom.to_angstrom();
+    spectro.geom.normalize();
+    let axes = spectro.geom.reorder();
+    let rotor = spectro.rotor_type();
+    let natom = spectro.natoms();
+    let n3n = 3 * natom;
+    let nvib = n3n - 6
+        + if let Rotor::Linear = rotor {
+            spectro.is_linear = Some(true);
+            1
+        } else {
+            spectro.is_linear = Some(false);
+            0
+        };
+    let i3vib = nvib * (nvib + 1) * (nvib + 2) / 6;
+    let i4vib = nvib * (nvib + 1) * (nvib + 2) * (nvib + 3) / 24;
+    let fc2 = load_fc2("testfiles/fort.15", n3n);
+    let fc2 = spectro.rot2nd(fc2, axes);
+    let fc2 = FACT2 * fc2;
+    let w = spectro.geom.weights();
+    let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
+    let fxm = spectro.form_sec(fc2, n3n, &sqm);
+    let (harms, lxm) = symm_eigen_decomp(fxm);
+    let freq = to_wavenumbers(harms);
+    let lx = spectro.make_lx(n3n, &sqm, &lxm);
+    let (_zmat, _biga, wila) = spectro.zeta(natom, nvib, &lxm, &w);
+    spectro.qcent(nvib, &freq, &wila);
+    let f3x = load_fc3("testfiles/fort.30", n3n);
+    let mut f3x = spectro.rot3rd(n3n, natom, f3x, axes);
+    let f3qcm = force3(n3n, &mut f3x, &lx, nvib, &freq, i3vib);
+    let f4x = load_fc4("testfiles/fort.40", n3n);
+    let mut f4x = spectro.rot4th(n3n, natom, f4x, axes);
+    let got = force4(n3n, &mut f4x, &lx, nvib, &freq, i4vib);
+    // signs different from fortran again, probably okay
+    let want = vec![
+        769.3358855094393,
+        -0.002712912620238425,
+        763.1685129051438,
+        -0.001501171784219294,
+        758.2529262030582,
+        -0.002431235632620156,
+        118.32792953849406,
+        0.0003713553455663881,
+        62.10500925390422,
+        -368.39066135682094,
+        -0.0025126784870662354,
+        -306.5011074516508,
+        0.0031153319021852573,
+        -156.84468164852024,
+        -54.958677005925686,
+    ];
+    assert_eq!(got, want);
+}
