@@ -440,3 +440,62 @@ fn test_funds_and_e0() {
     let want = vec![3753.166, 3656.537, 1598.516];
     assert_abs_diff_eq!(Dvec::from(got), Dvec::from(want), epsilon = 1e-3);
 }
+
+#[test]
+fn test_enrgy() {
+    let mut spectro = Spectro::load("testfiles/h2o.in");
+    spectro.geom.to_angstrom();
+    spectro.geom.normalize();
+    let axes = spectro.geom.reorder();
+    let rotor = spectro.rotor_type();
+    let natom = spectro.natoms();
+    let n3n = 3 * natom;
+    let nvib = n3n - 6
+        + if let Rotor::Linear = rotor {
+            spectro.is_linear = Some(true);
+            1
+        } else {
+            spectro.is_linear = Some(false);
+            0
+        };
+    let i3vib = nvib * (nvib + 1) * (nvib + 2) / 6;
+    let i4vib = nvib * (nvib + 1) * (nvib + 2) * (nvib + 3) / 24;
+    let fc2 = load_fc2("testfiles/fort.15", n3n);
+    let fc2 = spectro.rot2nd(fc2, axes);
+    let fc2 = FACT2 * fc2;
+    let w = spectro.geom.weights();
+    let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
+    let fxm = spectro.form_sec(fc2, n3n, &sqm);
+    let (harms, lxm) = symm_eigen_decomp(fxm);
+    let freq = to_wavenumbers(harms);
+    let lx = spectro.make_lx(n3n, &sqm, &lxm);
+    let (zmat, _biga, wila) = spectro.zeta(natom, nvib, &lxm, &w);
+    spectro.qcent(nvib, &freq, &wila);
+    let f3x = load_fc3("testfiles/fort.30", n3n);
+    let mut f3x = spectro.rot3rd(n3n, natom, f3x, axes);
+    let f3qcm = force3(n3n, &mut f3x, &lx, nvib, &freq, i3vib);
+    let f4x = load_fc4("testfiles/fort.40", n3n);
+    let mut f4x = spectro.rot4th(n3n, natom, f4x, axes);
+    let f4qcm = force4(n3n, &mut f4x, &lx, nvib, &freq, i4vib);
+    let moments = spectro.geom.principal_moments();
+    let rotcon: Vec<_> = moments.iter().map(|m| CONST / m).collect();
+    let (xcnst, e0) = xcalc(nvib, &f4qcm, &freq, &f3qcm, &zmat, &rotcon);
+    let wante0 = 20.057563725859055;
+    assert_abs_diff_eq!(e0, wante0, epsilon = 6e-8);
+    let fund = funds(&freq, nvib, &xcnst);
+    let got = enrgy(&fund, &freq, &xcnst, e0);
+    // my numbers after comparing visually to fortran
+    let want = vec![
+        (4656.438188555293, vec![0, 0, 0]),
+        (6254.953686350812, vec![0, 0, 1]),
+        (7818.958032793332, vec![0, 0, 2]),
+        (8312.975664427879, vec![0, 1, 0]),
+        (8409.60462543482, vec![1, 0, 0]),
+        (9895.66935813587, vec![0, 1, 1]),
+        (9988.129295095654, vec![1, 0, 1]),
+        (11883.428277109273, vec![0, 2, 0]),
+        (11899.804775421886, vec![1, 1, 0]),
+        (12065.411263606182, vec![2, 0, 0]),
+    ];
+    assert_eq!(got, want);
+}

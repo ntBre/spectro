@@ -36,7 +36,7 @@
   | elmhes.f   |    99 |        |                                                                        |
   | eltran.f   |    78 |        |                                                                        |
   | engval.f   |   113 |        |                                                                        |
-  | enrgy.f    |   561 |        |                                                                        |
+  | enrgy.f    |   561 | x      | done until resonances                                             |
   | f02aaf.f   |    12 |        |                                                                        |
   | f02abf.f   |    15 |        |                                                                        |
   | f02agf.f   |    66 |        |                                                                        |
@@ -61,7 +61,7 @@
   | hqr.f      |   223 |        |                                                                        |
   | hraman.f   |   453 |        |                                                                        |
   | iadtwp.f   |     4 |        |                                                                        |
-  | indexx.f   |    51 |        |                                                                        |
+  | indexx.f   |    51 | x      | heapsort                                                               |
   | inert.f    |   249 |        |                                                                        |
   | inidnm.f   |    37 |        |                                                                        |
   | inocda.f   |   206 |        |                                                                        |
@@ -75,7 +75,7 @@
   | ltensr.f   |  2450 | x      | skip without curvils                                                   |
   | lu.f       |    46 |        |                                                                        |
   | lus.f      |    34 |        |                                                                        |
-  | m01ajf.f   |    19 |        |                                                                        |
+  | m01ajf.f   |    19 | x      | indexx/heapsort wrapper                                                |
   | m01akf.f   |    32 |        |                                                                        |
   | mains.f    |  2416 |        | main driver of program                                                 |
   | matout.f   |    30 | x      | print a matrix                                                         |
@@ -174,7 +174,7 @@
   #+end_src
 
   #+RESULTS:
-  : finished 7583/40693 = 18.6%
+  : finished 8214/40693 = 20.2%
 * Extra code
 ** first sum rule test from zeta.f
    #+begin_src rust

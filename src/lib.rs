@@ -13,7 +13,7 @@ mod dummy;
 use dummy::{Dummy, DummyVal};
 
 mod utils;
-use nalgebra::Matrix3;
+use nalgebra::{dmatrix, Matrix3};
 use rotor::{Rotor, ROTOR_EPS};
 use tensor::{Tensor3, Tensor4};
 use utils::*;
@@ -652,5 +652,7 @@ impl Spectro {
         let (xcnst, e0) = xcalc(nvib, &f4qcm, &freq, &f3qcm, &zmat, &rotcon);
 
         let fund = funds(&freq, nvib, &xcnst);
+
+        let reng = enrgy(&fund, &freq, &xcnst, e0);
     }
 }

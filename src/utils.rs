@@ -1,6 +1,7 @@
 use std::{
     fmt::{Debug, Display},
     fs::read_to_string,
+    iter::zip,
     str::FromStr,
 };
 
@@ -553,6 +554,84 @@ pub fn funds(freq: &Dvec, nvib: usize, xcnst: &Dmat) -> Vec<f64> {
         fund.push(val);
     }
     fund
+}
+
+/// take a vec of energy: state pairs and print them in SPECTRO's format
+pub(crate) fn print_vib_states(reng: Vec<(f64, Vec<i32>)>) {
+    println!(
+        "{:^10}{:^20}{:^20}{:>21}",
+        "STATE NO.", "ENERGY (CM-1)", "ABOVE ZPT", "VIBRATIONAL STATE"
+    );
+    for (i, (energy, state)) in reng.iter().enumerate() {
+        print!("{:5}{:20.4}{:20.4}", i + 1, energy, *energy - reng[0].0);
+        print!("{:>21}", "NON-DEG (Vs) :");
+        for s in state {
+            print!("{:5}", s);
+        }
+        println!();
+    }
+}
+
+/// vibrational energy levels and properties in resonance. TODO needs a
+/// symmetric top implementation, this is for asymmetric tops
+pub(crate) fn enrgy(
+    fund: &[f64],
+    freq: &Dvec,
+    xcnst: &Dmat,
+    e0: f64,
+) -> Vec<(f64, Vec<i32>)> {
+    /*
+    TODO get from RESTST:
+    1. nstate - number of states, really just i1sts.len()
+    2. i1sts - the actual states
+    3. i1mode - list of singly-degenerate modes
+    4. iovrtn - indices of overtone states
+    5. ifunda - indices of fundamental states; this and above should be
+        handled as enums probably
+     */
+    let nstate = 10;
+    let i1sts = vec![
+        vec![0, 0, 0],
+        vec![1, 0, 0],
+        vec![0, 1, 0],
+        vec![0, 0, 1],
+        vec![2, 0, 0],
+        vec![0, 2, 0],
+        vec![0, 0, 2],
+        vec![1, 1, 0],
+        vec![1, 0, 1],
+        vec![0, 1, 1],
+    ];
+    let i1mode = vec![0, 1, 2];
+    let n1dm = fund.len();
+    let mut eng = vec![0.0; nstate];
+    for nst in 0..nstate {
+        let mut val1 = 0.0;
+        // why are these separate loops?
+        for ii in 0..n1dm {
+            let i = i1mode[ii];
+            val1 += freq[i] * ((i1sts[nst][ii] as f64) + 0.5);
+        }
+
+        let mut val2 = 0.0;
+        for ii in 0..n1dm {
+            let i = i1mode[ii];
+            for jj in 0..=ii {
+                let j = i1mode[jj];
+                val2 += xcnst[(i, j)]
+                    * ((i1sts[nst][ii] as f64) + 0.5)
+                    * ((i1sts[nst][jj] as f64) + 0.5);
+            }
+        }
+
+        eng[nst] = val1 + val2 + e0;
+    }
+    // TODO skipped a bunch of resonance stuff here
+    // the r stands for reordered. zip with states to sort them too
+    let reng = eng.clone();
+    let mut reng: Vec<_> = zip(reng, i1sts).collect();
+    reng.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+    reng
 }
 
 #[cfg(test)]
