@@ -7,8 +7,8 @@
   | alphaa.f   |   347 |        |                                                                        |
   | alphas.f   |   770 |        |                                                                        |
   | ammvib.f   |   133 |        |                                                                        |
-  | anhout.f   |    29 |        |                                                                        |
-  | anhprt.f   |    32 | x      | print anharmonic constants                                             |
+  | anhout.f   |    29 | x      | print anharmonic constants                                             |
+  | anhprt.f   |    32 | x      | print anharmonic constants differently                                 |
   | atunit.f   |   629 |        |                                                                        |
   | balanc.f   |   171 |        |                                                                        |
   | balbak.f   |    75 |        |                                                                        |
@@ -44,10 +44,10 @@
   | f04arf.f   |    12 |        |                                                                        |
   | f04atf.f   |    19 |        |                                                                        |
   | f05aaf.f   |    53 |        |                                                                        |
-  | find3.f    |    15 | x      | not used unless inorm on                                               |
+  | find3.f    |    15 | x      | not needed with sorting in find3r                                      |
   | find3r.f   |    11 | x      | cubic index                                                            |
-  | find4.f    |    19 |        |                                                                        |
-  | find4t.f   |    12 |        |                                                                        |
+  | find4.f    |    19 | x      | not needed with sorting in find4t                                      |
+  | find4t.f   |    12 | x      | quartic index                                                          |
   | force3.f   |   288 | x      | finished the part we use                                               |
   | force4.f   |   361 | x      | finished the part we use                                               |
   | frqout.f   |    31 |        |                                                                        |
@@ -69,20 +69,20 @@
   | intenr.f   |   879 |        |                                                                        |
   | iterat.f   |   621 |        |                                                                        |
   | izero.f    |    10 |        |                                                                        |
-  | jmfudg1.f  |    24 |        |                                                                        |
-  | locate.f   |    35 |        |                                                                        |
+  | jmfudg1.f  |    24 | x      | spectro version fudge, just pick a format                              |
+  | locate.f   |    35 | x      | locate tokens in input file                                            |
   | lsqrs.f    |   358 |        |                                                                        |
   | ltensr.f   |  2450 | x      | skip without curvils                                                   |
   | lu.f       |    46 |        |                                                                        |
   | lus.f      |    34 |        |                                                                        |
   | m01ajf.f   |    19 |        |                                                                        |
   | m01akf.f   |    32 |        |                                                                        |
-  | mains.f    |  2416 |        |                                                                        |
+  | mains.f    |  2416 |        | main driver of program                                                 |
   | matout.f   |    30 | x      | print a matrix                                                         |
   | mtxmpy.f   |    56 | x      | various matrix multiply routines                                       |
   | multbf2.f  |   224 |        |                                                                        |
   | multbf.f   |    50 |        |                                                                        |
-  | mxma.f     |    70 |        |                                                                        |
+  | mxma.f     |    70 | x      | matrix multiply using sparsity of one matrix                           |
   | mxmb.f     |    70 | x      | matrix multiply                                                        |
   | normfx.f   |   183 | x      | done minus unit stuff that doesn't seem used                           |
   | orthy.f    |    45 |        |                                                                        |
@@ -144,8 +144,8 @@
   | triple.f   |    14 |        |                                                                        |
   | trnsfm.f   |   662 |        |                                                                        |
   | umatrx.f   |   255 | x      | skip without curvils                                                   |
-  | vcross.f   |    13 |        |                                                                        |
-  | vecsum.f   |     9 |        |                                                                        |
+  | vcross.f   |    13 | x      | vector cross product                                                   |
+  | vecsum.f   |     9 | x      | vector dot product                                                     |
   | vecz.f     |    16 |        |                                                                        |
   | vibavg.f   |   303 |        |                                                                        |
   | vibfx.f    |   256 | x      | done minus degmode alignment for symm tops and linear molecules        |
@@ -174,7 +174,7 @@
   #+end_src
 
   #+RESULTS:
-  : finished 7372/40693 = 18.1%
+  : finished 7583/40693 = 18.6%
 * Extra code
 ** first sum rule test from zeta.f
    #+begin_src rust
