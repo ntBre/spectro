@@ -1,4 +1,3 @@
-#![allow(unused)]
 use std::{
     collections::HashMap,
     f64::consts::PI,
@@ -13,7 +12,7 @@ mod dummy;
 use dummy::{Dummy, DummyVal};
 
 mod utils;
-use nalgebra::{dmatrix, Matrix3};
+use nalgebra::Matrix3;
 use rotor::{Rotor, ROTOR_EPS};
 use tensor::{Tensor3, Tensor4};
 use utils::*;
@@ -29,17 +28,17 @@ type Mat3 = Matrix3<f64>;
 type Dvec = nalgebra::DVector<f64>;
 type Dmat = nalgebra::DMatrix<f64>;
 
-const HE: f64 = 4.359813653;
-const A0: f64 = 0.52917706;
+const _HE: f64 = 4.359813653;
+const _A0: f64 = 0.52917706;
 /// HE / (AO * AO) from fortran. something about hartrees and AO is bohr radius
 const FACT2: f64 = 4.359813653 / (0.52917706 * 0.52917706);
 const FUNIT3: f64 = 4.359813653 / (0.52917706 * 0.52917706 * 0.52917706);
 const FUNIT4: f64 =
     4.359813653 / (0.52917706 * 0.52917706 * 0.52917706 * 0.52917706);
 /// pre-computed √(elmass/amu)
-const FAC1: f64 = 0.02342178947039116194;
-const AMU: f64 = 1.66056559e-27;
-const ELMASS: f64 = 0.91095344e-30;
+const _FAC1: f64 = 0.02342178947039116194;
+const _AMU: f64 = 1.66056559e-27;
+const _ELMASS: f64 = 0.91095344e-30;
 /// looks like cm-1 to mhz factor
 const CL: f64 = 2.99792458;
 const ALAM: f64 = 4.0e-2 * (PI * PI * CL) / (PH * AVN);
@@ -54,7 +53,7 @@ const FACT4: f64 = 1.0e6 / (ALAM * ALAM * PH * CL);
 
 /// avogadro's number
 const AVN: f64 = 6.022045;
-const PARA: f64 = 1.0 / AVN;
+const _PARA: f64 = 1.0 / AVN;
 // pre-compute the sqrt and make const
 const SQRT_AVN: f64 = 2.4539855337796920273026076438896;
 // conversion to cm-1
@@ -375,8 +374,6 @@ impl Spectro {
     fn qcent(&self, nvib: usize, freq: &Dvec, wila: &Dmat) {
         // convert to cm-1 from the biggest mess you've ever seen
         const CONST1: f64 = 3.833384078e04;
-        // convert to mhz from cm-1
-        const CONST2: f64 = 2.99792458e04;
 
         let maxcor = if self.is_linear.unwrap() { 2 } else { 3 };
         let primat = self.geom.principal_moments();
@@ -581,6 +578,39 @@ impl Spectro {
         lx
     }
 
+    /// compute the vibrationally-averaged rotational constants for asymmetric
+    /// tops
+    fn alphaa(
+        &self,
+        nvib: usize,
+        rotcon: &[f64],
+        freq: &Dvec,
+        wila: &Dmat,
+        zmat: &Tensor3,
+        f3qcm: &[f64],
+        fund: &[f64],
+        i1mode: &[usize],
+        i1sts: &Vec<Vec<usize>>,
+    ) -> Dmat {
+        let primat = self.geom.principal_moments();
+        let alpha = alpha(nvib, rotcon, freq, &wila, &primat, &zmat, f3qcm);
+        let nstop = 4;
+        let n1dm = fund.len();
+        let mut rotnst = Dmat::zeros(nstop, 3);
+        for axis in 0..3 {
+            for ist in 0..nstop {
+                let mut suma = 0.0;
+                for ii in 0..n1dm {
+                    let i = i1mode[ii];
+                    suma += alpha[(i, axis)] * (i1sts[ist][ii] as f64 + 0.5);
+                }
+                let bva = rotcon[axis] + suma;
+                rotnst[(ist, axis)] = bva;
+            }
+        }
+        rotnst
+    }
+
     pub fn run(mut self) {
         // TODO consider moving some of this stuff into `load`. probably even up
         // to the i4vib line could just be included there and stored in fields
@@ -600,8 +630,8 @@ impl Spectro {
 
         let natom = self.natoms();
         let n3n = 3 * natom;
-        let i3n3n = n3n * (n3n + 1) * (n3n + 2) / 6;
-        let i4n3n = n3n * (n3n + 1) * (n3n + 2) * (n3n + 3) / 24;
+        let _i3n3n = n3n * (n3n + 1) * (n3n + 2) / 6;
+        let _i4n3n = n3n * (n3n + 1) * (n3n + 2) * (n3n + 3) / 24;
 
         let nvib = n3n - 6
             + if let Rotor::Linear = rotor {
@@ -611,7 +641,7 @@ impl Spectro {
                 self.is_linear = Some(false);
                 0
             };
-        let i2vib = ioff(nvib + 1);
+        let _i2vib = ioff(nvib + 1);
         let i3vib = nvib * (nvib + 1) * (nvib + 2) / 6;
         let i4vib = nvib * (nvib + 1) * (nvib + 2) * (nvib + 3) / 24;
 
@@ -633,7 +663,7 @@ impl Spectro {
         let lx = self.make_lx(n3n, &sqm, &lxm);
 
         // not used yet
-        let (zmat, biga, wila) = self.zeta(natom, nvib, &lxm, &w);
+        let (zmat, _biga, wila) = self.zeta(natom, nvib, &lxm, &w);
 
         // only for the quartic distortion coefficients, doesn't appear to touch
         // anything else
@@ -649,10 +679,76 @@ impl Spectro {
         let mut f4x = self.rot4th(n3n, natom, f4x, axes);
         let f4qcm = force4(n3n, &mut f4x, &lx, nvib, &freq, i4vib);
 
+        // TODO RESTST
+
+        // TODO get this from RESTST
+        let i1sts = vec![
+            vec![0, 0, 0],
+            vec![1, 0, 0],
+            vec![0, 1, 0],
+            vec![0, 0, 1],
+            vec![2, 0, 0],
+            vec![0, 2, 0],
+            vec![0, 0, 2],
+            vec![1, 1, 0],
+            vec![1, 0, 1],
+            vec![0, 1, 1],
+        ];
+
+        // TODO get this from RESTST
+        let i1mode = vec![0, 1, 2];
+
+        // end ALPHAA
+
         let (xcnst, e0) = xcalc(nvib, &f4qcm, &freq, &f3qcm, &zmat, &rotcon);
 
         let fund = funds(&freq, nvib, &xcnst);
 
-        let reng = enrgy(&fund, &freq, &xcnst, e0);
+        let _rotnst = self.alphaa(
+            nvib, &rotcon, &freq, &wila, &zmat, &f3qcm, &fund, &i1mode, &i1sts,
+        );
+
+        let _reng = enrgy(&fund, &freq, &xcnst, e0, &i1sts, &i1mode);
+
+        // begin ROTA
+        // cm-1 to mhz conversion factor
+        // const CONST2: f64 = 2.99792458e04;
+        // // I think this is always 3, but that doesn't really make sense. set to
+        // // 0 in mains, then passed to readw which never touches it and then set
+        // // to 3 if it's still 0. there might also be a better way to set these
+        // // than maxk. check what they actually loop over
+        // let maxj = 3;
+        // let maxk = 2 * maxj + 1;
+        // let mut erot = Dmat::zeros(maxk, maxk);
+        // let mut bcont = Dmat::zeros(maxk, maxk);
+        // let mut qcont = Dmat::zeros(maxk, maxk);
+        // let mut scont = Dmat::zeros(maxk, maxk);
+
+        // // number of states here is just the ground state + fundamentals,
+        // // singly-vibrationally excited states, but changes with resonances
+
+        // // TODO calculate this from i1sts
+        // let nstop = 4;
+        // // TODO take this from somewhere I guess
+        // let nderiv = self.header[7];
+        // // this is a 600 line loop fml
+        // for nst in 0..nstop {
+        //     // this is going to have to be outside the if somehow, maybe just
+        //     // assert that nderiv > 2
+        //     if nderiv > 2 {
+        //         let vib1 = rotnst[(0, nst)] - rotcon[(0)];
+        //         let vib2 = rotnst[(1, nst)] - rotcon[(1)];
+        //         let vib3 = rotnst[(2, nst)] - rotcon[(2)];
+        //         vibr[ic(1)] = vib1;
+        //         vibr[ic(2)] = vib2;
+        //         vibr[ic(3)] = vib3;
+        //         let bxa = b4a + vibr[(1)];
+        //         let bya = b5a + vibr[(2)];
+        //         let bza = b6a + vibr[(3)];
+        //         let bxs = b1s + vibr[(1)];
+        //         let bys = b2s + vibr[(2)];
+        //         let bzs = b3s + vibr[(3)];
+        //     }
+        // }
     }
 }

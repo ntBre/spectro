@@ -5,10 +5,13 @@ use std::{
     str::FromStr,
 };
 
-use nalgebra::SymmetricEigen;
+use nalgebra::{SymmetricEigen, Vector3};
 use tensor::{Tensor3, Tensor4};
 
 use crate::{Dmat, Dvec, Spectro, FACT3, FACT4, FUNIT3, FUNIT4, WAVE};
+
+#[cfg(test)]
+mod tests;
 
 impl Display for Spectro {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -156,7 +159,7 @@ pub fn load_fc2(infile: &str, n3n: usize) -> Dmat {
 
 pub fn load_fc3(infile: &str, n3n: usize) -> Tensor3 {
     let mut f3x = Tensor3::zeros(n3n, n3n, n3n);
-    let f33 = load_fc34("testfiles/fort.30");
+    let f33 = load_fc34(infile);
     let mut labc = 0;
     for iabc in 0..n3n {
         for jabc in 0..=iabc {
@@ -177,7 +180,7 @@ pub fn load_fc3(infile: &str, n3n: usize) -> Tensor3 {
 
 pub fn load_fc4(infile: &str, n3n: usize) -> Tensor4 {
     let mut f4x = Tensor4::zeros(n3n, n3n, n3n, n3n);
-    let f44 = load_fc34("testfiles/fort.40");
+    let f44 = load_fc34(infile);
     let mut mabc = 0;
     for iabc in 0..n3n {
         for jabc in 0..=iabc {
@@ -375,7 +378,7 @@ pub fn force4(
             }
         }
     }
-    let facts4 = quartic_sum_facs(i4vib, nvib);
+    let _facts4 = quartic_sum_facs(i4vib, nvib);
     f4qcm
 }
 
@@ -416,12 +419,12 @@ pub fn xcalc(
         let val1 = f4qcm[kkkk] / 16.0;
         let wk = freq[k].powi(2);
         let mut valu = 0.0;
-        let mut ifrmck = false; // probably a bool
+        let mut _ifrmck = false; // probably a bool
         for l in 0..nvib {
             let kkl = find3r(k, k, l);
             let val2 = f3qcm[kkl].powi(2);
             if ifrmchk[(k, k, l)] != 0.0 {
-                ifrmck = true;
+                // ifrmck = true;
                 todo!();
             } else {
                 let wl = freq[l].powi(2);
@@ -446,10 +449,10 @@ pub fn xcalc(
             }
 
             let mut valu = 0.0;
-            let mut ifrmck = false;
+            let mut _ifrmck = false;
             for m in 0..nvib {
-                let lm = ioff(l.max(m)) + l.min(m);
-                let km = ioff(k.max(m)) + k.min(m);
+                let _lm = ioff(l.max(m)) + l.min(m);
+                let _km = ioff(k.max(m)) + k.min(m);
                 let d1 = freq[k] + freq[l] + freq[m];
                 let d2 = freq[k] - freq[l] + freq[m];
                 let d3 = freq[k] + freq[l] - freq[m];
@@ -463,7 +466,6 @@ pub fn xcalc(
                 let delta = -d1 * d2 * d3 * d4;
                 let val3 = freq[m].powi(2) - freq[k].powi(2) - freq[l].powi(2);
                 valu -= 0.5 * f3qcm[klm].powi(2) * freq[m] * val3 / delta;
-                valu;
             }
             let val5 = freq[k] / freq[l];
             let val6 = freq[l] / freq[k];
@@ -485,13 +487,13 @@ pub fn xcalc(
         // kkkk and kkk terms
         let kkk = find3r(k, k, k);
         let kkkk = find4t(k, k, k, k);
-        let mut fiqcm = f4qcm[kkkk];
+        let fiqcm = f4qcm[kkkk];
         f4k += fiqcm / 64.0;
         f3k -= 7.0 * f3qcm[kkk].powi(2) / (576.0 * freq[k]);
         let wk = freq[k].powi(2);
 
         // kkl terms
-        let ifrmck = false;
+        let _ifrmck = false;
         for l in 0..nvib {
             let kkl = find3r(k, k, l);
             if k == l {
@@ -508,7 +510,7 @@ pub fn xcalc(
 
     // klm terms
     let mut f3klm = 0.0;
-    let mut ifrmck = false;
+    let mut _ifrmck = false;
     for k in 0..nvib {
         for l in 0..nvib {
             // TODO just start l at k? lol
@@ -523,9 +525,9 @@ pub fn xcalc(
                 let klm = find3r(k, l, m);
                 let zval3 = f3qcm[klm].powi(2);
                 let xklm = freq[k] * freq[l] * freq[m];
-                let wm = freq[m].powi(2);
-                let km = ioff(k.max(m)) + k.min(m);
-                let lm = ioff(l.max(m)) + l.min(m);
+                let _wm = freq[m].powi(2);
+                let _km = ioff(k.max(m)) + k.min(m);
+                let _lm = ioff(l.max(m)) + l.min(m);
                 // TODO resonance stuff
                 let d1 = freq[k] + freq[l] + freq[m];
                 let d2 = freq[k] - freq[l] + freq[m];
@@ -557,6 +559,7 @@ pub fn funds(freq: &Dvec, nvib: usize, xcnst: &Dmat) -> Vec<f64> {
 }
 
 /// take a vec of energy: state pairs and print them in SPECTRO's format
+#[allow(dead_code)]
 pub(crate) fn print_vib_states(reng: Vec<(f64, Vec<i32>)>) {
     println!(
         "{:^10}{:^20}{:^20}{:>21}",
@@ -579,30 +582,17 @@ pub(crate) fn enrgy(
     freq: &Dvec,
     xcnst: &Dmat,
     e0: f64,
-) -> Vec<(f64, Vec<i32>)> {
+    i1sts: &Vec<Vec<usize>>,
+    i1mode: &[usize],
+) -> Vec<(f64, Vec<usize>)> {
     /*
     TODO get from RESTST:
-    1. nstate - number of states, really just i1sts.len()
-    2. i1sts - the actual states
-    3. i1mode - list of singly-degenerate modes
     4. iovrtn - indices of overtone states
     5. ifunda - indices of fundamental states; this and above should be
         handled as enums probably
      */
-    let nstate = 10;
-    let i1sts = vec![
-        vec![0, 0, 0],
-        vec![1, 0, 0],
-        vec![0, 1, 0],
-        vec![0, 0, 1],
-        vec![2, 0, 0],
-        vec![0, 2, 0],
-        vec![0, 0, 2],
-        vec![1, 1, 0],
-        vec![1, 0, 1],
-        vec![0, 1, 1],
-    ];
-    let i1mode = vec![0, 1, 2];
+    let nstate = i1sts.len();
+    // NOTE: singly degenerate modes. this would change with degeneracies
     let n1dm = fund.len();
     let mut eng = vec![0.0; nstate];
     for nst in 0..nstate {
@@ -629,29 +619,52 @@ pub(crate) fn enrgy(
     // TODO skipped a bunch of resonance stuff here
     // the r stands for reordered. zip with states to sort them too
     let reng = eng.clone();
-    let mut reng: Vec<_> = zip(reng, i1sts).collect();
+    let mut reng: Vec<_> = zip(reng, i1sts.clone()).collect();
     reng.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
     reng
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+pub(crate) fn alpha(
+    nvib: usize,
+    rotcon: &[f64],
+    freq: &Dvec,
+    wila: &Dmat,
+    primat: &Vector3<f64>,
+    zmat: &Tensor3,
+    f3qcm: &[f64],
+) -> Dmat {
+    /// CONST IS THE PI*SQRT(C/H) FACTOR
+    const CONST: f64 = 0.086112;
+    let mut alpha = Dmat::zeros(nvib, 3);
+    for ixyz in 0..3 {
+        for i in 0..nvib {
+            let ii = ioff(ixyz + 2) - 1;
+            let valu0 = 2.0 * rotcon[ixyz].powi(2) / freq[i];
+            let mut valu1 = 0.0;
+            for jxyz in 0..3 {
+                let ij = ioff(ixyz.max(jxyz) + 1) + ixyz.min(jxyz);
+                valu1 += wila[(i, ij)].powi(2) / primat[jxyz];
+            }
+            valu1 *= 0.75;
 
-    #[test]
-    fn test_find3r() {
-        let got = find3r(2, 2, 2);
-        let want = 9;
-        assert_eq!(got, want);
+            let mut valu2 = 0.0;
+            let mut valu3 = 0.0;
+            for j in 0..nvib {
+                if j != i {
+                    let _ijvib = ioff(i.max(j)) + i.min(j);
+                    let wisq = freq[i].powi(2);
+                    let wjsq = freq[j].powi(2);
+                    // TODO should be if icorol stuff
+                    valu2 += zmat[(i, j, ixyz)].powi(2) * (3.0 * wisq + wjsq)
+                        / (wisq - wjsq);
+                }
+                let wj32 = freq[j].powf(1.5);
+                let iij = find3r(j, i, i);
+                valu3 += wila[(j, ii)] * f3qcm[iij] * freq[i] / wj32;
+            }
+            // valu3 issue on fourth iteration
+            alpha[(i, ixyz)] = valu0 * (valu1 + valu2 + valu3 * CONST);
+        }
     }
-
-    #[test]
-    fn test_quartic_sum_facs() {
-        let got = quartic_sum_facs(15, 3);
-        let want: Vec<f64> = vec![
-            24.0, 6.0, 4.0, 6.0, 24.0, 6.0, 2.0, 2.0, 6.0, 4.0, 2.0, 4.0, 6.0,
-            6.0, 24.0,
-        ];
-        assert_eq!(got, want);
-    }
+    alpha
 }

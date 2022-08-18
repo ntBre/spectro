@@ -4,8 +4,8 @@
   | File       | Lines | Status | Description                                                            |
   |------------+-------+--------+------------------------------------------------------------------------|
   | adegnl.f   |   101 |        |                                                                        |
-  | alphaa.f   |   347 |        |                                                                        |
-  | alphas.f   |   770 |        |                                                                        |
+  | alphaa.f   |   347 | x      | rotation-vibration interaction constants for asymmetric tops           |
+  | alphas.f   |   770 |        | rotation-vibration interaction constants for spherical tops            |
   | ammvib.f   |   133 |        |                                                                        |
   | anhout.f   |    29 | x      | print anharmonic constants                                             |
   | anhprt.f   |    32 | x      | print anharmonic constants differently                                 |
@@ -36,7 +36,7 @@
   | elmhes.f   |    99 |        |                                                                        |
   | eltran.f   |    78 |        |                                                                        |
   | engval.f   |   113 |        |                                                                        |
-  | enrgy.f    |   561 | x      | done until resonances                                             |
+  | enrgy.f    |   561 | x      | done until resonances                                                  |
   | f02aaf.f   |    12 |        |                                                                        |
   | f02abf.f   |    15 |        |                                                                        |
   | f02agf.f   |    66 |        |                                                                        |
@@ -108,7 +108,7 @@
   | rot2nd.f   |    43 | x      | rotate fc2 to new axes                                                 |
   | rot3rd.f   |    62 | x      | rotate fc3 to new axes                                                 |
   | rot4th.f   |    69 | x      | rotate fc4 to new axes                                                 |
-  | rota.f     |   711 |        |                                                                        |
+  | rota.f     |   711 |        | rotational energy levels of asymmetric tops                            |
   | rotater.f  |   112 |        |                                                                        |
   | rotdp1.f   |    28 |        |                                                                        |
   | rotdp2.f   |    33 |        |                                                                        |
@@ -116,7 +116,7 @@
   | rotnew.f   |    44 |        |                                                                        |
   | rotrn2.f   |   198 | x      | project out rot/trans from carts, skipping since we never use          |
   | rotrn3.f   |    87 | x      | project out rot/trans for cubics, skipping since we never use          |
-  | rots.f     |   514 |        |                                                                        |
+  | rots.f     |   514 |        | rotational energy levels of symmetric tops                             |
   | rs.f       |    60 |        |                                                                        |
   | rsfrm1.f   |   154 |        |                                                                        |
   | rsfrm2.f   |   140 |        |                                                                        |
@@ -174,7 +174,7 @@
   #+end_src
 
   #+RESULTS:
-  : finished 8214/40693 = 20.2%
+  : finished 8561/40693 = 21.0%
 * Extra code
 ** first sum rule test from zeta.f
    #+begin_src rust
