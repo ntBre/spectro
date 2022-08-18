@@ -8,7 +8,7 @@ use std::{
 use nalgebra::{SymmetricEigen, Vector3};
 use tensor::{Tensor3, Tensor4};
 
-use crate::{Dmat, Dvec, Spectro, FACT3, FACT4, FUNIT3, FUNIT4, WAVE};
+use crate::{Dmat, Dvec, Spectro, Vec3, FACT3, FACT4, FUNIT3, FUNIT4, WAVE};
 
 #[cfg(test)]
 mod tests;
@@ -667,4 +667,52 @@ pub(crate) fn alpha(
         }
     }
     alpha
+}
+
+/// convert tau to tau prime in wavenumbers
+pub(crate) fn tau_prime(maxcor: usize, tau: Tensor4) -> Dmat {
+    let mut taupcm = Dmat::zeros(maxcor, maxcor);
+    for ijxyz in 0..maxcor {
+        for klxyz in 0..maxcor {
+            taupcm[(ijxyz, klxyz)] = tau[(ijxyz, ijxyz, klxyz, klxyz)];
+            if ijxyz != klxyz {
+                taupcm[(ijxyz, klxyz)] +=
+                    2.0 * tau[(ijxyz, klxyz, ijxyz, klxyz)];
+            }
+        }
+    }
+    taupcm
+}
+
+pub(crate) fn make_tau(
+    maxcor: usize,
+    nvib: usize,
+    freq: &Dvec,
+    primat: &Vec3,
+    wila: &Dmat,
+) -> Tensor4 {
+    // convert to cm-1 from the biggest mess you've ever seen
+    const CONST1: f64 = 3.833384078e04;
+    let mut tau = Tensor4::zeros(maxcor, maxcor, maxcor, maxcor);
+    for ixyz in 0..maxcor {
+        for jxyz in 0..maxcor {
+            for kxyz in 0..maxcor {
+                for lxyz in 0..maxcor {
+                    let ijxyz = ioff(ixyz.max(jxyz) + 1) + ixyz.min(jxyz);
+                    let klxyz = ioff(kxyz.max(lxyz) + 1) + kxyz.min(lxyz);
+                    let mut sum = 0.0;
+                    for k in 0..nvib {
+                        let div = freq[k].powi(2)
+                            * primat[ixyz]
+                            * primat[jxyz]
+                            * primat[kxyz]
+                            * primat[lxyz];
+                        sum += wila[(k, ijxyz)] * wila[(k, klxyz)] / div;
+                    }
+                    tau[(ixyz, jxyz, kxyz, lxyz)] = -0.5 * CONST1 * sum;
+                }
+            }
+        }
+    }
+    tau
 }
