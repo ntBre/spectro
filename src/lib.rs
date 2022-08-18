@@ -45,6 +45,7 @@ const ALAM: f64 = 4.0e-2 * (PI * PI * CL) / (PH * AVN);
 /// constant for converting moments of inertia to rotational constants
 const CONST: f64 = 1.0e+02 * (PH * AVN) / (8.0e+00 * PI * PI * CL);
 /// planck's constant in atomic units?
+
 const PH: f64 = 6.626176;
 /// pre-computed sqrt of ALAM
 const SQLAM: f64 = 0.17222125037910759882;
@@ -78,6 +79,9 @@ pub enum Curvil {
 
     Tors(usize, usize, usize, usize),
 }
+
+pub mod qcent;
+use qcent::*;
 
 /// struct containing the fields to describe a Spectro input file:
 /// ```text
@@ -380,92 +384,6 @@ impl Spectro {
         (zmat, biga, wila)
     }
 
-    /// calculate the quartic centrifugal distortion constants. for now just
-    /// return the effective rotational constants in the Watson A reduced
-    /// Hamiltonian and in the S reduced Hamiltonian
-    #[allow(unused)]
-    fn qcent(
-        &self,
-        nvib: usize,
-        freq: &Dvec,
-        wila: &Dmat,
-        rotcon: &[f64],
-    ) -> (f64, f64, f64, f64, f64, f64) {
-        let maxcor = if self.is_linear.unwrap() { 2 } else { 3 };
-        let primat = self.geom.principal_moments();
-        let tau = make_tau(maxcor, nvib, freq, &primat, wila);
-        let taupcm = tau_prime(maxcor, tau);
-        // NOTE: pretty sure this is always the case
-        let irep = 0;
-        let ic = [IPTOC[(irep, 0)], IPTOC[(irep, 1)], IPTOC[(irep, 2)]];
-        let id = [ICTOP[(irep, 0)], ICTOP[(irep, 1)], ICTOP[(irep, 2)]];
-
-        let mut t = Dmat::zeros(maxcor, maxcor);
-        for ixyz in 0..maxcor {
-            for jxyz in 0..maxcor {
-                t[(ic[ixyz], ic[jxyz])] = taupcm[(ixyz, jxyz)] / 4.0;
-            }
-        }
-
-        let t400 =
-            (3.0e0 * t[(0, 0)] + 3.0e0 * t[(1, 1)] + 2.0e0 * t[(0, 1)]) / 8.0e0;
-        let t220 = t[(0, 2)] + t[(1, 2)] - 2.0e0 * t400;
-        let t040 = t[(2, 2)] - t220 - t400;
-        let t202 = (t[(0, 0)] - t[(1, 1)]) / 4.0e0;
-        let t022 = (t[(0, 2)] - t[(1, 2)]) / 2.0e0 - t202;
-        let t004 = (t[(0, 0)] + t[(1, 1)] - 2.0e0 * t[(0, 1)]) / 16.0e0;
-
-        let b200 = 0.5 * (rotcon[id[0]] + rotcon[id[1]]) - 4.0 * t004;
-        let b020 = rotcon[id[2]] - b200 + 6.0 * t004;
-        let b002 = 0.25 * (rotcon[id[0]] - rotcon[id[1]]);
-
-        // asymmetric top
-        let sigma = (2.0 * rotcon[id[2]] - rotcon[id[0]] - rotcon[id[1]])
-            / (rotcon[id[0]] - rotcon[id[1]]);
-        // definitely need not to do this if it's not an asymmetric top
-        let rkappa =
-            (2.0 * rotcon[1] - rotcon[0] - rotcon[2]) / (rotcon[0] - rotcon[2]);
-
-        // coefficients in the Watson A reduction
-        let delj = -t400 - 2.0 * t004;
-        let delk = -t040 - 10.0 * t004;
-        let deljk = -t220 + 12.0 * t004;
-        let sdelk = -t022 - 4.0 * sigma * t004;
-        let sdelj = -t202;
-
-        // effective rotational constants
-        let bxa = rotcon[id[0]] - 8.0 * (sigma + 1.0) * t004;
-        let bya = rotcon[id[1]] + 8.0 * (sigma - 1.0) * t004;
-        let bza = rotcon[id[2]] + 16.0 * t004;
-
-        // nielsen centrifugal distortion constants
-        let djn = -t400;
-        let djkn = -t220;
-        let dkn = -t040;
-        let sdjn = -t202;
-        let r5 = t022 / 2.0;
-        let r6 = t004;
-
-        // coefficients in the Watson S reduction
-        let dj = -t400 + 0.5 * t022 / sigma;
-        let djk = -t220 - 3.0 * t022 / sigma;
-        let dk = -t040 + 2.5 * t022 / sigma;
-        let sd1 = t202;
-        let sd2 = t004 + 0.25 * t022 / sigma;
-
-        let bxs = rotcon[id[0]] - 4.0 * t004 + (2.0 + 1.0 / sigma) * t022;
-        let bys = rotcon[id[1]] - 4.0 * t004 - (2.0 - 1.0 / sigma) * t022;
-        let bzs = rotcon[id[2]] + 6.0 * t004 - 5.0 * t022 / (2.0 * sigma);
-
-        // Wilson's centrifugal distortion constants
-        let djw = -taupcm[(ic[0], ic[0])] / 4.0;
-        let djkw = -2.0 * djw - taupcm[(ic[0], ic[1])] / 2.0;
-        let dkw =
-            djw - taupcm[(ic[2], ic[2])] / 4.0 + taupcm[(ic[0], ic[2])] / 2.0;
-
-        (bxa, bya, bza, bxs, bys, bzs)
-    }
-
     /// formation of the secular equation
     pub fn form_sec(&self, fx: DMat, n3n: usize, sqm: &[f64]) -> DMat {
         let mut fxm = fx.clone();
@@ -713,10 +631,35 @@ impl Spectro {
         // not used yet
         let (zmat, _biga, wila) = self.zeta(natom, nvib, &lxm, &w);
 
-        // only for the quartic distortion coefficients, doesn't appear to touch
-        // anything else
-        let (b4a, b5a, b6a, b1s, b2s, b3s) =
-            self.qcent(nvib, &freq, &wila, &rotcon);
+        let Qcent {
+            sigma: _,
+            rkappa: _,
+            delj,
+            delk,
+            deljk,
+            sdelk: _,
+            sdelj: _,
+            bxa: b4a,
+            bya: b5a,
+            bza: b6a,
+            djn: _,
+            djkn: _,
+            dkn: _,
+            sdjn: _,
+            r5: _,
+            r6: _,
+            dj: _,
+            djk: _,
+            dk: _,
+            sd1: _,
+            sd2: _,
+            bxs: b1s,
+            bys: b2s,
+            bzs: b3s,
+            djw: _,
+            djkw: _,
+            dkw: _,
+        } = Qcent::new(&self, nvib, &freq, &wila, &rotcon);
 
         // start of cubic analysis
         let f3x = load_fc3("testfiles/fort.30", n3n);
@@ -764,10 +707,11 @@ impl Spectro {
         {
             // cm-1 to mhz conversion factor
             // const CONST2: f64 = 2.99792458e04;
-            // I think this is always 3, but that doesn't really make sense. set to
-            // 0 in mains, then passed to readw which never touches it and then set
-            // to 3 if it's still 0. there might also be a better way to set these
-            // than maxk. check what they actually loop over
+
+            // I think this is always 3, but that doesn't really make sense. set
+            // to 0 in mains, then passed to readw which never touches it and
+            // then set to 3 if it's still 0. there might also be a better way
+            // to set these than maxk. check what they actually loop over
             let maxj = 3;
             let maxk = 2 * maxj + 1;
             let mut erot = Dmat::zeros(maxk, maxk);
@@ -788,22 +732,42 @@ impl Spectro {
             let nderiv = self.header[7];
             // this is a 600 line loop fml
             for nst in 0..nstop {
-                // this is going to have to be outside the if somehow, maybe just
-                // assert that nderiv > 2
-                if nderiv > 2 {
-                    let vib1 = rotnst[(nst, 0)] - rotcon[(0)];
-                    let vib2 = rotnst[(nst, 1)] - rotcon[(1)];
-                    let vib3 = rotnst[(nst, 2)] - rotcon[(2)];
-                    let mut vibr = [0.0; 3];
-                    vibr[ic[0]] = vib1;
-                    vibr[ic[1]] = vib2;
-                    vibr[ic[2]] = vib3;
-                    let bxa = b4a + vibr[0];
-                    let bya = b5a + vibr[1];
-                    let bza = b6a + vibr[2];
-                    let bxs = b1s + vibr[0];
-                    let bys = b2s + vibr[1];
-                    let bzs = b3s + vibr[2];
+                // this is inside a conditional in the fortran code, but it
+                // would be really annoying to return these from inside it here
+                assert!(nderiv > 2);
+                let vib1 = rotnst[(nst, 0)] - rotcon[(0)];
+                let vib2 = rotnst[(nst, 1)] - rotcon[(1)];
+                let vib3 = rotnst[(nst, 2)] - rotcon[(2)];
+                let mut vibr = [0.0; 3];
+                vibr[ic[0]] = vib1;
+                vibr[ic[1]] = vib2;
+                vibr[ic[2]] = vib3;
+                let bxa = b4a + vibr[0];
+                let bya = b5a + vibr[1];
+                let bza = b6a + vibr[2];
+                let bxs = b1s + vibr[0];
+                let bys = b2s + vibr[1];
+                let bzs = b3s + vibr[2];
+
+                for jj in 1..maxj + 1 {
+                    let j = jj - 1;
+                    for k in -(j as isize)..j as isize {
+                        // another nderiv conditional here, but I already
+                        // asserted it above. you just won't call rota if the
+                        // derivative is lower
+
+                        let vala1 = 0.5 * (bxa + bya) * (j * (j + 1)) as f64;
+                        let vala2 = (bza - 0.5 * (bxa + bya)) * (k * k) as f64;
+                        let vala3 = delj * ((j * j) * ((j + 1).pow(2))) as f64;
+                        let vala4 =
+                            deljk * (j * (j + 1) * (k * k) as usize) as f64;
+                        let vala5 = delk * (k.pow(4)) as f64;
+                        // let vala6 = phij * ((j.pow(3)) * ((j + 1).pow(3)));
+                        // let vala7 =
+                        //     phijk * ((j * j) * ((j + 1).pow(2)) * (k * k));
+                        // let vala8 = phikj * (j * (j + 1) * (k.pow(4)));
+                        // let vala9 = phik * (k.pow(6));
+                    }
                 }
             }
         }

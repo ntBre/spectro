@@ -256,10 +256,8 @@ fn test_run() {
 fn test_zeta() {
     let mut spectro = Spectro::load("testfiles/h2o.in");
     spectro.geom.to_angstrom();
-
     spectro.geom.normalize();
     let axes = spectro.geom.reorder();
-
     let rotor = spectro.rotor_type();
     let natom = spectro.natoms();
     let n3n = 3 * natom;
@@ -316,10 +314,6 @@ fn test_force3() {
     let (harms, lxm) = symm_eigen_decomp(fxm);
     let freq = to_wavenumbers(harms);
     let lx = spectro.make_lx(n3n, &sqm, &lxm);
-    let (_zmat, _biga, wila) = spectro.zeta(natom, nvib, &lxm, &w);
-    let moments = spectro.geom.principal_moments();
-    let rotcon: Vec<_> = moments.iter().map(|m| CONST / m).collect();
-    spectro.qcent(nvib, &freq, &wila, &rotcon);
     let f3x = load_fc3("testfiles/fort.30", n3n);
     let mut f3x = spectro.rot3rd(n3n, natom, f3x, axes);
     let got = force3(n3n, &mut f3x, &lx, nvib, &freq, i3vib);
@@ -367,10 +361,6 @@ fn test_force4() {
     let (harms, lxm) = symm_eigen_decomp(fxm);
     let freq = to_wavenumbers(harms);
     let lx = spectro.make_lx(n3n, &sqm, &lxm);
-    let (_zmat, _biga, wila) = spectro.zeta(natom, nvib, &lxm, &w);
-    let moments = spectro.geom.principal_moments();
-    let rotcon: Vec<_> = moments.iter().map(|m| CONST / m).collect();
-    spectro.qcent(nvib, &freq, &wila, &rotcon);
     let f4x = load_fc4("testfiles/fort.40", n3n);
     let mut f4x = spectro.rot4th(n3n, natom, f4x, axes);
     let got = force4(n3n, &mut f4x, &lx, nvib, &freq, i4vib);
@@ -423,10 +413,7 @@ fn test_funds_and_e0() {
     let (harms, lxm) = symm_eigen_decomp(fxm);
     let freq = to_wavenumbers(harms);
     let lx = spectro.make_lx(n3n, &sqm, &lxm);
-    let (zmat, _biga, wila) = spectro.zeta(natom, nvib, &lxm, &w);
-    let moments = spectro.geom.principal_moments();
-    let rotcon: Vec<_> = moments.iter().map(|m| CONST / m).collect();
-    spectro.qcent(nvib, &freq, &wila, &rotcon);
+    let (zmat, _biga, _wila) = spectro.zeta(natom, nvib, &lxm, &w);
     let f3x = load_fc3("testfiles/fort.30", n3n);
     let mut f3x = spectro.rot3rd(n3n, natom, f3x, axes);
     let f3qcm = force3(n3n, &mut f3x, &lx, nvib, &freq, i3vib);
@@ -471,10 +458,7 @@ fn test_enrgy() {
     let (harms, lxm) = symm_eigen_decomp(fxm);
     let freq = to_wavenumbers(harms);
     let lx = spectro.make_lx(n3n, &sqm, &lxm);
-    let (zmat, _biga, wila) = spectro.zeta(natom, nvib, &lxm, &w);
-    let moments = spectro.geom.principal_moments();
-    let rotcon: Vec<_> = moments.iter().map(|m| CONST / m).collect();
-    spectro.qcent(nvib, &freq, &wila, &rotcon);
+    let (zmat, _biga, _wila) = spectro.zeta(natom, nvib, &lxm, &w);
     let f3x = load_fc3("testfiles/fort.30", n3n);
     let mut f3x = spectro.rot3rd(n3n, natom, f3x, axes);
     let f3qcm = force3(n3n, &mut f3x, &lx, nvib, &freq, i3vib);
@@ -544,9 +528,6 @@ fn test_alpha() {
     let freq = to_wavenumbers(harms);
     let lx = spectro.make_lx(n3n, &sqm, &lxm);
     let (zmat, _biga, wila) = spectro.zeta(natom, nvib, &lxm, &w);
-    let moments = spectro.geom.principal_moments();
-    let rotcon: Vec<_> = moments.iter().map(|m| CONST / m).collect();
-    spectro.qcent(nvib, &freq, &wila, &rotcon);
     let f3x = load_fc3("testfiles/fort.30", n3n);
     let mut f3x = spectro.rot3rd(n3n, natom, f3x, axes);
     let f3qcm = force3(n3n, &mut f3x, &lx, nvib, &freq, i3vib);
@@ -591,9 +572,6 @@ fn test_alphaa() {
     let freq = to_wavenumbers(harms);
     let lx = spectro.make_lx(n3n, &sqm, &lxm);
     let (zmat, _biga, wila) = spectro.zeta(natom, nvib, &lxm, &w);
-    let moments = spectro.geom.principal_moments();
-    let rotcon: Vec<_> = moments.iter().map(|m| CONST / m).collect();
-    spectro.qcent(nvib, &freq, &wila, &rotcon);
     let f3x = load_fc3("testfiles/fort.30", n3n);
     let mut f3x = spectro.rot3rd(n3n, natom, f3x, axes);
     let f3qcm = force3(n3n, &mut f3x, &lx, nvib, &freq, i3vib);
