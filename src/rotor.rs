@@ -4,6 +4,7 @@ use std::fmt::Display;
 /// classification
 pub(crate) const ROTOR_EPS: f64 = 1.0e-4;
 
+#[derive(Clone, Debug, Default, PartialEq)]
 pub enum Rotor {
     Diatomic,
     Linear,
@@ -11,6 +12,8 @@ pub enum Rotor {
     OblateSymmTop,
     ProlateSymmTop,
     AsymmTop,
+    #[default]
+    None,
 }
 
 impl Display for Rotor {
@@ -25,6 +28,7 @@ impl Display for Rotor {
                 Rotor::OblateSymmTop => "an oblate symmetric top",
                 Rotor::ProlateSymmTop => "a prolate symmetric top",
                 Rotor::AsymmTop => "an asymmetric top",
+                Rotor::None => panic!("rotor type not set"),
             }
         )
     }

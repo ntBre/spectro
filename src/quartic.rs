@@ -57,7 +57,7 @@ impl Quartic {
         wila: &Dmat,
         rotcon: &[f64],
     ) -> Self {
-        let maxcor = if spectro.is_linear.unwrap() { 2 } else { 3 };
+        let maxcor = if spectro.is_linear() { 2 } else { 3 };
         let primat = spectro.geom.principal_moments();
         let tau = make_tau(maxcor, nvib, freq, &primat, wila);
         let taupcm = tau_prime(maxcor, tau);

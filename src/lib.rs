@@ -102,10 +102,23 @@ pub struct Spectro {
     pub curvils: Vec<Curvil>,
     pub degmodes: Vec<Vec<usize>>,
     pub dummies: Vec<Dummy>,
-    pub is_linear: Option<bool>,
+    pub rotor_type: Rotor,
+    pub n3n: usize,
+    pub i3n3n: usize,
+    pub i4n3n: usize,
+    pub nvib: usize,
+    pub i2vib: usize,
+    pub i3vib: usize,
+    pub i4vib: usize,
+    pub natom: usize,
+    pub axes: Mat3,
 }
 
 impl Spectro {
+    pub fn is_linear(&self) -> bool {
+        self.rotor_type == Rotor::Linear
+    }
+
     /// return a ready-to-use spectro without a template
     pub fn nocurvil() -> Self {
         Self {
@@ -241,6 +254,21 @@ impl Spectro {
                 }
             }
         }
+        // assumes input geometry in bohr
+        ret.geom.to_angstrom();
+        ret.geom.normalize();
+        ret.axes = ret.geom.reorder();
+        ret.rotor_type = ret.rotor_type();
+        ret.natom = ret.natoms();
+        let n3n = 3 * ret.natoms();
+        ret.n3n = n3n;
+        ret.i3n3n = n3n * (n3n + 1) * (n3n + 2) / 6;
+        ret.i4n3n = n3n * (n3n + 1) * (n3n + 2) * (n3n + 3) / 24;
+        let nvib = n3n - 6 + if ret.is_linear() { 1 } else { 0 };
+        ret.nvib = nvib;
+        ret.i2vib = ioff(nvib + 1);
+        ret.i3vib = nvib * (nvib + 1) * (nvib + 2) / 6;
+        ret.i4vib = nvib * (nvib + 1) * (nvib + 2) * (nvib + 3) / 24;
         ret
     }
 
@@ -477,20 +505,14 @@ impl Spectro {
 
     /// rotate the quartic force constants in `f4x` to align with the principal
     /// axes in `eg` used to align the geometry
-    pub fn rot4th(
-        &self,
-        n3n: usize,
-        natom: usize,
-        f4x: Tensor4,
-        eg: Mat3,
-    ) -> Tensor4 {
+    pub fn rot4th(&self, f4x: Tensor4, eg: Mat3) -> Tensor4 {
         let (a, b, c, d) = f4x.shape();
         let mut ret = Tensor4::zeros(a, b, c, d);
-        for i in 0..n3n {
-            for j in 0..n3n {
-                for k in 0..natom {
+        for i in 0..self.n3n {
+            for j in 0..self.n3n {
+                for k in 0..self.natom {
                     let ic = k * 3;
-                    for l in 0..natom {
+                    for l in 0..self.natom {
                         let id = l * 3;
                         let mut a = Mat3::zeros();
                         for kk in 0..3 {
@@ -509,11 +531,11 @@ impl Spectro {
             }
         }
 
-        for k in 0..n3n {
-            for l in 0..n3n {
-                for i in 0..natom {
+        for k in 0..self.n3n {
+            for l in 0..self.n3n {
+                for i in 0..self.natom {
                     let ia = i * 3;
-                    for j in 0..natom {
+                    for j in 0..self.natom {
                         let ib = j * 3;
                         let mut a = Mat3::zeros();
                         for ii in 0..3 {
@@ -579,43 +601,15 @@ impl Spectro {
         rotnst
     }
 
-    pub fn run(mut self) {
-        // TODO consider moving some of this stuff into `load`. probably even up
-        // to the i4vib line could just be included there and stored in fields
-        // on self
-
-        // assumes input geometry in bohr
-        self.geom.to_angstrom();
-
-        self.geom.normalize();
-        let axes = self.geom.reorder();
-
+    pub fn run(self) {
+        let axes = self.geom.principal_axes();
         let moments = self.geom.principal_moments();
         let rotcon: Vec<_> = moments.iter().map(|m| CONST / m).collect();
-
-        let rotor = self.rotor_type();
-        println!("Molecule is {}", rotor);
-
         let natom = self.natoms();
-        let n3n = 3 * natom;
-        let _i3n3n = n3n * (n3n + 1) * (n3n + 2) / 6;
-        let _i4n3n = n3n * (n3n + 1) * (n3n + 2) * (n3n + 3) / 24;
-
-        let nvib = n3n - 6
-            + if let Rotor::Linear = rotor {
-                self.is_linear = Some(true);
-                1
-            } else {
-                self.is_linear = Some(false);
-                0
-            };
-        let _i2vib = ioff(nvib + 1);
-        let i3vib = nvib * (nvib + 1) * (nvib + 2) / 6;
-        let i4vib = nvib * (nvib + 1) * (nvib + 2) * (nvib + 3) / 24;
 
         // load the force constants, rotate them to the new axes, and convert
         // them to the proper units
-        let fc2 = load_fc2("testfiles/fort.15", n3n);
+        let fc2 = load_fc2("testfiles/fort.15", self.n3n);
         let fc2 = self.rot2nd(fc2, axes);
         let fc2 = FACT2 * fc2;
 
@@ -623,15 +617,15 @@ impl Spectro {
         // frequencies and the LXM matrix
         let w = self.geom.weights();
         let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
-        let fxm = self.form_sec(fc2, n3n, &sqm);
+        let fxm = self.form_sec(fc2, self.n3n, &sqm);
         let (harms, lxm) = symm_eigen_decomp(fxm);
         let freq = to_wavenumbers(harms);
 
         // form the LX matrix, not used so far
-        let lx = self.make_lx(n3n, &sqm, &lxm);
+        let lx = self.make_lx(self.n3n, &sqm, &lxm);
 
         // not used yet
-        let (zmat, _biga, wila) = self.zeta(natom, nvib, &lxm, &w);
+        let (zmat, _biga, wila) = self.zeta(natom, self.nvib, &lxm, &w);
 
         let Quartic {
             sigma: _,
@@ -661,17 +655,19 @@ impl Spectro {
             djw: _,
             djkw: _,
             dkw: _,
-        } = Quartic::new(&self, nvib, &freq, &wila, &rotcon);
+        } = Quartic::new(&self, self.nvib, &freq, &wila, &rotcon);
 
         // start of cubic analysis
-        let f3x = load_fc3("testfiles/fort.30", n3n);
-        let mut f3x = self.rot3rd(n3n, natom, f3x, axes);
-        let f3qcm = force3(n3n, &mut f3x, &lx, nvib, &freq, i3vib);
+        let f3x = load_fc3("testfiles/fort.30", self.n3n);
+        let mut f3x = self.rot3rd(self.n3n, natom, f3x, axes);
+        let f3qcm =
+            force3(self.n3n, &mut f3x, &lx, self.nvib, &freq, self.i3vib);
 
         // start of quartic analysis
-        let f4x = load_fc4("testfiles/fort.40", n3n);
-        let mut f4x = self.rot4th(n3n, natom, f4x, axes);
-        let f4qcm = force4(n3n, &mut f4x, &lx, nvib, &freq, i4vib);
+        let f4x = load_fc4("testfiles/fort.40", self.n3n);
+        let mut f4x = self.rot4th(f4x, axes);
+        let f4qcm =
+            force4(self.n3n, &mut f4x, &lx, self.nvib, &freq, self.i4vib);
 
         // TODO RESTST
 
@@ -696,14 +692,16 @@ impl Spectro {
 
         // TODO SEXTIC
         let Sextic {} =
-            Sextic::new(&self, nvib, &wila, &zmat, &freq, &f3qcm, &rotcon);
+            Sextic::new(&self, &wila, &zmat, &freq, &f3qcm, &rotcon);
 
-        let (xcnst, e0) = xcalc(nvib, &f4qcm, &freq, &f3qcm, &zmat, &rotcon);
+        let (xcnst, e0) =
+            xcalc(self.nvib, &f4qcm, &freq, &f3qcm, &zmat, &rotcon);
 
-        let fund = funds(&freq, nvib, &xcnst);
+        let fund = funds(&freq, self.nvib, &xcnst);
 
         let rotnst = self.alphaa(
-            nvib, &rotcon, &freq, &wila, &zmat, &f3qcm, &fund, &i1mode, &i1sts,
+            self.nvib, &rotcon, &freq, &wila, &zmat, &f3qcm, &fund, &i1mode,
+            &i1sts,
         );
 
         let _reng = enrgy(&fund, &freq, &xcnst, e0, &i1sts, &i1mode);

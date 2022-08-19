@@ -10,19 +10,20 @@ use crate::{
 /// struct holding the sextic distortion constants
 pub(crate) struct Sextic {}
 
+#[allow(unused)]
 impl Sextic {
     pub(crate) fn new(
         spectro: &Spectro,
-        nvib: usize,
         wila: &Dmat,
         zmat: &Tensor3,
         freq: &Dvec,
         f3qcm: &[f64],
         rotcon: &[f64],
     ) -> Self {
+        let nvib = spectro.nvib;
         // convert to Hz from cm⁻¹
         const CONST2: f64 = 2.99792458e10;
-        let maxcor = if spectro.is_linear.unwrap() { 2 } else { 3 };
+        let maxcor = if spectro.is_linear() { 2 } else { 3 };
         let primat = spectro.geom.principal_moments();
         let c = c_mat(maxcor, nvib, freq, &primat, wila);
         let t = t_mat(maxcor, nvib, freq, &c);
@@ -75,7 +76,7 @@ fn scc(
         }
         val3 /= 6.0;
 
-        if spectro.is_linear.unwrap() {
+        if spectro.is_linear() {
             todo!() // goto 510
         };
 
@@ -229,7 +230,6 @@ mod tests {
     use nalgebra::dmatrix;
 
     use crate::{
-        rotor::Rotor,
         utils::{
             force3, force4, funds, load_fc2, load_fc3, load_fc4,
             symm_eigen_decomp, to_wavenumbers, xcalc,
@@ -241,45 +241,29 @@ mod tests {
 
     #[test]
     fn test_all() {
-        let mut spectro = Spectro::load("testfiles/h2o.in");
-        spectro.geom.to_angstrom();
-        spectro.geom.normalize();
-        let axes = spectro.geom.reorder();
-        let rotor = spectro.rotor_type();
-        let natom = spectro.natoms();
-        let n3n = 3 * natom;
-        let nvib = n3n - 6
-            + if let Rotor::Linear = rotor {
-                spectro.is_linear = Some(true);
-                1
-            } else {
-                spectro.is_linear = Some(false);
-                0
-            };
-        let i3vib = nvib * (nvib + 1) * (nvib + 2) / 6;
-        let i4vib = nvib * (nvib + 1) * (nvib + 2) * (nvib + 3) / 24;
-        let fc2 = load_fc2("testfiles/fort.15", n3n);
-        let fc2 = spectro.rot2nd(fc2, axes);
+        let s = Spectro::load("testfiles/h2o.in");
+        let fc2 = load_fc2("testfiles/fort.15", s.n3n);
+        let fc2 = s.rot2nd(fc2, s.axes);
         let fc2 = FACT2 * fc2;
-        let w = spectro.geom.weights();
+        let w = s.geom.weights();
         let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
-        let fxm = spectro.form_sec(fc2, n3n, &sqm);
+        let fxm = s.form_sec(fc2, s.n3n, &sqm);
         let (harms, lxm) = symm_eigen_decomp(fxm);
         let freq = to_wavenumbers(harms);
-        let lx = spectro.make_lx(n3n, &sqm, &lxm);
-        let (zmat, _biga, wila) = spectro.zeta(natom, nvib, &lxm, &w);
-        let f3x = load_fc3("testfiles/fort.30", n3n);
-        let mut f3x = spectro.rot3rd(n3n, natom, f3x, axes);
-        let f3qcm = force3(n3n, &mut f3x, &lx, nvib, &freq, i3vib);
-        let f4x = load_fc4("testfiles/fort.40", n3n);
-        let mut f4x = spectro.rot4th(n3n, natom, f4x, axes);
-        let f4qcm = force4(n3n, &mut f4x, &lx, nvib, &freq, i4vib);
-        let moments = spectro.geom.principal_moments();
+        let lx = s.make_lx(s.n3n, &sqm, &lxm);
+        let (zmat, _biga, wila) = s.zeta(s.natom, s.nvib, &lxm, &w);
+        let f3x = load_fc3("testfiles/fort.30", s.n3n);
+        let mut f3x = s.rot3rd(s.n3n, s.natom, f3x, s.axes);
+        let f3qcm = force3(s.n3n, &mut f3x, &lx, s.nvib, &freq, s.i3vib);
+        let f4x = load_fc4("testfiles/fort.40", s.n3n);
+        let mut f4x = s.rot4th(f4x, s.axes);
+        let f4qcm = force4(s.n3n, &mut f4x, &lx, s.nvib, &freq, s.i4vib);
+        let moments = s.geom.principal_moments();
         let rotcon: Vec<_> = moments.iter().map(|m| CONST / m).collect();
-        let (xcnst, _e0) = xcalc(nvib, &f4qcm, &freq, &f3qcm, &zmat, &rotcon);
-        let fund = funds(&freq, nvib, &xcnst);
+        let (xcnst, _e0) = xcalc(s.nvib, &f4qcm, &freq, &f3qcm, &zmat, &rotcon);
+        let _fund = funds(&freq, s.nvib, &xcnst);
 
-        let primat = spectro.geom.principal_moments();
+        let primat = s.geom.principal_moments();
 
         // c_mat
         let c = {
