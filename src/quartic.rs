@@ -3,8 +3,10 @@ use crate::{
     Dmat, Dvec, Spectro, ICTOP, IPTOC,
 };
 
+/// struct containing all of the quartic distortion constants and probably some
+/// related values
 #[allow(unused)]
-pub(crate) struct Qcent {
+pub(crate) struct Quartic {
     pub(crate) sigma: f64,
     pub(crate) rkappa: f64,
 
@@ -45,10 +47,8 @@ pub(crate) struct Qcent {
     pub(crate) dkw: f64,
 }
 
-impl Qcent {
-    /// calculate the quartic centrifugal distortion constants. for now just
-    /// return the effective rotational constants in the Watson A reduced
-    /// Hamiltonian and in the S reduced Hamiltonian
+impl Quartic {
+    /// calculate the quartic centrifugal distortion constants
     #[allow(unused)]
     pub(crate) fn new(
         spectro: &Spectro,
@@ -88,7 +88,7 @@ impl Qcent {
         let sigma = (2.0 * rotcon[id[2]] - rotcon[id[0]] - rotcon[id[1]])
             / (rotcon[id[0]] - rotcon[id[1]]);
         let djw = -taupcm[(ic[0], ic[0])] / 4.0;
-        Qcent {
+        Quartic {
             // asymmetric top
             sigma: (2.0 * rotcon[id[2]] - rotcon[id[0]] - rotcon[id[1]])
                 / (rotcon[id[0]] - rotcon[id[1]]),

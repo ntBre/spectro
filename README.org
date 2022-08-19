@@ -62,7 +62,7 @@
   | hraman.f   |   453 |        |                                                                 |
   | iadtwp.f   |     4 |        |                                                                 |
   | indexx.f   |    51 | x      | heapsort                                                        |
-  | inert.f    |   249 |        |                                                                 |
+  | inert.f    |   249 |        | inertia defect                                                  |
   | inidnm.f   |    37 |        |                                                                 |
   | inocda.f   |   206 |        |                                                                 |
   | inten.f    |  1347 |        |                                                                 |
@@ -121,7 +121,7 @@
   | rsfrm1.f   |   154 |        |                                                                 |
   | rsfrm2.f   |   140 |        |                                                                 |
   | rsp.f      |    83 | x      | eigen decomposition                                             |
-  | sextic.f   |   743 |        |                                                                 |
+  | sextic.f   |   743 |        | sextic distortion constants                                     |
   | smxpy.f    |    25 |        |                                                                 |
   | spectro.f  |    60 | x      | entry point, just calls mains                                   |
   | sqhamp.f   |    78 | x      | skip without curvils                                            |

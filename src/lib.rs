@@ -80,8 +80,10 @@ pub enum Curvil {
     Tors(usize, usize, usize, usize),
 }
 
-pub mod qcent;
-use qcent::*;
+pub mod quartic;
+use quartic::*;
+pub mod sextic;
+use sextic::*;
 
 /// struct containing the fields to describe a Spectro input file:
 /// ```text
@@ -631,7 +633,7 @@ impl Spectro {
         // not used yet
         let (zmat, _biga, wila) = self.zeta(natom, nvib, &lxm, &w);
 
-        let Qcent {
+        let Quartic {
             sigma: _,
             rkappa: _,
             delj,
@@ -659,7 +661,7 @@ impl Spectro {
             djw: _,
             djkw: _,
             dkw: _,
-        } = Qcent::new(&self, nvib, &freq, &wila, &rotcon);
+        } = Quartic::new(&self, nvib, &freq, &wila, &rotcon);
 
         // start of cubic analysis
         let f3x = load_fc3("testfiles/fort.30", n3n);
@@ -691,6 +693,10 @@ impl Spectro {
         let i1mode = vec![0, 1, 2];
 
         // end ALPHAA
+
+        // TODO SEXTIC
+        let Sextic {} =
+            Sextic::new(&self, nvib, &wila, &zmat, &freq, &f3qcm, &rotcon);
 
         let (xcnst, e0) = xcalc(nvib, &f4qcm, &freq, &f3qcm, &zmat, &rotcon);
 
@@ -728,7 +734,6 @@ impl Spectro {
 
             // TODO calculate this from i1sts
             let nstop = 4;
-            // TODO take this from somewhere I guess
             let nderiv = self.header[7];
             // this is a 600 line loop fml
             for nst in 0..nstop {
