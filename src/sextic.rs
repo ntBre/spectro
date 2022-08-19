@@ -30,7 +30,6 @@ impl Sextic {
         let cc = cc_tensor(nvib, maxcor, freq, &c, zmat, rotcon);
         let tau = make_tau(maxcor, nvib, freq, &primat, wila);
         let scc = scc(maxcor, tau, rotcon, nvib, freq, cc, f3qcm, &c, spectro);
-        println!("{:.8}", scc);
         Sextic {}
     }
 }
@@ -99,6 +98,8 @@ fn scc(
         let value = val1 - val2 + val3 + val4;
         scc[(ixyz - 1, ixyz - 1, ixyz - 1)] = value;
     }
+
+    println!("{:.8}", scc);
 
     if spectro.is_linear() {
         todo!() // goto 900, return?
