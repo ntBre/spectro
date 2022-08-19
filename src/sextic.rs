@@ -45,7 +45,6 @@ fn scc(
     c: &Dmat,
     spectro: &Spectro,
 ) -> Tensor3 {
-    println!("{:.8}", tau);
     // some kind of tolerance for messing with certain values
     const TOL: f64 = 1e-4;
     let mut scc = Tensor3::zeros(3, 3, 3);
@@ -99,8 +98,6 @@ fn scc(
         let value = val1 - val2 + val3 + val4;
         scc[(ixyz - 1, ixyz - 1, ixyz - 1)] = value;
     }
-
-    println!("{:.8}", scc);
 
     if spectro.is_linear() {
         todo!() // goto 900, return?
