@@ -42,5 +42,5 @@ fn test_taupcm() {
      0.01018052, -0.00839612, -0.00138895;
     -0.00283749, -0.00138895, -0.00093412;
        ];
-    assert_abs_diff_eq!(got, want, epsilon = 1e-8);
+    assert_abs_diff_eq!(got, want, epsilon = 2e-7);
 }

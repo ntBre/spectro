@@ -45,6 +45,7 @@ fn scc(
     c: &Dmat,
     spectro: &Spectro,
 ) -> Tensor3 {
+    println!("{:.8}", tau);
     // some kind of tolerance for messing with certain values
     const TOL: f64 = 1e-4;
     let mut scc = Tensor3::zeros(3, 3, 3);

@@ -596,7 +596,6 @@ impl Spectro {
     }
 
     pub fn run(self) {
-        let axes = self.geom.principal_axes();
         let moments = self.geom.principal_moments();
         let rotcon: Vec<_> = moments.iter().map(|m| CONST / m).collect();
         let natom = self.natoms();
@@ -604,7 +603,7 @@ impl Spectro {
         // load the force constants, rotate them to the new axes, and convert
         // them to the proper units
         let fc2 = load_fc2("testfiles/fort.15", self.n3n);
-        let fc2 = self.rot2nd(fc2, axes);
+        let fc2 = self.rot2nd(fc2, self.axes);
         let fc2 = FACT2 * fc2;
 
         // form the secular equations and decompose them to get harmonic
@@ -653,13 +652,13 @@ impl Spectro {
 
         // start of cubic analysis
         let f3x = load_fc3("testfiles/fort.30", self.n3n);
-        let mut f3x = self.rot3rd(f3x, axes);
+        let mut f3x = self.rot3rd(f3x, self.axes);
         let f3qcm =
             force3(self.n3n, &mut f3x, &lx, self.nvib, &freq, self.i3vib);
 
         // start of quartic analysis
         let f4x = load_fc4("testfiles/fort.40", self.n3n);
-        let mut f4x = self.rot4th(f4x, axes);
+        let mut f4x = self.rot4th(f4x, self.axes);
         let f4qcm =
             force4(self.n3n, &mut f4x, &lx, self.nvib, &freq, self.i4vib);
 
