@@ -253,7 +253,7 @@ mod tests {
         let lx = s.make_lx(s.n3n, &sqm, &lxm);
         let (zmat, _biga, wila) = s.zeta(s.natom, s.nvib, &lxm, &w);
         let f3x = load_fc3("testfiles/fort.30", s.n3n);
-        let mut f3x = s.rot3rd(s.n3n, s.natom, f3x, s.axes);
+        let mut f3x = s.rot3rd(f3x, s.axes);
         let f3qcm = force3(s.n3n, &mut f3x, &lx, s.nvib, &freq, s.i3vib);
         let f4x = load_fc4("testfiles/fort.40", s.n3n);
         let mut f4x = s.rot4th(f4x, s.axes);

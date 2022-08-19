@@ -448,21 +448,15 @@ impl Spectro {
 
     /// rotate the cubic force constants in `f3x` to align with the principal
     /// axes in `eg` used to align the geometry
-    pub fn rot3rd(
-        &self,
-        n3n: usize,
-        natom: usize,
-        f3x: Tensor3,
-        eg: Mat3,
-    ) -> Tensor3 {
+    pub fn rot3rd(&self, f3x: Tensor3, eg: Mat3) -> Tensor3 {
         let (a, b, c) = f3x.shape();
         let mut ret = Tensor3::zeros(a, b, c);
         // TODO could try slice impl like in rot2nd, but it will be harder with
         // tensors
-        for i in 0..n3n {
-            for j in 0..natom {
+        for i in 0..self.n3n {
+            for j in 0..self.natom {
                 let ib = j * 3;
-                for k in 0..natom {
+                for k in 0..self.natom {
                     let ic = k * 3;
                     let mut a = Mat3::zeros();
                     for jj in 0..3 {
@@ -483,9 +477,9 @@ impl Spectro {
         // have to use the transpose to get the same indices as the fortran
         // version
         let eg = eg.transpose();
-        for j in 0..n3n {
-            for k in 0..n3n {
-                for i in 0..natom {
+        for j in 0..self.n3n {
+            for k in 0..self.n3n {
+                for i in 0..self.natom {
                     let ia = i * 3;
                     let mut val = [0.0; 3];
                     for ii in 0..3 {
@@ -659,7 +653,7 @@ impl Spectro {
 
         // start of cubic analysis
         let f3x = load_fc3("testfiles/fort.30", self.n3n);
-        let mut f3x = self.rot3rd(self.n3n, natom, f3x, axes);
+        let mut f3x = self.rot3rd(f3x, axes);
         let f3qcm =
             force3(self.n3n, &mut f3x, &lx, self.nvib, &freq, self.i3vib);
 
