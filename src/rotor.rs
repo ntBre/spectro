@@ -51,7 +51,6 @@ impl Rotor {
         i1mode: &[usize],
         freq: &Dvec,
         zmat: &Tensor3,
-        _rotcon: &[f64],
     ) -> Vec<Resonance> {
         // tolerances for resonance checking
         const CTOL: f64 = 200.0;
@@ -73,20 +72,8 @@ impl Rotor {
                         let diff = freq[i] - freq[j];
                         if diff.abs() <= CTOL {
                             for z in 0..3 {
-                                // this is written as 3 separate ifs in
-                                // fortran...
                                 if zmat[(i, j, z)] >= ZTOL {
                                     ret.push(Resonance::Coriolis { i, j });
-                                    // apparently unused, just for printing the
-                                    // estimated perturbation I think
-
-                                    // let xjmcor = (rotcon[0]
-                                    //     * zmat[(i, j, z)]
-                                    //     * (freq[i] + freq[j]))
-                                    //     .powi(2)
-                                    //     / diff
-                                    //     / freq[i]
-                                    //     / freq[j];
                                 }
                             }
                         }
