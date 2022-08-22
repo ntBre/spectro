@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use tensor::Tensor3;
 
-use crate::resonance::Resonance;
+use crate::resonance::Coriolis;
 use crate::Dvec;
 
 /// cutoff for determining if moments of inertia are equal for rotor
@@ -51,7 +51,7 @@ impl Rotor {
         i1mode: &[usize],
         freq: &Dvec,
         zmat: &Tensor3,
-    ) -> Vec<Resonance> {
+    ) -> Vec<Coriolis> {
         // tolerances for resonance checking
         const CTOL: f64 = 200.0;
         const ZTOL: f64 = 0.25;
@@ -73,7 +73,7 @@ impl Rotor {
                         if diff.abs() <= CTOL {
                             for z in 0..3 {
                                 if zmat[(i, j, z)] >= ZTOL {
-                                    ret.push(Resonance::Coriolis { i, j });
+                                    ret.push(Coriolis::new(i, j));
                                 }
                             }
                         }
