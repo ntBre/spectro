@@ -14,6 +14,9 @@ pub(crate) struct Sextic {
     pub(crate) phijk: f64,
     pub(crate) phikj: f64,
     pub(crate) phik: f64,
+    pub(crate) sphij: f64,
+    pub(crate) sphijk: f64,
+    pub(crate) sphik: f64,
 }
 
 #[allow(unused)]
@@ -128,10 +131,10 @@ impl Sextic {
             ret.phik = phi060 - 7.0 * phi420 / 3.0
                 + 28.0 * phi204
                 + 7.0 * ret.phijk / 3.0;
-            let sphij = phi402 + phi006;
-            let sphijk = phi222 + 4.0 * sigma * phi204 - 10.0 * phi006
+            ret.sphij = phi402 + phi006;
+            ret.sphijk = phi222 + 4.0 * sigma * phi204 - 10.0 * phi006
                 + 2.0 * (t220 - 2.0 * sigma * t202 - 4.0 * t004) * t004 / b002;
-            let sphik = phi042
+            ret.sphik = phi042
                 + 4.0 * sigma * phi024 / 3.0
                 + (32.0 * sigma * sigma / 3.0 + 9.0) * phi006
                 + 4.0
@@ -703,6 +706,9 @@ mod tests {
                 phijk: -2.968676109850574e-6,
                 phikj: -7.511855416181053e-6,
                 phik: 6.961216139007188e-5,
+                sphij: 2.280027748491844e-7,
+                sphijk: -5.840119329269477e-7,
+                sphik: 1.1285064065400101e-5,
             };
             assert_eq!(got, want);
         }

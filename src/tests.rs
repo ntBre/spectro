@@ -6,7 +6,7 @@ use symm::Molecule;
 use crate::Curvil::*;
 use crate::*;
 
-use na::{dmatrix, dvector, matrix};
+use na::{dmatrix, dvector, matrix, DVector};
 use nalgebra as na;
 
 #[test]
@@ -272,7 +272,32 @@ fn test_normfx() {
 #[test]
 fn test_run() {
     let spectro = Spectro::load("testfiles/h2o.in");
-    spectro.run();
+    let got = spectro.run();
+    let want = Output {
+        // corr one day
+        //       3753.2
+        //       3656.5
+        //       1598.5
+        harms: dvector![3943.7, 3833.7, 1650.9],
+        funds: vec![3753.2, 3656.5, 1598.5],
+        rots: vec![
+            Rot::new(vec![0, 0, 0], 27.65578, 14.50450, 9.26320),
+            Rot::new(vec![1, 0, 0], 26.49932, 14.40582, 9.12023),
+            Rot::new(vec![0, 1, 0], 26.96677, 14.28519, 9.08617),
+            Rot::new(vec![0, 0, 1], 30.25411, 14.66636, 9.11681),
+        ],
+    };
+    assert_abs_diff_eq!(got.harms, want.harms, epsilon = 0.1);
+    assert_abs_diff_eq!(
+        Dvec::from(got.funds),
+        Dvec::from(want.funds),
+        epsilon = 0.1
+    );
+    assert_abs_diff_eq!(
+        DVector::from(got.rots),
+        DVector::from(want.rots),
+        epsilon = 3e-5
+    );
 }
 
 #[test]

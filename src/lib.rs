@@ -12,9 +12,11 @@ mod dummy;
 use dummy::{Dummy, DummyVal};
 
 mod utils;
+use rot::Rot;
 use rotor::{Rotor, ROTOR_EPS};
 use tensor::{Tensor3, Tensor4};
 use utils::*;
+mod rot;
 
 mod rotor;
 
@@ -598,7 +600,97 @@ impl Spectro {
         rotnst
     }
 
-    pub fn run(self) {
+    /// rotational energy levels of an asymmmetric top
+    #[allow(unused)]
+    fn rota(
+        &self,
+        rotnst: &Dmat,
+        i1sts: &Vec<Vec<usize>>,
+        rotcon: &[f64],
+        quartic: &Quartic,
+        sextic: &Sextic,
+    ) -> Vec<Rot> {
+        let Quartic {
+            sigma: _,
+            rkappa: _,
+            delj,
+            delk,
+            deljk,
+            sdelk,
+            sdelj,
+            bxa: b4a,
+            bya: b5a,
+            bza: b6a,
+            djn: _,
+            djkn: _,
+            dkn: _,
+            sdjn: _,
+            r5: _,
+            r6: _,
+            dj: _,
+            djk: _,
+            dk: _,
+            sd1: _,
+            sd2: _,
+            bxs: b1s,
+            bys: b2s,
+            bzs: b3s,
+            djw: _,
+            djkw: _,
+            dkw: _,
+        } = quartic;
+        let Sextic {
+            phij,
+            phijk,
+            phikj,
+            phik,
+            sphij,
+            sphijk,
+            sphik,
+        } = sextic;
+
+        // I think this is always 3, but that doesn't really make sense. set
+        // to 0 in mains, then passed to readw which never touches it and
+        // then set to 3 if it's still 0. there might also be a better way
+        // to set these than maxk. check what they actually loop over
+        let maxj = 3;
+        let maxk = 2 * maxj + 1;
+        // NOTE: pretty sure this is always the case
+        let irep = 0;
+        let (ic, _) = princ_cart(irep);
+        // number of states here is just the ground state + fundamentals,
+        // singly-vibrationally excited states, but changes with resonances
+        // TODO take this from actual i1sts when I have that. currently i1sts is
+        // all states, but I want to partition it to the singly-degenerate
+        // states.
+        let nstop = 4;
+        let nderiv = self.header[7];
+        // this is a 600 line loop fml
+        let mut ret = Vec::new();
+        for nst in 0..nstop {
+            // this is inside a conditional in the fortran code, but it
+            // would be really annoying to return these from inside it here
+            assert!(nderiv > 2);
+            let vib1 = rotnst[(nst, 0)] - rotcon[(0)];
+            let vib2 = rotnst[(nst, 1)] - rotcon[(1)];
+            let vib3 = rotnst[(nst, 2)] - rotcon[(2)];
+            let mut vibr = [0.0; 3];
+            vibr[ic[0]] = vib1;
+            vibr[ic[1]] = vib2;
+            vibr[ic[2]] = vib3;
+            let bxa = b4a + vibr[0];
+            let bya = b5a + vibr[1];
+            let bza = b6a + vibr[2];
+            ret.push(Rot::new(i1sts[nst].clone(), bza, bxa, bya));
+            // TODO return these S ones too
+            let bxs = b1s + vibr[0];
+            let bys = b2s + vibr[1];
+            let bzs = b3s + vibr[2];
+        }
+        ret
+    }
+
+    pub fn run(self) -> Output {
         let moments = self.geom.principal_moments();
         let rotcon: Vec<_> = moments.iter().map(|m| CONST / m).collect();
         let natom = self.natoms();
@@ -623,35 +715,7 @@ impl Spectro {
         // not used yet
         let (zmat, _biga, wila) = self.zeta(natom, self.nvib, &lxm, &w);
 
-        let Quartic {
-            sigma: _,
-            rkappa: _,
-            delj,
-            delk,
-            deljk,
-            sdelk: _,
-            sdelj: _,
-            bxa: b4a,
-            bya: b5a,
-            bza: b6a,
-            djn: _,
-            djkn: _,
-            dkn: _,
-            sdjn: _,
-            r5: _,
-            r6: _,
-            dj: _,
-            djk: _,
-            dk: _,
-            sd1: _,
-            sd2: _,
-            bxs: b1s,
-            bys: b2s,
-            bzs: b3s,
-            djw: _,
-            djkw: _,
-            dkw: _,
-        } = Quartic::new(&self, self.nvib, &freq, &wila, &rotcon);
+        let quartic = Quartic::new(&self, self.nvib, &freq, &wila, &rotcon);
 
         // start of cubic analysis
         let f3x = load_fc3("testfiles/fort.30", self.n3n);
@@ -668,6 +732,8 @@ impl Spectro {
         // TODO RESTST
 
         // TODO get this from RESTST
+        // NOTE: right now these are *not* i1sts, they are all of the states.
+        // i1sts is really only the first four
         let i1sts = vec![
             vec![0, 0, 0],
             vec![1, 0, 0],
@@ -686,12 +752,7 @@ impl Spectro {
 
         // end ALPHAA
 
-        let Sextic {
-            phij,
-            phijk,
-            phikj,
-            phik,
-        } = Sextic::new(&self, &wila, &zmat, &freq, &f3qcm, &rotcon);
+        let sextic = Sextic::new(&self, &wila, &zmat, &freq, &f3qcm, &rotcon);
 
         let (xcnst, e0) =
             xcalc(self.nvib, &f4qcm, &freq, &f3qcm, &zmat, &rotcon);
@@ -705,76 +766,24 @@ impl Spectro {
 
         let _reng = enrgy(&fund, &freq, &xcnst, e0, &i1sts, &i1mode);
 
-        // begin ROTA
-        #[allow(unused)]
-        {
-            // cm-1 to mhz conversion factor
-            // const CONST2: f64 = 2.99792458e04;
+        let rots = self.rota(&rotnst, &i1sts, &rotcon, &quartic, &sextic);
 
-            // I think this is always 3, but that doesn't really make sense. set
-            // to 0 in mains, then passed to readw which never touches it and
-            // then set to 3 if it's still 0. there might also be a better way
-            // to set these than maxk. check what they actually loop over
-            let maxj = 3;
-            let maxk = 2 * maxj + 1;
-            let mut erot = Dmat::zeros(maxk, maxk);
-            let mut bcont = Dmat::zeros(maxk, maxk);
-            let mut qcont = Dmat::zeros(maxk, maxk);
-            let mut scont = Dmat::zeros(maxk, maxk);
-
-            // NOTE: pretty sure this is always the case
-            let irep = 0;
-            let ic = [IPTOC[(0, irep)], IPTOC[(1, irep)], IPTOC[(2, irep)]];
-
-            // number of states here is just the ground state + fundamentals,
-            // singly-vibrationally excited states, but changes with resonances
-
-            // TODO calculate this from i1sts
-            let nstop = 4;
-            let nderiv = self.header[7];
-            // this is a 600 line loop fml
-            for nst in 0..nstop {
-                // this is inside a conditional in the fortran code, but it
-                // would be really annoying to return these from inside it here
-                assert!(nderiv > 2);
-                let vib1 = rotnst[(nst, 0)] - rotcon[(0)];
-                let vib2 = rotnst[(nst, 1)] - rotcon[(1)];
-                let vib3 = rotnst[(nst, 2)] - rotcon[(2)];
-                let mut vibr = [0.0; 3];
-                vibr[ic[0]] = vib1;
-                vibr[ic[1]] = vib2;
-                vibr[ic[2]] = vib3;
-                let bxa = b4a + vibr[0];
-                let bya = b5a + vibr[1];
-                let bza = b6a + vibr[2];
-                let bxs = b1s + vibr[0];
-                let bys = b2s + vibr[1];
-                let bzs = b3s + vibr[2];
-
-                for jj in 1..maxj + 1 {
-                    let j = jj - 1;
-                    for k in -(j as isize)..j as isize {
-                        // another nderiv conditional here, but I already
-                        // asserted it above. you just won't call rota if the
-                        // derivative is lower
-
-                        let vala1 = 0.5 * (bxa + bya) * (j * (j + 1)) as f64;
-                        let vala2 = (bza - 0.5 * (bxa + bya)) * (k * k) as f64;
-                        let vala3 = delj * ((j * j) * ((j + 1).pow(2))) as f64;
-                        let vala4 =
-                            deljk * (j * (j + 1) * (k * k) as usize) as f64;
-                        let vala5 = delk * (k.pow(4)) as f64;
-                        let vala6 =
-                            phij * ((j.pow(3)) * ((j + 1).pow(3))) as f64;
-                        let vala7 = phijk
-                            * ((j * j) * ((j + 1).pow(2)) * (k * k) as usize)
-                                as f64;
-                        let vala8 =
-                            phikj * (j * (j + 1) * (k.pow(4)) as usize) as f64;
-                        let vala9 = phik * (k.pow(6)) as f64;
-                    }
-                }
-            }
+        Output {
+            harms: freq,
+            funds: fund,
+            rots,
         }
     }
+}
+
+/// contains all of the output data from running Spectro
+pub struct Output {
+    /// harmonic frequencies
+    pub harms: Dvec,
+
+    /// non-resonance-corrected anharmonic frequencies
+    pub funds: Vec<f64>,
+
+    /// vibrationally averaged rotational constants
+    pub rots: Vec<Rot>,
 }

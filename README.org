@@ -38,7 +38,7 @@
   | engval.f   |   113 |        |                                                                 |
   | enrgy.f    |   561 | x      | done until resonances                                           |
   | f02aaf.f   |    12 |        |                                                                 |
-  | f02abf.f   |    15 |        |                                                                 |
+  | f02abf.f   |    15 | x      | wrapper for rs                                                  |
   | f02agf.f   |    66 |        |                                                                 |
   | f04aef.f   |    16 |        |                                                                 |
   | f04arf.f   |    12 |        |                                                                 |
@@ -108,7 +108,7 @@
   | rot2nd.f   |    43 | x      | rotate fc2 to new axes                                          |
   | rot3rd.f   |    62 | x      | rotate fc3 to new axes                                          |
   | rot4th.f   |    69 | x      | rotate fc4 to new axes                                          |
-  | rota.f     |   711 |        | rotational energy levels of asymmetric tops                     |
+  | rota.f     |   711 | x      | rotational energy levels of asymmetric tops, done I think       |
   | rotater.f  |   112 |        |                                                                 |
   | rotdp1.f   |    28 |        |                                                                 |
   | rotdp2.f   |    33 |        |                                                                 |
@@ -117,7 +117,7 @@
   | rotrn2.f   |   198 | x      | project out rot/trans from carts, skipping since we never use   |
   | rotrn3.f   |    87 | x      | project out rot/trans for cubics, skipping since we never use   |
   | rots.f     |   514 |        | rotational energy levels of symmetric tops                      |
-  | rs.f       |    60 |        |                                                                 |
+  | rs.f       |    60 | x      | eigenvalues and eigenvectors of real symmetric matrix           |
   | rsfrm1.f   |   154 |        |                                                                 |
   | rsfrm2.f   |   140 |        |                                                                 |
   | rsp.f      |    83 | x      | eigen decomposition                                             |
@@ -133,13 +133,13 @@
   | thrj.f     |    62 |        |                                                                 |
   | tmtrx.f    |   150 |        |                                                                 |
   | tonorm.f   |   846 |        |                                                                 |
-  | tql2.f     |   177 |        |                                                                 |
-  | tqlrat.f   |   136 |        |                                                                 |
+  | tql2.f     |   177 | x      | eigenvalues of a sym. tridiag. matrix + eigenvectors            |
+  | tqlrat.f   |   136 | x      | eigenvalues of a sym. tridiag. matrix                           |
   | trans33.f  |    88 |        |                                                                 |
   | trans44.f  |   110 |        |                                                                 |
   | trbak3.f   |    84 |        |                                                                 |
-  | tred1.f    |   119 |        |                                                                 |
-  | tred2.f    |   143 |        |                                                                 |
+  | tred1.f    |   119 | x      | real sym. matrix to tridiagonal form                            |
+  | tred2.f    |   143 | x      | real sym. matrix to tridiagonal form + eigenvectors             |
   | tred3.f    |   120 |        |                                                                 |
   | triple.f   |    14 |        |                                                                 |
   | trnsfm.f   |   662 |        |                                                                 |
@@ -174,7 +174,7 @@
   #+end_src
 
   #+RESULTS:
-  : finished 8561/40693 = 21.0%
+  : finished 9922/40693 = 24.4%
 * Extra code
 ** first sum rule test from zeta.f
    #+begin_src rust
@@ -198,4 +198,115 @@
 	     }
 	 }
      }
+   #+end_src
+** crazy stuff in rota.f that I don't think we use
+   #+begin_src rust
+     for jj in 1..=maxj + 1 {
+	 let j = jj - 1;
+	 let mut erot = Dmat::zeros(maxk, maxk);
+	 let mut bcont = Dmat::zeros(maxk, maxk);
+	 let mut qcont = Dmat::zeros(maxk, maxk);
+	 let mut scont = Dmat::zeros(maxk, maxk);
+	 // 501 loop
+	 for k in -(j as isize)..=j as isize {
+	     // another nderiv conditional here, but I already
+	     // asserted it above. you just won't call rota if the
+	     // derivative is lower
+
+	     let vala1 = 0.5 * (bxa + bya) * (j * (j + 1)) as f64;
+	     let vala2 = (bza - 0.5 * (bxa + bya)) * (k * k) as f64;
+	     let vala3 = delj * ((j * j) * ((j + 1).pow(2))) as f64;
+	     let vala4 = deljk * (j * (j + 1) * (k * k) as usize) as f64;
+	     let vala5 = delk * (k.pow(4)) as f64;
+	     let vala6 = phij * ((j.pow(3)) * ((j + 1).pow(3))) as f64;
+	     let vala7 = phijk
+		 ,* ((j * j) * ((j + 1).pow(2)) * (k * k) as usize)
+		     as f64;
+	     let vala8 =
+		 phikj * (j * (j + 1) * (k.pow(4)) as usize) as f64;
+	     let vala9 = phik * (k.pow(6)) as f64;
+
+	     // suspicious of this +1 but it doesn't crash
+	     let kj1 = (k + j as isize) as usize;
+	     bcont[(kj1, kj1)] = vala1 + vala2;
+	     qcont[(kj1, kj1)] = vala3 + vala4 + vala5;
+	     scont[(kj1, kj1)] = vala6 + vala7 + vala8 + vala9;
+	     erot[(kj1, kj1)] = bcont[(kj1, kj1)] - qcont[(kj1, kj1)]
+		 + scont[(kj1, kj1)];
+
+	     // add some off-diagonal matrix elements
+	     if k + j as isize + 3 <= 2 * j as isize + 1 {
+		 // TODO another nderiv assert
+		 let valb1 = 0.25e0 * (bxa - bya);
+		 let valb2 = sdelj * (j * (j + 1)) as f64;
+		 let valb3 =
+		     0.5e0 * sdelk * (((k + 2).pow(2)) + (k * k)) as f64;
+		 let valb4 = sphij * ((j * j) * ((j + 1).pow(2))) as f64;
+		 let valb5 = 0.5e0
+		     ,* sphijk
+		     ,* ((j * (j + 1)) as isize
+			 ,* (((k + 2).pow(2)) + (k * k)))
+			 as f64;
+		 let valb6 =
+		     0.5e0 * sphik * ((k + 2).pow(4) + k.pow(4)) as f64;
+
+		 let tot1 = valb1;
+		 let tot2 = valb2 + valb3;
+		 let tot3 = valb4 + valb5 + valb6;
+		 let valb7 =
+		     ((j * (j + 1)) as isize - k * (k + 1)) as f64;
+		 let valb8 =
+		     ((j * (j + 1)) as isize - (k + 1) * (k + 2)) as f64;
+		 let tot4 = valb7 * valb8;
+		 let tot5 = tot4.sqrt();
+		 let kj1 = (k + j as isize) as usize;
+		 let kj3 = (k + j as isize + 2) as usize;
+		 bcont[(kj1, kj3)] = tot1 * tot5;
+		 qcont[(kj1, kj3)] = tot2 * tot5;
+		 scont[(kj1, kj3)] = tot3 * tot5;
+		 erot[(kj1, kj3)] = bcont[(kj1, kj3)]
+		     - qcont[(kj1, kj3)]
+		     + scont[(kj1, kj3)];
+	     }
+	     if k + j as isize - 1 >= 1 {
+		 // TODO nderiv again
+		 let valc3 =
+		     0.5 * sdelk * ((k - 2).pow(2) + k.pow(2)) as f64;
+		 let valc5 = 0.5
+		     ,* sphijk
+		     ,* ((j * (j + 1)) as isize
+			 ,* ((k - 2).pow(2) * k.pow(2)))
+			 as f64;
+		 let valc6 =
+		     0.5 * sphik * ((k - 2).pow(4) + k.pow(4)) as f64;
+		 // NOTE assuming these are the same as above
+		 let valb1 = 0.25e0 * (bxa - bya);
+		 let valb2 = sdelj * (j * (j + 1)) as f64;
+		 let valb3 =
+		     0.5e0 * sdelk * (((k + 2).pow(2)) + (k * k)) as f64;
+		 let valb4 = sphij * ((j * j) * ((j + 1).pow(2))) as f64;
+		 let tot1 = valb1;
+		 let tot2 = valb2 + valc3;
+		 let tot3 = valb4 + valc5 + valc6;
+		 let valc7 =
+		     ((j * (j + 1)) as isize - k * (k - 1)) as f64;
+		 let valc8 =
+		     ((j * (j + 1)) as isize - (k - 1) * (k - 2)) as f64;
+		 let tot4 = valc7 * valc8;
+		 let tot5 = tot4.sqrt();
+		 let kj1 = (k + j as isize) as usize;
+		 let kjm1 = (k + j as isize - 2) as usize;
+		 bcont[(kj1, kjm1)] = tot1 * tot5;
+		 qcont[(kj1, kjm1)] = tot2 * tot5;
+		 scont[(kj1, kjm1)] = tot3 * tot5;
+		 erot[(kj1, kjm1)] = bcont[(kj1, kjm1)]
+		     - qcont[(kj1, kjm1)]
+		     + scont[(kj1, kjm1)];
+	     }
+	 }
+	 // println!("{:.8}", erot);
+	 let (eigval, eigvec) = symm_eigen_decomp(erot);
+	 // println!("{nst},{jj}\n{:.6}", eigval);
+     }
+
    #+end_src
