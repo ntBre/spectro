@@ -1,167 +1,167 @@
 # -*- org-confirm-babel-evaluate: nil; -*-
 * Line survey
   #+name: lines
-  | File       | Lines | Status | Description                                                     |
-  |------------+-------+--------+-----------------------------------------------------------------|
-  | adegnl.f   |   101 |        |                                                                 |
-  | alphaa.f   |   347 | x      | rotation-vibration interaction constants for asymmetric tops    |
-  | alphas.f   |   770 |        | rotation-vibration interaction constants for spherical tops     |
-  | ammvib.f   |   133 |        |                                                                 |
-  | anhout.f   |    29 | x      | print anharmonic constants                                      |
-  | anhprt.f   |    32 | x      | print anharmonic constants differently                          |
-  | atunit.f   |   629 |        |                                                                 |
-  | balanc.f   |   171 |        |                                                                 |
-  | balbak.f   |    75 |        |                                                                 |
-  | bdegnl.f   |   256 |        |                                                                 |
-  | bmtrx.f    |   821 |        |                                                                 |
-  | buildz.f   |   155 |        |                                                                 |
-  | cmxma.f    |    72 |        |                                                                 |
-  | corcup.f   |  1234 |        |                                                                 |
-  | curveq.f   |   205 |        |                                                                 |
-  | czgen.f    |    13 |        |                                                                 |
-  | darla.f    |    92 |        |                                                                 |
-  | darls.f    |   162 |        |                                                                 |
-  | dcopy.f    |    12 |        |                                                                 |
-  | ddot.f     |    40 |        |                                                                 |
-  | decide.f   |   316 |        |                                                                 |
-  | define.f   |   367 | x      | skip without curvils                                            |
-  | degnl.f    |   394 |        |                                                                 |
-  | denom.f    |    30 |        |                                                                 |
-  | dipolq.f   |   450 |        |                                                                 |
-  | diptrn.f   |   342 |        |                                                                 |
-  | dist.f     |   811 | x      | com, moi alignment                                              |
-  | dlstge.f   |    13 |        |                                                                 |
-  | dlstlt.f   |    13 |        |                                                                 |
-  | dp2nrm.f   |   411 |        |                                                                 |
-  | elmhes.f   |    99 |        |                                                                 |
-  | eltran.f   |    78 |        |                                                                 |
-  | engval.f   |   113 |        |                                                                 |
-  | enrgy.f    |   561 | x      | done until resonances                                           |
-  | f02aaf.f   |    12 |        |                                                                 |
-  | f02abf.f   |    15 | x      | wrapper for rs                                                  |
-  | f02agf.f   |    66 |        |                                                                 |
-  | f04aef.f   |    16 |        |                                                                 |
-  | f04arf.f   |    12 |        |                                                                 |
-  | f04atf.f   |    19 |        |                                                                 |
-  | f05aaf.f   |    53 |        |                                                                 |
-  | find3.f    |    15 | x      | not needed with sorting in find3r                               |
-  | find3r.f   |    11 | x      | cubic index                                                     |
-  | find4.f    |    19 | x      | not needed with sorting in find4t                               |
-  | find4t.f   |    12 | x      | quartic index                                                   |
-  | force3.f   |   288 | x      | finished the part we use                                        |
-  | force4.f   |   361 | x      | finished the part we use                                        |
-  | frqout.f   |    31 |        |                                                                 |
-  | gdarla.f   |    63 |        |                                                                 |
-  | gen1.f     |    47 |        |                                                                 |
-  | gen2.f     |   224 |        |                                                                 |
-  | gen4.f     |    14 |        |                                                                 |
-  | genrsa.f   |   258 |        |                                                                 |
-  | gfslv.f    |   561 |        |                                                                 |
-  | hqr2.f     |   416 |        |                                                                 |
-  | hqr.f      |   223 |        |                                                                 |
-  | hraman.f   |   453 |        |                                                                 |
-  | iadtwp.f   |     4 |        |                                                                 |
-  | indexx.f   |    51 | x      | heapsort                                                        |
-  | inert.f    |   249 |        | inertia defect                                                  |
-  | inidnm.f   |    37 |        |                                                                 |
-  | inocda.f   |   206 |        |                                                                 |
-  | inten.f    |  1347 |        |                                                                 |
-  | intenr.f   |   879 |        |                                                                 |
-  | iterat.f   |   621 |        |                                                                 |
-  | izero.f    |    10 |        |                                                                 |
-  | jmfudg1.f  |    24 | x      | spectro version fudge, just pick a format                       |
-  | locate.f   |    35 | x      | locate tokens in input file                                     |
-  | lsqrs.f    |   358 |        |                                                                 |
-  | ltensr.f   |  2450 | x      | skip without curvils                                            |
-  | lu.f       |    46 |        |                                                                 |
-  | lus.f      |    34 |        |                                                                 |
-  | m01ajf.f   |    19 | x      | indexx/heapsort wrapper                                         |
-  | m01akf.f   |    32 |        |                                                                 |
-  | mains.f    |  2416 |        | main driver of program                                          |
-  | matout.f   |    30 | x      | print a matrix                                                  |
-  | mtxmpy.f   |    56 | x      | various matrix multiply routines                                |
-  | multbf2.f  |   224 |        |                                                                 |
-  | multbf.f   |    50 |        |                                                                 |
-  | mxma.f     |    70 | x      | matrix multiply using sparsity of one matrix                    |
-  | mxmb.f     |    70 | x      | matrix multiply                                                 |
-  | normfx.f   |   183 | x      | done minus unit stuff that doesn't seem used                    |
-  | orthy.f    |    45 |        |                                                                 |
-  | parity.f   |     6 |        |                                                                 |
-  | pbinom.f   |    21 |        |                                                                 |
-  | plsym.f    |   171 |        |                                                                 |
-  | polar.f    |   410 |        |                                                                 |
-  | print.f    |    32 |        |                                                                 |
-  | printout.f |   178 |        |                                                                 |
-  | projec.f   |    41 |        |                                                                 |
-  | prout.f    |    65 |        |                                                                 |
-  | pxcals.f   |   861 |        |                                                                 |
-  | qcent.f    |   517 | x      | quartic distortion coeffs, code done but determine return       |
-  | ramanq.f   |  2072 |        |                                                                 |
-  | readw.f    |   207 |        |                                                                 |
-  | res2a.f    |   284 |        |                                                                 |
-  | res3a.f    |   183 |        |                                                                 |
-  | resona.f   |   167 |        |                                                                 |
-  | restst.f   |  1535 |        |                                                                 |
-  | rfile.f    |    13 |        |                                                                 |
-  | rg.f       |    73 |        |                                                                 |
-  | rot1st.f   |    29 |        |                                                                 |
-  | rot2nd.f   |    43 | x      | rotate fc2 to new axes                                          |
-  | rot3rd.f   |    62 | x      | rotate fc3 to new axes                                          |
-  | rot4th.f   |    69 | x      | rotate fc4 to new axes                                          |
-  | rota.f     |   711 | x      | rotational energy levels of asymmetric tops, done I think       |
-  | rotater.f  |   112 |        |                                                                 |
-  | rotdp1.f   |    28 |        |                                                                 |
-  | rotdp2.f   |    33 |        |                                                                 |
-  | rotdp3.f   |    34 |        |                                                                 |
-  | rotnew.f   |    44 |        |                                                                 |
-  | rotrn2.f   |   198 | x      | project out rot/trans from carts, skipping since we never use   |
-  | rotrn3.f   |    87 | x      | project out rot/trans for cubics, skipping since we never use   |
-  | rots.f     |   514 |        | rotational energy levels of symmetric tops                      |
-  | rs.f       |    60 | x      | eigenvalues and eigenvectors of real symmetric matrix           |
-  | rsfrm1.f   |   154 |        |                                                                 |
-  | rsfrm2.f   |   140 |        |                                                                 |
-  | rsp.f      |    83 | x      | eigen decomposition                                             |
-  | sextic.f   |   743 |        | sextic distortion constants                                     |
-  | smxpy.f    |    25 |        |                                                                 |
-  | spectro.f  |    60 | x      | entry point, just calls mains                                   |
-  | sqhamp.f   |    78 | x      | skip without curvils                                            |
-  | square.f   |    20 |        |                                                                 |
-  | squr.f     |    20 |        |                                                                 |
-  | subres.f   |    28 |        |                                                                 |
-  | sxmpy.f    |    26 |        |                                                                 |
-  | threej.f   |    28 |        |                                                                 |
-  | thrj.f     |    62 |        |                                                                 |
-  | tmtrx.f    |   150 |        |                                                                 |
-  | tonorm.f   |   846 |        |                                                                 |
-  | tql2.f     |   177 | x      | eigenvalues of a sym. tridiag. matrix + eigenvectors            |
-  | tqlrat.f   |   136 | x      | eigenvalues of a sym. tridiag. matrix                           |
-  | trans33.f  |    88 |        |                                                                 |
-  | trans44.f  |   110 |        |                                                                 |
-  | trbak3.f   |    84 |        |                                                                 |
-  | tred1.f    |   119 | x      | real sym. matrix to tridiagonal form                            |
-  | tred2.f    |   143 | x      | real sym. matrix to tridiagonal form + eigenvectors             |
-  | tred3.f    |   120 |        |                                                                 |
-  | triple.f   |    14 |        |                                                                 |
-  | trnsfm.f   |   662 |        |                                                                 |
-  | umatrx.f   |   255 | x      | skip without curvils                                            |
-  | vcross.f   |    13 | x      | vector cross product                                            |
-  | vecsum.f   |     9 | x      | vector dot product                                              |
-  | vecz.f     |    16 |        |                                                                 |
-  | vibavg.f   |   303 |        |                                                                 |
-  | vibfx.f    |   256 | x      | done minus degmode alignment for symm tops and linear molecules |
-  | vprodz.f   |     9 |        |                                                                 |
-  | w0cal.f    |   106 |        |                                                                 |
-  | wcals.f    |   427 |        |                                                                 |
-  | wpadti.f   |     4 |        |                                                                 |
-  | wreadw.f   |    34 |        |                                                                 |
-  | xcalc.f    |   404 | x      | done until resonances                                           |
-  | xcals.f    |   984 |        |                                                                 |
-  | xtcalc.f   |   509 |        |                                                                 |
-  | xtcals.f   |  1635 |        |                                                                 |
-  | zero.f     |    10 | x      | zero a vector                                                   |
-  | zeta.f     |   576 | x      | done but skipped sum rules checks                               |
-  | zgen.f     |    14 |        |                                                                 |
-  | zmat.f     |    71 |        |                                                                 |
+  | File       | Lines | Status | Description                                                     | Reason   |
+  |------------+-------+--------+-----------------------------------------------------------------+----------|
+  | adegnl.f   |   101 |        |                                                                 |          |
+  | alphaa.f   |   347 | x      | rotation-vibration interaction constants for asymmetric tops    | coded    |
+  | alphas.f   |   770 |        | rotation-vibration interaction constants for spherical tops     |          |
+  | ammvib.f   |   133 |        |                                                                 |          |
+  | anhout.f   |    29 | x      | print anharmonic constants                                      | noneed   |
+  | anhprt.f   |    32 | x      | print anharmonic constants differently                          | noneed   |
+  | atunit.f   |   629 | x      | atomic unit output                                              | unused   |
+  | balanc.f   |   171 |        |                                                                 |          |
+  | balbak.f   |    75 |        |                                                                 |          |
+  | bdegnl.f   |   256 |        |                                                                 |          |
+  | bmtrx.f    |   821 |        |                                                                 |          |
+  | buildz.f   |   155 |        |                                                                 |          |
+  | cmxma.f    |    72 |        |                                                                 |          |
+  | corcup.f   |  1234 |        |                                                                 |          |
+  | curveq.f   |   205 |        |                                                                 |          |
+  | czgen.f    |    13 |        |                                                                 |          |
+  | darla.f    |    92 |        |                                                                 |          |
+  | darls.f    |   162 |        |                                                                 |          |
+  | dcopy.f    |    12 |        |                                                                 |          |
+  | ddot.f     |    40 |        |                                                                 |          |
+  | decide.f   |   316 |        |                                                                 |          |
+  | define.f   |   367 | x      | skip without curvils                                            | nocurvil |
+  | degnl.f    |   394 |        |                                                                 |          |
+  | denom.f    |    30 |        |                                                                 |          |
+  | dipolq.f   |   450 | x      | cartesian -> normal dipole derivatives                          | unused   |
+  | diptrn.f   |   342 | x      | normal -> internal dipole derivatives                           | unused   |
+  | dist.f     |   811 | x      | com, moi alignment                                              | coded    |
+  | dlstge.f   |    13 |        |                                                                 |          |
+  | dlstlt.f   |    13 |        |                                                                 |          |
+  | dp2nrm.f   |   411 |        |                                                                 |          |
+  | elmhes.f   |    99 |        |                                                                 |          |
+  | eltran.f   |    78 |        |                                                                 |          |
+  | engval.f   |   113 |        |                                                                 |          |
+  | enrgy.f    |   561 | x      | done until resonances                                           |          |
+  | f02aaf.f   |    12 |        |                                                                 |          |
+  | f02abf.f   |    15 | x      | wrapper for rs                                                  |          |
+  | f02agf.f   |    66 |        |                                                                 |          |
+  | f04aef.f   |    16 |        |                                                                 |          |
+  | f04arf.f   |    12 |        |                                                                 |          |
+  | f04atf.f   |    19 |        |                                                                 |          |
+  | f05aaf.f   |    53 |        |                                                                 |          |
+  | find3.f    |    15 | x      | not needed with sorting in find3r                               |          |
+  | find3r.f   |    11 | x      | cubic index                                                     |          |
+  | find4.f    |    19 | x      | not needed with sorting in find4t                               |          |
+  | find4t.f   |    12 | x      | quartic index                                                   |          |
+  | force3.f   |   288 | x      | finished the part we use                                        |          |
+  | force4.f   |   361 | x      | finished the part we use                                        |          |
+  | frqout.f   |    31 |        |                                                                 |          |
+  | gdarla.f   |    63 |        |                                                                 |          |
+  | gen1.f     |    47 |        |                                                                 |          |
+  | gen2.f     |   224 |        |                                                                 |          |
+  | gen4.f     |    14 |        |                                                                 |          |
+  | genrsa.f   |   258 |        |                                                                 |          |
+  | gfslv.f    |   561 |        |                                                                 |          |
+  | hqr2.f     |   416 |        |                                                                 |          |
+  | hqr.f      |   223 |        |                                                                 |          |
+  | hraman.f   |   453 | x      | hyper raman fundamental intensities                             | unused   |
+  | iadtwp.f   |     4 |        |                                                                 |          |
+  | indexx.f   |    51 | x      | heapsort                                                        |          |
+  | inert.f    |   249 |        | inertia defect                                                  |          |
+  | inidnm.f   |    37 |        |                                                                 |          |
+  | inocda.f   |   206 |        |                                                                 |          |
+  | inten.f    |  1347 | x      | calculate intensities                                           | unused   |
+  | intenr.f   |   879 |        |                                                                 |          |
+  | iterat.f   |   621 | x      | normal coordinate analysis for cartesian coordinates            | unused   |
+  | izero.f    |    10 |        |                                                                 |          |
+  | jmfudg1.f  |    24 | x      | spectro version fudge, just pick a format                       |          |
+  | locate.f   |    35 | x      | locate tokens in input file                                     |          |
+  | lsqrs.f    |   358 | x      | least squares fit of Xs to experiment                           | unused   |
+  | ltensr.f   |  2450 | x      | skip without curvils                                            |          |
+  | lu.f       |    46 |        |                                                                 |          |
+  | lus.f      |    34 |        |                                                                 |          |
+  | m01ajf.f   |    19 | x      | indexx/heapsort wrapper                                         |          |
+  | m01akf.f   |    32 |        |                                                                 |          |
+  | mains.f    |  2416 |        | main driver of program                                          |          |
+  | matout.f   |    30 | x      | print a matrix                                                  |          |
+  | mtxmpy.f   |    56 | x      | various matrix multiply routines                                |          |
+  | multbf2.f  |   224 |        |                                                                 |          |
+  | multbf.f   |    50 |        |                                                                 |          |
+  | mxma.f     |    70 | x      | matrix multiply using sparsity of one matrix                    |          |
+  | mxmb.f     |    70 | x      | matrix multiply                                                 |          |
+  | normfx.f   |   183 | x      | done minus unit stuff that doesn't seem used                    |          |
+  | orthy.f    |    45 |        |                                                                 |          |
+  | parity.f   |     6 |        |                                                                 |          |
+  | pbinom.f   |    21 |        |                                                                 |          |
+  | plsym.f    |   171 |        |                                                                 |          |
+  | polar.f    |   410 | x      | vibrational contribution to alpha and beta                      | unused   |
+  | print.f    |    32 |        |                                                                 |          |
+  | printout.f |   178 |        |                                                                 |          |
+  | projec.f   |    41 |        |                                                                 |          |
+  | prout.f    |    65 |        |                                                                 |          |
+  | pxcals.f   |   861 |        |                                                                 |          |
+  | qcent.f    |   517 | x      | quartic distortion coeffs, code done but determine return       |          |
+  | ramanq.f   |  2072 | x      | some kind of raman spectra I guess                              | unused   |
+  | readw.f    |   207 |        |                                                                 |          |
+  | res2a.f    |   284 |        |                                                                 |          |
+  | res3a.f    |   183 |        |                                                                 |          |
+  | resona.f   |   167 |        |                                                                 |          |
+  | restst.f   |  1535 |        |                                                                 |          |
+  | rfile.f    |    13 |        |                                                                 |          |
+  | rg.f       |    73 |        |                                                                 |          |
+  | rot1st.f   |    29 |        |                                                                 |          |
+  | rot2nd.f   |    43 | x      | rotate fc2 to new axes                                          |          |
+  | rot3rd.f   |    62 | x      | rotate fc3 to new axes                                          |          |
+  | rot4th.f   |    69 | x      | rotate fc4 to new axes                                          |          |
+  | rota.f     |   711 | x      | rotational energy levels of asymmetric tops, done I think       |          |
+  | rotater.f  |   112 |        |                                                                 |          |
+  | rotdp1.f   |    28 |        |                                                                 |          |
+  | rotdp2.f   |    33 |        |                                                                 |          |
+  | rotdp3.f   |    34 |        |                                                                 |          |
+  | rotnew.f   |    44 |        |                                                                 |          |
+  | rotrn2.f   |   198 | x      | project out rot/trans from carts, skipping since we never use   |          |
+  | rotrn3.f   |    87 | x      | project out rot/trans for cubics, skipping since we never use   |          |
+  | rots.f     |   514 |        | rotational energy levels of symmetric tops                      |          |
+  | rs.f       |    60 | x      | eigenvalues and eigenvectors of real symmetric matrix           |          |
+  | rsfrm1.f   |   154 |        |                                                                 |          |
+  | rsfrm2.f   |   140 |        |                                                                 |          |
+  | rsp.f      |    83 | x      | eigen decomposition                                             |          |
+  | sextic.f   |   743 |        | sextic distortion constants                                     |          |
+  | smxpy.f    |    25 |        |                                                                 |          |
+  | spectro.f  |    60 | x      | entry point, just calls mains                                   |          |
+  | sqhamp.f   |    78 | x      | skip without curvils                                            |          |
+  | square.f   |    20 |        |                                                                 |          |
+  | squr.f     |    20 |        |                                                                 |          |
+  | subres.f   |    28 |        |                                                                 |          |
+  | sxmpy.f    |    26 |        |                                                                 |          |
+  | threej.f   |    28 |        |                                                                 |          |
+  | thrj.f     |    62 |        |                                                                 |          |
+  | tmtrx.f    |   150 |        |                                                                 |          |
+  | tonorm.f   |   846 |        |                                                                 |          |
+  | tql2.f     |   177 | x      | eigenvalues of a sym. tridiag. matrix + eigenvectors            |          |
+  | tqlrat.f   |   136 | x      | eigenvalues of a sym. tridiag. matrix                           |          |
+  | trans33.f  |    88 |        |                                                                 |          |
+  | trans44.f  |   110 |        |                                                                 |          |
+  | trbak3.f   |    84 |        |                                                                 |          |
+  | tred1.f    |   119 | x      | real sym. matrix to tridiagonal form                            |          |
+  | tred2.f    |   143 | x      | real sym. matrix to tridiagonal form + eigenvectors             |          |
+  | tred3.f    |   120 |        |                                                                 |          |
+  | triple.f   |    14 |        |                                                                 |          |
+  | trnsfm.f   |   662 |        |                                                                 |          |
+  | umatrx.f   |   255 | x      | skip without curvils                                            |          |
+  | vcross.f   |    13 | x      | vector cross product                                            |          |
+  | vecsum.f   |     9 | x      | vector dot product                                              |          |
+  | vecz.f     |    16 |        |                                                                 |          |
+  | vibavg.f   |   303 |        |                                                                 |          |
+  | vibfx.f    |   256 | x      | done minus degmode alignment for symm tops and linear molecules |          |
+  | vprodz.f   |     9 |        |                                                                 |          |
+  | w0cal.f    |   106 |        |                                                                 |          |
+  | wcals.f    |   427 |        |                                                                 |          |
+  | wpadti.f   |     4 |        |                                                                 |          |
+  | wreadw.f   |    34 |        |                                                                 |          |
+  | xcalc.f    |   404 | x      | done until resonances                                           |          |
+  | xcals.f    |   984 |        |                                                                 |          |
+  | xtcalc.f   |   509 |        |                                                                 |          |
+  | xtcals.f   |  1635 |        |                                                                 |          |
+  | zero.f     |    10 | x      | zero a vector                                                   |          |
+  | zeta.f     |   576 | x      | done but skipped sum rules checks                               |          |
+  | zgen.f     |    14 |        |                                                                 |          |
+  | zmat.f     |    71 |        |                                                                 |          |
 
   #+begin_src awk :stdin lines
     NR > 1 {
@@ -174,7 +174,7 @@
   #+end_src
 
   #+RESULTS:
-  : finished 9922/40693 = 24.4%
+  : finished 16604/40693 = 40.8%
 * Extra code
 ** first sum rule test from zeta.f
    #+begin_src rust
