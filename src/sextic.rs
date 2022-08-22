@@ -3,12 +3,18 @@ use std::cmp::{max, min};
 use tensor::{Tensor3, Tensor4};
 
 use crate::{
-    utils::{find3r, ioff, make_tau},
+    utils::{find3r, ioff, make_tau, princ_cart, tau_prime},
     Dmat, Dvec, Spectro, Vec3, SQLAM,
 };
 
 /// struct holding the sextic distortion constants
-pub(crate) struct Sextic {}
+#[derive(Debug, Default, PartialEq)]
+pub(crate) struct Sextic {
+    pub(crate) phij: f64,
+    pub(crate) phijk: f64,
+    pub(crate) phikj: f64,
+    pub(crate) phik: f64,
+}
 
 #[allow(unused)]
 impl Sextic {
@@ -20,17 +26,182 @@ impl Sextic {
         f3qcm: &[f64],
         rotcon: &[f64],
     ) -> Self {
+        let mut ret = Self::default();
         let nvib = spectro.nvib;
         // convert to Hz from cm⁻¹
         const CONST2: f64 = 2.99792458e10;
         let maxcor = if spectro.is_linear() { 2 } else { 3 };
         let primat = spectro.geom.principal_moments();
         let c = c_mat(maxcor, nvib, freq, &primat, wila);
+        // TODO why did we even make this??
         let t = t_mat(maxcor, nvib, freq, &c);
         let cc = cc_tensor(nvib, maxcor, freq, &c, zmat, rotcon);
         let tau = make_tau(maxcor, nvib, freq, &primat, wila);
+        let taucpm = tau_prime(maxcor, &tau);
         let scc = scc(maxcor, tau, rotcon, nvib, freq, cc, f3qcm, &c, spectro);
-        Sextic {}
+        // says this is the default representation and sets it to 1 if it was
+        // originally 0. NOTE my 0 is fortran 1
+        let irep = 0;
+        let (ic, id) = princ_cart(irep);
+        let mut t = Dmat::zeros(maxcor, maxcor);
+        for ixyz in 0..maxcor {
+            for jxyz in 0..maxcor {
+                t[(ic[ixyz], ic[jxyz])] = taucpm[(ixyz, jxyz)] / 4.0;
+            }
+        }
+        let mut phi = Tensor3::zeros(maxcor, maxcor, maxcor);
+        for ixyz in 0..maxcor {
+            for jxyz in 0..maxcor {
+                for kxyz in 0..maxcor {
+                    phi[(ic[ixyz], ic[jxyz], ic[kxyz])] =
+                        scc[(ixyz, jxyz, kxyz)];
+                }
+            }
+        }
+        let t400 = (3.0 * t[(1 - 1, 1 - 1)]
+            + 3.0 * t[(2 - 1, 2 - 1)]
+            + 2.0 * t[(1 - 1, 2 - 1)])
+            / 8.0;
+        let t220 = t[(1 - 1, 3 - 1)] + t[(2 - 1, 3 - 1)] - 2.0 * t400;
+        let t040 = t[(3 - 1, 3 - 1)] - t220 - t400;
+        let t202 = (t[(1 - 1, 1 - 1)] - t[(2 - 1, 2 - 1)]) / 4.0;
+        let t022 = (t[(1 - 1, 3 - 1)] - t[(2 - 1, 3 - 1)]) / 2.0 - t202;
+        let t004 = (t[(1 - 1, 1 - 1)] + t[(2 - 1, 2 - 1)]
+            - 2.0 * t[(1 - 1, 2 - 1)])
+            / 16.0;
+        let b200 = 0.5e0 * (rotcon[id[1 - 1]] + rotcon[id[2 - 1]]) - 4.0 * t004;
+        let b020 = rotcon[id[3 - 1]] - b200 + 6.0 * t004;
+        let b002 = 0.25e0 * (rotcon[id[1 - 1]] - rotcon[id[2 - 1]]);
+        let phi600 = 5.0
+            * (phi[(1 - 1, 1 - 1, 1 - 1)] + phi[(2 - 1, 2 - 1, 2 - 1)])
+            / 16.0
+            + (phi[(1 - 1, 1 - 1, 2 - 1)] + phi[(2 - 1, 2 - 1, 1 - 1)]) / 8.0;
+        let phi420 = 3.0
+            * (phi[(1 - 1, 1 - 1, 3 - 1)] + phi[(2 - 1, 2 - 1, 3 - 1)])
+            / 4.0
+            + phi[(1 - 1, 2 - 1, 3 - 1)] / 4.0
+            - 3.0 * phi600;
+        let phi240 = phi[(3 - 1, 3 - 1, 1 - 1)] + phi[(3 - 1, 3 - 1, 2 - 1)]
+            - 2.0 * phi420
+            - 3.0 * phi600;
+        let phi060 = phi[(3 - 1, 3 - 1, 3 - 1)] - phi240 - phi420 - phi600;
+        let phi402 = 15.0
+            * (phi[(1 - 1, 1 - 1, 1 - 1)] - phi[(2 - 1, 2 - 1, 2 - 1)])
+            / 64.0
+            + (phi[(1 - 1, 1 - 1, 2 - 1)] - phi[(2 - 1, 2 - 1, 1 - 1)]) / 32.0;
+        let phi222 = (phi[(1 - 1, 1 - 1, 3 - 1)] - phi[(2 - 1, 2 - 1, 3 - 1)])
+            / 2.0
+            - 2.0 * phi402;
+        let phi042 = (phi[(3 - 1, 3 - 1, 1 - 1)] - phi[(3 - 1, 3 - 1, 2 - 1)])
+            / 2.0
+            - phi222
+            - phi402;
+        let phi204 = 3.0
+            * (phi[(1 - 1, 1 - 1, 1 - 1)] + phi[(2 - 1, 2 - 1, 2 - 1)])
+            / 32.0
+            - (phi[(1 - 1, 1 - 1, 2 - 1)] + phi[(2 - 1, 2 - 1, 1 - 1)]) / 16.0;
+        let phi024 = (phi[(1 - 1, 1 - 1, 3 - 1)] + phi[(2 - 1, 2 - 1, 3 - 1)]
+            - phi[(1 - 1, 2 - 1, 3 - 1)])
+            / 8.0
+            - phi204;
+        let phi006 = (phi[(1 - 1, 1 - 1, 1 - 1)] - phi[(2 - 1, 2 - 1, 2 - 1)])
+            / 64.0
+            - (phi[(1 - 1, 1 - 1, 2 - 1)] - phi[(2 - 1, 2 - 1, 1 - 1)]) / 32.0;
+
+        let sigma = if !spectro.rotor_type.is_sym_top() {
+            // asymmetric top
+            let sigma = (2.0 * rotcon[id[3 - 1]]
+                - rotcon[id[1 - 1]]
+                - rotcon[id[2 - 1]])
+                / (rotcon[id[1 - 1]] - rotcon[id[2 - 1]]);
+            let rkappa =
+                (2.0 * rotcon[(3 - 1)] - rotcon[(1 - 1)] - rotcon[(2 - 1)])
+                    / (rotcon[(1 - 1)] - rotcon[(2 - 1)]);
+            ret.phij = phi600 + 2.0 * phi204;
+            ret.phijk = phi420 - 12.0 * phi204
+                + 2.0 * phi024
+                + 16.0 * sigma * phi006
+                + 8.0 * t022 * t004 / b002;
+            ret.phikj = phi240 + 10.0 * phi420 / 3.0
+                - 30.0 * phi204
+                - 10.0 * ret.phijk / 3.0;
+            ret.phik = phi060 - 7.0 * phi420 / 3.0
+                + 28.0 * phi204
+                + 7.0 * ret.phijk / 3.0;
+            let sphij = phi402 + phi006;
+            let sphijk = phi222 + 4.0 * sigma * phi204 - 10.0 * phi006
+                + 2.0 * (t220 - 2.0 * sigma * t202 - 4.0 * t004) * t004 / b002;
+            let sphik = phi042
+                + 4.0 * sigma * phi024 / 3.0
+                + (32.0 * sigma * sigma / 3.0 + 9.0) * phi006
+                + 4.0
+                    * (t040 + sigma * t022 / 3.0
+                        - 2.0 * (sigma * sigma - 2.0) * t004)
+                    * t004
+                    / b002;
+            sigma
+        } else {
+            todo!()
+        };
+
+        // symmetric top representation
+        let irep = if spectro.rotor_type.is_sym_top() {
+            if spectro.rotor_type.is_prolate() {
+                1
+            } else {
+                6
+            }
+        } else {
+            1
+        };
+        let (ic, id) = princ_cart(irep);
+        let rkappa =
+            (2.0 * rotcon[id[1 - 1]] - rotcon[id[2 - 1]] - rotcon[id[3 - 1]])
+                / (rotcon[id[2 - 1]] - rotcon[id[3 - 1]]);
+        // NOTE BP = BO in our case instead of having two variables. TODO use
+        // this at some point.
+
+        assert!(!spectro.rotor_type.is_sym_top());
+        // let (bp, sigma, irep) = if spectro.rotor_type.is_sym_top() {
+        //     // rkappa = -1 => prolate
+        //     // rkappa = +1 => oblate
+        //     if rkappa < 0.0 {
+        // 	let bp = (rkappa + 1.0) / (rkappa - 3.0);
+        // 	// interesting choice..
+        // 	let sigma = -9999999999999.0;
+        // 	let irep = 3;
+        // 	(bp, sigma, irep)
+        //     } else {
+        // };
+        let rho = t022 / (4.0 * sigma);
+        let div = 2.0 * sigma * sigma + 27.0 / 16.0;
+        let mu = (sigma * phi042 - 9.0 * phi024 / 8.0
+            + (-2.0 * sigma * t040 + (sigma * sigma + 3.0) * t022
+                - 5.0 * sigma * t004)
+                * t022
+                / b020)
+            / div;
+        let nu = 3.0 * mu / (16.0 * sigma)
+            + phi024 / (8.0 * sigma)
+            + t004 * t022 / b020;
+        let lamda = 5.0 * nu / sigma
+            + phi222 / (sigma * 2.0)
+            + (-t220 / (sigma * 2.0) + t202
+                - t022 / (sigma * sigma)
+                - 2.0 * t004 / sigma)
+                * t022
+                / b020;
+        let hj = phi600 - lamda;
+        let hjk = phi420 + 6.0 * lamda - 3.0 * mu;
+        let hkj = phi240 - 5.0 * lamda + 10.0 * mu;
+        let hk = phi060 - 7.0 * mu;
+        let h1 = phi402 - nu;
+        let h2 = phi204 + lamda / 2.0;
+        let h3 = phi006 + nu;
+
+        // TODO linear molecule case and spherical top case
+
+        ret
     }
 }
 
@@ -523,6 +694,17 @@ mod tests {
             -0.00070920, -0.00034716, -0.00023348;
             };
             assert_abs_diff_eq!(got, want, epsilon = 5e-8);
+        }
+        // new
+        {
+            let got = Sextic::new(&s, &wila, &zmat, &freq, &f3qcm, &rotcon);
+            let want = Sextic {
+                phij: 4.602841007501275e-7,
+                phijk: -2.968676109850574e-6,
+                phikj: -7.511855416181053e-6,
+                phik: 6.961216139007188e-5,
+            };
+            assert_eq!(got, want);
         }
     }
 }

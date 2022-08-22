@@ -8,7 +8,9 @@ use std::{
 use nalgebra::{SymmetricEigen, Vector3};
 use tensor::{Tensor3, Tensor4};
 
-use crate::{Dmat, Dvec, Spectro, Vec3, FACT3, FACT4, FUNIT3, FUNIT4, WAVE};
+use crate::{
+    Dmat, Dvec, Spectro, Vec3, FACT3, FACT4, FUNIT3, FUNIT4, ICTOP, IPTOC, WAVE,
+};
 
 #[cfg(test)]
 mod tests;
@@ -670,7 +672,7 @@ pub(crate) fn alpha(
 }
 
 /// convert tau to tau prime in wavenumbers
-pub(crate) fn tau_prime(maxcor: usize, tau: Tensor4) -> Dmat {
+pub(crate) fn tau_prime(maxcor: usize, tau: &Tensor4) -> Dmat {
     let mut taupcm = Dmat::zeros(maxcor, maxcor);
     for ijxyz in 0..maxcor {
         for klxyz in 0..maxcor {
@@ -715,4 +717,12 @@ pub(crate) fn make_tau(
         }
     }
     tau
+}
+
+/// set up vectors for principal -> cartesian and cartesian -> principal
+/// transformations
+pub(crate) fn princ_cart(irep: usize) -> ([usize; 3], [usize; 3]) {
+    let ic = [IPTOC[(irep, 0)], IPTOC[(irep, 1)], IPTOC[(irep, 2)]];
+    let id = [ICTOP[(irep, 0)], ICTOP[(irep, 1)], ICTOP[(irep, 2)]];
+    (ic, id)
 }

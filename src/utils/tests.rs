@@ -36,7 +36,7 @@ fn test_taupcm() {
     let (_zmat, _biga, wila) = s.zeta(s.natom, s.nvib, &lxm, &w);
     let primat = s.geom.principal_moments();
     let tau = make_tau(3, 3, &freq, &primat, &wila);
-    let got = tau_prime(3, tau);
+    let got = tau_prime(3, &tau);
     let want = dmatrix![
     -0.08628870,  0.01018052, -0.00283749;
      0.01018052, -0.00839612, -0.00138895;

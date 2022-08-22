@@ -52,11 +52,14 @@ const SQLAM: f64 = 0.17222125037910759882;
 const FACT3: f64 = 1.0e6 / (SQLAM * SQLAM * SQLAM * PH * CL);
 const FACT4: f64 = 1.0e6 / (ALAM * ALAM * PH * CL);
 
+/// PRINCIPAL ---> CARTESIAN
 static IPTOC: nalgebra::Matrix3x6<usize> = nalgebra::matrix![
 2,0,1,1,2,0;
 0,1,2,2,1,0;
 0,2,1,1,0,2;
 ];
+
+/// CARTESIAN---> PRINCIPAL
 static ICTOP: nalgebra::Matrix3x6<usize> = nalgebra::matrix![
     1,2,0,2,0,1;
     0,1,2,2,1,0;
@@ -683,9 +686,12 @@ impl Spectro {
 
         // end ALPHAA
 
-        // TODO SEXTIC
-        let Sextic {} =
-            Sextic::new(&self, &wila, &zmat, &freq, &f3qcm, &rotcon);
+        let Sextic {
+            phij,
+            phijk,
+            phikj,
+            phik,
+        } = Sextic::new(&self, &wila, &zmat, &freq, &f3qcm, &rotcon);
 
         let (xcnst, e0) =
             xcalc(self.nvib, &f4qcm, &freq, &f3qcm, &zmat, &rotcon);
@@ -758,11 +764,14 @@ impl Spectro {
                         let vala4 =
                             deljk * (j * (j + 1) * (k * k) as usize) as f64;
                         let vala5 = delk * (k.pow(4)) as f64;
-                        // let vala6 = phij * ((j.pow(3)) * ((j + 1).pow(3)));
-                        // let vala7 =
-                        //     phijk * ((j * j) * ((j + 1).pow(2)) * (k * k));
-                        // let vala8 = phikj * (j * (j + 1) * (k.pow(4)));
-                        // let vala9 = phik * (k.pow(6));
+                        let vala6 =
+                            phij * ((j.pow(3)) * ((j + 1).pow(3))) as f64;
+                        let vala7 = phijk
+                            * ((j * j) * ((j + 1).pow(2)) * (k * k) as usize)
+                                as f64;
+                        let vala8 =
+                            phikj * (j * (j + 1) * (k.pow(4)) as usize) as f64;
+                        let vala9 = phik * (k.pow(6)) as f64;
                     }
                 }
             }

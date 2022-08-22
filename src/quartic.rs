@@ -1,6 +1,6 @@
 use crate::{
-    utils::{make_tau, tau_prime},
-    Dmat, Dvec, Spectro, ICTOP, IPTOC,
+    utils::{make_tau, princ_cart, tau_prime},
+    Dmat, Dvec, Spectro,
 };
 
 /// struct containing all of the quartic distortion constants and probably some
@@ -60,11 +60,10 @@ impl Quartic {
         let maxcor = if spectro.is_linear() { 2 } else { 3 };
         let primat = spectro.geom.principal_moments();
         let tau = make_tau(maxcor, nvib, freq, &primat, wila);
-        let taupcm = tau_prime(maxcor, tau);
+        let taupcm = tau_prime(maxcor, &tau);
         // NOTE: pretty sure this is always the case
         let irep = 0;
-        let ic = [IPTOC[(irep, 0)], IPTOC[(irep, 1)], IPTOC[(irep, 2)]];
-        let id = [ICTOP[(irep, 0)], ICTOP[(irep, 1)], ICTOP[(irep, 2)]];
+        let (ic, id) = princ_cart(irep);
 
         let mut t = Dmat::zeros(maxcor, maxcor);
         for ixyz in 0..maxcor {
