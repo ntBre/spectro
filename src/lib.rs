@@ -18,6 +18,7 @@ use tensor::{Tensor3, Tensor4};
 use utils::*;
 mod rot;
 
+mod resonance;
 mod rotor;
 
 use symm::{Atom, Molecule};
@@ -709,10 +710,10 @@ impl Spectro {
         let (harms, lxm) = symm_eigen_decomp(fxm);
         let freq = to_wavenumbers(harms);
 
-        // form the LX matrix, not used so far
+        // form the LX matrix
         let lx = self.make_lx(self.n3n, &sqm, &lxm);
 
-        // not used yet
+        // biga not used yet
         let (zmat, _biga, wila) = self.zeta(natom, self.nvib, &lxm, &w);
 
         let quartic = Quartic::new(&self, self.nvib, &freq, &wila, &rotcon);
@@ -729,7 +730,7 @@ impl Spectro {
         let f4qcm =
             force4(self.n3n, &mut f4x, &lx, self.nvib, &freq, self.i4vib);
 
-        // TODO RESTST
+        self.restst(&zmat, &f3qcm, &freq, &rotcon);
 
         // TODO get this from RESTST
         // NOTE: right now these are *not* i1sts, they are all of the states.
@@ -773,6 +774,44 @@ impl Spectro {
             funds: fund,
             rots,
         }
+    }
+
+    // should return all of the resonances, as well as the states (I think)
+    #[allow(unused)]
+    pub(crate) fn restst(
+        &self,
+        zmat: &Tensor3,
+        f3qcm: &[f64],
+        freq: &Dvec,
+        rotcon: &[f64],
+    ) -> () {
+        // tolerances for resonance checking
+        const FTOL1: f64 = 200.0;
+        const F3TOL: f64 = 10.0;
+        const DLTOL: f64 = 1000.0;
+        const DFTOL: f64 = 200.0;
+        const DDTOL: f64 = 300.0;
+        // NOTE I'm skipping the parts where the resonances are read in for now
+
+        let isymtp = self.rotor_type.is_sym_top();
+        let (n1dm, i1mode) = if isymtp {
+            // they require degmode input here and then a bunch of code at
+            // restst.f:322
+            todo!()
+        } else {
+            let n1dm = self.nvib;
+            let n2dm = 0;
+            let n3dm = 0;
+            let mut v = vec![0; self.nvib];
+            for i in 0..self.nvib {
+                v[i] = i;
+            }
+            (n1dm, v)
+        };
+        // could probably do the test above in here
+        self.rotor_type
+            .coriolis_resonances(n1dm, &i1mode, freq, zmat, rotcon);
+        todo!()
     }
 }
 

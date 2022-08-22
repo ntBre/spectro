@@ -1,5 +1,10 @@
 use std::fmt::Display;
 
+use tensor::Tensor3;
+
+use crate::resonance::Resonance;
+use crate::Dvec;
+
 /// cutoff for determining if moments of inertia are equal for rotor
 /// classification
 pub(crate) const ROTOR_EPS: f64 = 1.0e-4;
@@ -38,6 +43,59 @@ impl Rotor {
     pub fn is_prolate(&self) -> bool {
         assert!(*self != Rotor::None);
         *self == Rotor::ProlateSymmTop
+    }
+
+    pub fn coriolis_resonances(
+        &self,
+        n1dm: usize,
+        i1mode: &[usize],
+        freq: &Dvec,
+        zmat: &Tensor3,
+        _rotcon: &[f64],
+    ) -> Vec<Resonance> {
+        // tolerances for resonance checking
+        const CTOL: f64 = 200.0;
+        const ZTOL: f64 = 0.25;
+
+        let mut ret = Vec::new();
+        match self {
+            Rotor::Diatomic => todo!(),
+            Rotor::Linear => todo!(),
+            Rotor::SphericalTop => todo!(),
+            Rotor::OblateSymmTop => todo!(),
+            Rotor::ProlateSymmTop => todo!(),
+            Rotor::AsymmTop => {
+                for ii in 0..n1dm {
+                    // loop over i1mode?
+                    let i = i1mode[ii];
+                    for jj in 0..ii {
+                        let j = i1mode[jj];
+                        let diff = freq[i] - freq[j];
+                        if diff.abs() <= CTOL {
+                            for z in 0..3 {
+                                // this is written as 3 separate ifs in
+                                // fortran...
+                                if zmat[(i, j, z)] >= ZTOL {
+                                    ret.push(Resonance::Coriolis { i, j });
+                                    // apparently unused, just for printing the
+                                    // estimated perturbation I think
+
+                                    // let xjmcor = (rotcon[0]
+                                    //     * zmat[(i, j, z)]
+                                    //     * (freq[i] + freq[j]))
+                                    //     .powi(2)
+                                    //     / diff
+                                    //     / freq[i]
+                                    //     / freq[j];
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            Rotor::None => todo!(),
+        }
+        ret
     }
 }
 
