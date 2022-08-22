@@ -101,7 +101,7 @@
   | res2a.f    |   284 |        |                                                                 |          |
   | res3a.f    |   183 |        |                                                                 |          |
   | resona.f   |   167 |        |                                                                 |          |
-  | restst.f   |  1535 |        |                                                                 |          |
+  | restst.f   |  1535 | x      | resonance testing, finished for asym top and no degmodes        |          |
   | rfile.f    |    13 |        |                                                                 |          |
   | rg.f       |    73 |        |                                                                 |          |
   | rot1st.f   |    29 |        |                                                                 |          |
@@ -174,7 +174,7 @@
   #+end_src
 
   #+RESULTS:
-  : finished 16604/40693 = 40.8%
+  : finished 18139/40693 = 44.6%
 * Extra code
 ** first sum rule test from zeta.f
    #+begin_src rust

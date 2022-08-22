@@ -12,6 +12,7 @@ mod dummy;
 use dummy::{Dummy, DummyVal};
 
 mod utils;
+use resonance::{Coriolis, Darling, Fermi1, Fermi2};
 use rot::Rot;
 use rotor::{Rotor, ROTOR_EPS};
 use tensor::{Tensor3, Tensor4};
@@ -118,6 +119,15 @@ pub struct Spectro {
     pub i4vib: usize,
     pub natom: usize,
     pub axes: Mat3,
+}
+
+pub struct Restst {
+    pub coriolis: Vec<Coriolis>,
+    pub fermi1: Vec<Fermi1>,
+    pub fermi2: Vec<Fermi2>,
+    pub darling: Vec<Darling>,
+    pub i1sts: Vec<Vec<usize>>,
+    pub i1mode: Vec<usize>,
 }
 
 impl Spectro {
@@ -730,26 +740,14 @@ impl Spectro {
         let f4qcm =
             force4(self.n3n, &mut f4x, &lx, self.nvib, &freq, self.i4vib);
 
-        self.restst(&zmat, &f3qcm, &freq, &rotcon);
-
-        // TODO get this from RESTST
-        // NOTE: right now these are *not* i1sts, they are all of the states.
-        // i1sts is really only the first four
-        let i1sts = vec![
-            vec![0, 0, 0],
-            vec![1, 0, 0],
-            vec![0, 1, 0],
-            vec![0, 0, 1],
-            vec![2, 0, 0],
-            vec![0, 2, 0],
-            vec![0, 0, 2],
-            vec![1, 1, 0],
-            vec![1, 0, 1],
-            vec![0, 1, 1],
-        ];
-
-        // TODO get this from RESTST
-        let i1mode = vec![0, 1, 2];
+        let Restst {
+            coriolis: _,
+            fermi1: _,
+            fermi2: _,
+            darling: _,
+            i1sts,
+            i1mode,
+        } = self.restst(&zmat, &f3qcm, &freq);
 
         // end ALPHAA
 
@@ -777,25 +775,25 @@ impl Spectro {
     }
 
     // should return all of the resonances, as well as the states (I think)
-    #[allow(unused)]
     pub(crate) fn restst(
         &self,
         zmat: &Tensor3,
         f3qcm: &[f64],
         freq: &Dvec,
-        rotcon: &[f64],
-    ) -> () {
+    ) -> Restst {
         // NOTE I'm skipping the parts where the resonances are read in for now
 
         let isymtp = self.rotor.is_sym_top();
         let (n1dm, i1mode) = if isymtp {
+            // TODO degen
+
             // they require degmode input here and then a bunch of code at
             // restst.f:322
             todo!()
         } else {
             let n1dm = self.nvib;
-            let n2dm = 0;
-            let n3dm = 0;
+            let _n2dm = 0;
+            let _n3dm = 0;
             let mut v = vec![0; self.nvib];
             for i in 0..self.nvib {
                 v[i] = i;
@@ -804,11 +802,52 @@ impl Spectro {
         };
         // TODO do I really need n1dm and i1mode? could probably just get n1dm
         // as needed as i1mode.len()
-        let coriols = self.rotor.coriolis(n1dm, &i1mode, freq, zmat);
+        let coriolis = self.rotor.coriolis(n1dm, &i1mode, freq, zmat);
         let fermi1 = self.rotor.fermi1(n1dm, &i1mode, freq, f3qcm);
         let fermi2 = self.rotor.fermi2(n1dm, &i1mode, freq, f3qcm);
         let darling = self.rotor.darling(n1dm, &i1mode, freq);
-        todo!()
+
+        // TODO degen complicates this, restst.f:1210
+
+        // TODO figure out how to separate these into ground state, funds,
+        // overtones, and combination bands. one vec of enum variants? struct
+        // with fields of each?
+
+        let mut i1sts = Vec::new();
+        // ground state, all zeros
+        i1sts.push(vec![0; n1dm]);
+        // fundamentals, single excitations
+        for ii in 0..n1dm {
+            let mut tmp = vec![0; n1dm];
+            tmp[ii] = 1;
+            i1sts.push(tmp);
+        }
+
+        // overtones, double excitations in one mode
+        for ii in 0..n1dm {
+            let mut tmp = vec![0; n1dm];
+            tmp[ii] = 2;
+            i1sts.push(tmp);
+        }
+
+        // combination bands, double excitations in different modes.
+        // TODO this could probably be combined with the overtones
+        for ii in 0..n1dm {
+            for jj in ii + 1..n1dm {
+                let mut tmp = vec![0; n1dm];
+                tmp[ii] = 1;
+                tmp[jj] = 1;
+                i1sts.push(tmp);
+            }
+        }
+        Restst {
+            coriolis,
+            fermi1,
+            fermi2,
+            darling,
+            i1sts,
+            i1mode,
+        }
     }
 }
 

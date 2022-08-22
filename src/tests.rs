@@ -443,19 +443,15 @@ fn test_enrgy() {
     let wante0 = 20.057563725859055;
     assert_abs_diff_eq!(e0, wante0, epsilon = 6e-8);
     let fund = funds(&freq, s.nvib, &xcnst);
-    let i1sts = vec![
-        vec![0, 0, 0],
-        vec![1, 0, 0],
-        vec![0, 1, 0],
-        vec![0, 0, 1],
-        vec![2, 0, 0],
-        vec![0, 2, 0],
-        vec![0, 0, 2],
-        vec![1, 1, 0],
-        vec![1, 0, 1],
-        vec![0, 1, 1],
-    ];
-    let got = enrgy(&fund, &freq, &xcnst, e0, &i1sts, &[0, 1, 2]);
+    let Restst {
+        coriolis: _,
+        fermi1: _,
+        fermi2: _,
+        darling: _,
+        i1sts,
+        i1mode,
+    } = s.restst(&zmat, &f3qcm, &freq);
+    let got = enrgy(&fund, &freq, &xcnst, e0, &i1sts, &i1mode);
     // my numbers after comparing visually to fortran
     let want = vec![
         (4656.438188555293, vec![0, 0, 0]),
@@ -523,28 +519,16 @@ fn test_alphaa() {
     let rotcon: Vec<_> = moments.iter().map(|m| CONST / m).collect();
     let (xcnst, _e0) = xcalc(s.nvib, &f4qcm, &freq, &f3qcm, &zmat, &rotcon);
     let fund = funds(&freq, s.nvib, &xcnst);
-    let i1sts = vec![
-        vec![0, 0, 0],
-        vec![1, 0, 0],
-        vec![0, 1, 0],
-        vec![0, 0, 1],
-        vec![2, 0, 0],
-        vec![0, 2, 0],
-        vec![0, 0, 2],
-        vec![1, 1, 0],
-        vec![1, 0, 1],
-        vec![0, 1, 1],
-    ];
+    let Restst {
+        coriolis: _,
+        fermi1: _,
+        fermi2: _,
+        darling: _,
+        i1sts,
+        i1mode,
+    } = s.restst(&zmat, &f3qcm, &freq);
     let got = s.alphaa(
-        s.nvib,
-        &rotcon,
-        &freq,
-        &wila,
-        &zmat,
-        &f3qcm,
-        &fund,
-        &[0, 1, 2],
-        &i1sts,
+        s.nvib, &rotcon, &freq, &wila, &zmat, &f3qcm, &fund, &i1mode, &i1sts,
     );
     let want = dmatrix![
     27.657417987118755, 14.498766626639174, 9.2673038449583238;
