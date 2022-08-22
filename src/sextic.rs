@@ -111,7 +111,7 @@ impl Sextic {
             / 64.0
             - (phi[(1 - 1, 1 - 1, 2 - 1)] - phi[(2 - 1, 2 - 1, 1 - 1)]) / 32.0;
 
-        let sigma = if !spectro.rotor_type.is_sym_top() {
+        let sigma = if !spectro.rotor.is_sym_top() {
             // asymmetric top
             let sigma = (2.0 * rotcon[id[3 - 1]]
                 - rotcon[id[1 - 1]]
@@ -148,8 +148,8 @@ impl Sextic {
         };
 
         // symmetric top representation
-        let irep = if spectro.rotor_type.is_sym_top() {
-            if spectro.rotor_type.is_prolate() {
+        let irep = if spectro.rotor.is_sym_top() {
+            if spectro.rotor.is_prolate() {
                 1
             } else {
                 6
@@ -164,7 +164,7 @@ impl Sextic {
         // NOTE BP = BO in our case instead of having two variables. TODO use
         // this at some point.
 
-        assert!(!spectro.rotor_type.is_sym_top());
+        assert!(!spectro.rotor.is_sym_top());
         // let (bp, sigma, irep) = if spectro.rotor_type.is_sym_top() {
         //     // rkappa = -1 => prolate
         //     // rkappa = +1 => oblate

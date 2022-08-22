@@ -108,7 +108,7 @@ pub struct Spectro {
     pub curvils: Vec<Curvil>,
     pub degmodes: Vec<Vec<usize>>,
     pub dummies: Vec<Dummy>,
-    pub rotor_type: Rotor,
+    pub rotor: Rotor,
     pub n3n: usize,
     pub i3n3n: usize,
     pub i4n3n: usize,
@@ -122,7 +122,7 @@ pub struct Spectro {
 
 impl Spectro {
     pub fn is_linear(&self) -> bool {
-        self.rotor_type == Rotor::Linear
+        self.rotor == Rotor::Linear
     }
 
     /// return a ready-to-use spectro without a template
@@ -264,7 +264,7 @@ impl Spectro {
         ret.geom.to_angstrom();
         ret.geom.normalize();
         ret.axes = ret.geom.reorder();
-        ret.rotor_type = ret.rotor_type();
+        ret.rotor = ret.rotor_type();
         ret.natom = ret.natoms();
         let n3n = 3 * ret.natoms();
         ret.n3n = n3n;
@@ -785,15 +785,9 @@ impl Spectro {
         freq: &Dvec,
         rotcon: &[f64],
     ) -> () {
-        // tolerances for resonance checking
-        const FTOL1: f64 = 200.0;
-        const F3TOL: f64 = 10.0;
-        const DLTOL: f64 = 1000.0;
-        const DFTOL: f64 = 200.0;
-        const DDTOL: f64 = 300.0;
         // NOTE I'm skipping the parts where the resonances are read in for now
 
-        let isymtp = self.rotor_type.is_sym_top();
+        let isymtp = self.rotor.is_sym_top();
         let (n1dm, i1mode) = if isymtp {
             // they require degmode input here and then a bunch of code at
             // restst.f:322
@@ -808,9 +802,12 @@ impl Spectro {
             }
             (n1dm, v)
         };
-        // could probably do the test above in here
-        self.rotor_type
-            .coriolis_resonances(n1dm, &i1mode, freq, zmat, rotcon);
+        // TODO do I really need n1dm and i1mode? could probably just get n1dm
+        // as needed as i1mode.len()
+        let coriols = self.rotor.coriolis(n1dm, &i1mode, freq, zmat);
+        let fermi1 = self.rotor.fermi1(n1dm, &i1mode, freq, f3qcm);
+        let fermi2 = self.rotor.fermi2(n1dm, &i1mode, freq, f3qcm);
+        let darling = self.rotor.darling(n1dm, &i1mode, freq);
         todo!()
     }
 }
