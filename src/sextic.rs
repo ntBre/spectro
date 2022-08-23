@@ -1,6 +1,7 @@
 use std::cmp::{max, min};
 
-use tensor::{Tensor3, Tensor4};
+use tensor::Tensor4;
+type Tensor3 = tensor::tensor3::Tensor3<f64>;
 
 use crate::{
     utils::{find3r, ioff, make_tau, princ_cart, tau_prime},
@@ -667,7 +668,8 @@ mod tests {
         let f4qcm = force4(s.n3n, &mut f4x, &lx, s.nvib, &freq, s.i4vib);
         let moments = s.geom.principal_moments();
         let rotcon: Vec<_> = moments.iter().map(|m| CONST / m).collect();
-        let (xcnst, _e0) = xcalc(s.nvib, &f4qcm, &freq, &f3qcm, &zmat, &rotcon);
+        let (xcnst, _e0) =
+            xcalc(s.nvib, &f4qcm, &freq, &f3qcm, &zmat, &rotcon, &[], &[]);
         let _fund = funds(&freq, s.nvib, &xcnst);
 
         let primat = s.geom.principal_moments();

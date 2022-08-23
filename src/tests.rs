@@ -271,33 +271,44 @@ fn test_normfx() {
 
 #[test]
 fn test_run() {
-    let spectro = Spectro::load("testfiles/h2o.in");
-    let got = spectro.run();
-    let want = Output {
-        // corr one day
-        //       3753.2
-        //       3656.5
-        //       1598.5
-        harms: dvector![3943.7, 3833.7, 1650.9],
-        funds: vec![3753.2, 3656.5, 1598.5],
-        rots: vec![
-            Rot::new(vec![0, 0, 0], 27.65578, 14.50450, 9.26320),
-            Rot::new(vec![1, 0, 0], 26.49932, 14.40582, 9.12023),
-            Rot::new(vec![0, 1, 0], 26.96677, 14.28519, 9.08617),
-            Rot::new(vec![0, 0, 1], 30.25411, 14.66636, 9.11681),
-        ],
-    };
-    assert_abs_diff_eq!(got.harms, want.harms, epsilon = 0.1);
-    assert_abs_diff_eq!(
-        Dvec::from(got.funds),
-        Dvec::from(want.funds),
-        epsilon = 0.1
-    );
-    assert_abs_diff_eq!(
-        DVector::from(got.rots),
-        DVector::from(want.rots),
-        epsilon = 3e-5
-    );
+    struct Test {
+        infile: &'static str,
+        fort15: &'static str,
+        fort30: &'static str,
+        fort40: &'static str,
+        want: Output,
+    }
+    let tests = [Test {
+        infile: "testfiles/h2o.in",
+        fort15: "testfiles/fort.15",
+        fort30: "testfiles/fort.30",
+        fort40: "testfiles/fort.40",
+        want: Output {
+            harms: dvector![3943.7, 3833.7, 1650.9],
+            funds: vec![3753.2, 3656.5, 1598.5],
+            rots: vec![
+                Rot::new(vec![0, 0, 0], 27.65578, 14.50450, 9.26320),
+                Rot::new(vec![1, 0, 0], 26.49932, 14.40582, 9.12023),
+                Rot::new(vec![0, 1, 0], 26.96677, 14.28519, 9.08617),
+                Rot::new(vec![0, 0, 1], 30.25411, 14.66636, 9.11681),
+            ],
+        },
+    }];
+    for test in tests {
+        let spectro = Spectro::load(test.infile);
+        let got = spectro.run(test.fort15, test.fort30, test.fort40);
+        assert_abs_diff_eq!(got.harms, test.want.harms, epsilon = 0.1);
+        assert_abs_diff_eq!(
+            Dvec::from(got.funds),
+            Dvec::from(test.want.funds),
+            epsilon = 0.1
+        );
+        assert_abs_diff_eq!(
+            DVector::from(got.rots),
+            DVector::from(test.want.rots),
+            epsilon = 3e-5
+        );
+    }
 }
 
 #[test]
@@ -410,7 +421,8 @@ fn test_funds_and_e0() {
     let f4qcm = force4(s.n3n, &mut f4x, &lx, s.nvib, &freq, s.i4vib);
     let moments = s.geom.principal_moments();
     let rotcon: Vec<_> = moments.iter().map(|m| CONST / m).collect();
-    let (xcnst, e0) = xcalc(s.nvib, &f4qcm, &freq, &f3qcm, &zmat, &rotcon);
+    let (xcnst, e0) =
+        xcalc(s.nvib, &f4qcm, &freq, &f3qcm, &zmat, &rotcon, &[], &[]);
     let wante0 = 20.057563725859055;
     assert_abs_diff_eq!(e0, wante0, epsilon = 6e-8);
     let got = funds(&freq, s.nvib, &xcnst);
@@ -439,7 +451,8 @@ fn test_enrgy() {
     let f4qcm = force4(s.n3n, &mut f4x, &lx, s.nvib, &freq, s.i4vib);
     let moments = s.geom.principal_moments();
     let rotcon: Vec<_> = moments.iter().map(|m| CONST / m).collect();
-    let (xcnst, e0) = xcalc(s.nvib, &f4qcm, &freq, &f3qcm, &zmat, &rotcon);
+    let (xcnst, e0) =
+        xcalc(s.nvib, &f4qcm, &freq, &f3qcm, &zmat, &rotcon, &[], &[]);
     let wante0 = 20.057563725859055;
     assert_abs_diff_eq!(e0, wante0, epsilon = 6e-8);
     let fund = funds(&freq, s.nvib, &xcnst);
@@ -517,7 +530,8 @@ fn test_alphaa() {
     let f4qcm = force4(s.n3n, &mut f4x, &lx, s.nvib, &freq, s.i4vib);
     let moments = s.geom.principal_moments();
     let rotcon: Vec<_> = moments.iter().map(|m| CONST / m).collect();
-    let (xcnst, _e0) = xcalc(s.nvib, &f4qcm, &freq, &f3qcm, &zmat, &rotcon);
+    let (xcnst, _e0) =
+        xcalc(s.nvib, &f4qcm, &freq, &f3qcm, &zmat, &rotcon, &[], &[]);
     let fund = funds(&freq, s.nvib, &xcnst);
     let Restst {
         coriolis: _,

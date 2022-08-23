@@ -1,10 +1,9 @@
 use std::fmt::Display;
 
-use tensor::Tensor3;
-
 use crate::resonance::{Coriolis, Darling, Fermi1, Fermi2};
 use crate::utils::find3r;
 use crate::Dvec;
+type Tensor3 = tensor::tensor3::Tensor3<f64>;
 
 /// cutoff for determining if moments of inertia are equal for rotor
 /// classification

@@ -19,8 +19,8 @@
   | corcup.f   |  1234 |        |                                                                 |          |
   | curveq.f   |   205 |        |                                                                 |          |
   | czgen.f    |    13 |        |                                                                 |          |
-  | darla.f    |    92 |        |                                                                 |          |
-  | darls.f    |   162 |        |                                                                 |          |
+  | darla.f    |    92 | x      | print darling-dennison constants for asym. tops                 | noneed   |
+  | darls.f    |   162 | x      | print darling-dennison constants for sym. tops                  | noneed   |
   | dcopy.f    |    12 |        |                                                                 |          |
   | ddot.f     |    40 |        |                                                                 |          |
   | decide.f   |   316 |        |                                                                 |          |
@@ -51,7 +51,7 @@
   | force3.f   |   288 | x      | finished the part we use                                        |          |
   | force4.f   |   361 | x      | finished the part we use                                        |          |
   | frqout.f   |    31 |        |                                                                 |          |
-  | gdarla.f   |    63 |        |                                                                 |          |
+  | gdarla.f   |    63 | x      | generalized darling-dennison for asym. tops                     | unused   |
   | gen1.f     |    47 |        |                                                                 |          |
   | gen2.f     |   224 |        |                                                                 |          |
   | gen4.f     |    14 |        |                                                                 |          |

@@ -9,5 +9,4 @@ edition = "2021"
 nalgebra = "0.30.1"
 approx = "0.5.1"
 symm = { path = "/home/brent/Projects/symm" }
-intder = { path = "/home/brent/Projects/intder" }
 tensor = { version = "0.1.0", path = "/home/brent/Projects/tensor" }

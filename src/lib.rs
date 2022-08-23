@@ -4,9 +4,8 @@ use std::{
     fmt::Debug,
     fs::File,
     io::{BufRead, BufReader, Result},
+    path::Path,
 };
-
-use intder::DMat;
 
 mod dummy;
 use dummy::{Dummy, DummyVal};
@@ -15,7 +14,8 @@ mod utils;
 use resonance::{Coriolis, Darling, Fermi1, Fermi2};
 use rot::Rot;
 use rotor::{Rotor, ROTOR_EPS};
-use tensor::{Tensor3, Tensor4};
+use tensor::Tensor4;
+type Tensor3 = tensor::tensor3::Tensor3<f64>;
 use utils::*;
 mod rot;
 
@@ -432,7 +432,7 @@ impl Spectro {
     }
 
     /// formation of the secular equation
-    pub fn form_sec(&self, fx: DMat, n3n: usize, sqm: &[f64]) -> DMat {
+    pub fn form_sec(&self, fx: Dmat, n3n: usize, sqm: &[f64]) -> Dmat {
         let mut fxm = fx.clone();
         for i in 0..n3n {
             let ii = i / 3;
@@ -447,7 +447,7 @@ impl Spectro {
 
     /// rotate the harmonic force constants in `fx` to align with the principal
     /// axes in `eg` used to align the geometry
-    pub fn rot2nd(&self, fx: DMat, eg: Mat3) -> DMat {
+    pub fn rot2nd(&self, fx: Dmat, eg: Mat3) -> Dmat {
         let mut ret = fx.clone();
         let natom = self.natoms();
         for ia in (0..3 * natom).step_by(3) {
@@ -702,14 +702,17 @@ impl Spectro {
         ret
     }
 
-    pub fn run(self) -> Output {
+    pub fn run<P>(self, fort15: P, fort30: P, fort40: P) -> Output
+    where
+        P: AsRef<Path>,
+    {
         let moments = self.geom.principal_moments();
         let rotcon: Vec<_> = moments.iter().map(|m| CONST / m).collect();
         let natom = self.natoms();
 
         // load the force constants, rotate them to the new axes, and convert
         // them to the proper units
-        let fc2 = load_fc2("testfiles/fort.15", self.n3n);
+        let fc2 = load_fc2(fort15, self.n3n);
         let fc2 = self.rot2nd(fc2, self.axes);
         let fc2 = FACT2 * fc2;
 
@@ -730,32 +733,31 @@ impl Spectro {
         let quartic = Quartic::new(&self, self.nvib, &freq, &wila, &rotcon);
 
         // start of cubic analysis
-        let f3x = load_fc3("testfiles/fort.30", self.n3n);
+        let f3x = load_fc3(fort30, self.n3n);
         let mut f3x = self.rot3rd(f3x, self.axes);
         let f3qcm =
             force3(self.n3n, &mut f3x, &lx, self.nvib, &freq, self.i3vib);
 
         // start of quartic analysis
-        let f4x = load_fc4("testfiles/fort.40", self.n3n);
+        let f4x = load_fc4(fort40, self.n3n);
         let mut f4x = self.rot4th(f4x, self.axes);
         let f4qcm =
             force4(self.n3n, &mut f4x, &lx, self.nvib, &freq, self.i4vib);
 
         let Restst {
             coriolis: _,
-            fermi1: _,
-            fermi2: _,
+            fermi1,
+            fermi2,
             darling: _,
             i1sts,
             i1mode,
         } = self.restst(&zmat, &f3qcm, &freq);
 
-        // end ALPHAA
-
         let sextic = Sextic::new(&self, &wila, &zmat, &freq, &f3qcm, &rotcon);
 
-        let (xcnst, e0) =
-            xcalc(self.nvib, &f4qcm, &freq, &f3qcm, &zmat, &rotcon);
+        let (xcnst, e0) = xcalc(
+            self.nvib, &f4qcm, &freq, &f3qcm, &zmat, &rotcon, &fermi1, &fermi2,
+        );
 
         let fund = funds(&freq, self.nvib, &xcnst);
 

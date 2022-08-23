@@ -2,14 +2,18 @@ use std::{
     fmt::{Debug, Display},
     fs::read_to_string,
     iter::zip,
+    path::Path,
     str::FromStr,
 };
 
 use nalgebra::{SymmetricEigen, Vector3};
-use tensor::{Tensor3, Tensor4};
+use tensor::Tensor4;
+type Tensor3 = tensor::tensor3::Tensor3<f64>;
 
 use crate::{
-    Dmat, Dvec, Spectro, Vec3, FACT3, FACT4, FUNIT3, FUNIT4, ICTOP, IPTOC, WAVE,
+    resonance::{Fermi1, Fermi2},
+    Dmat, Dvec, Spectro, Vec3, FACT3, FACT4, FUNIT3, FUNIT4, ICTOP, IPTOC,
+    WAVE,
 };
 
 impl Display for Spectro {
@@ -147,7 +151,10 @@ pub fn symm_eigen_decomp(mat: Dmat) -> (Dvec, Dmat) {
     )
 }
 
-pub fn load_fc2(infile: &str, n3n: usize) -> Dmat {
+pub fn load_fc2<P>(infile: P, n3n: usize) -> Dmat
+where
+    P: AsRef<Path>,
+{
     let data = read_to_string(infile).unwrap();
     Dmat::from_iterator(
         n3n,
@@ -156,7 +163,10 @@ pub fn load_fc2(infile: &str, n3n: usize) -> Dmat {
     )
 }
 
-pub fn load_fc3(infile: &str, n3n: usize) -> Tensor3 {
+pub fn load_fc3<P>(infile: P, n3n: usize) -> Tensor3
+where
+    P: AsRef<Path>,
+{
     let mut f3x = Tensor3::zeros(n3n, n3n, n3n);
     let f33 = load_fc34(infile);
     let mut labc = 0;
@@ -177,7 +187,10 @@ pub fn load_fc3(infile: &str, n3n: usize) -> Tensor3 {
     f3x
 }
 
-pub fn load_fc4(infile: &str, n3n: usize) -> Tensor4 {
+pub fn load_fc4<P>(infile: P, n3n: usize) -> Tensor4
+where
+    P: AsRef<Path>,
+{
     let mut f4x = Tensor4::zeros(n3n, n3n, n3n, n3n);
     let f44 = load_fc34(infile);
     let mut mabc = 0;
@@ -218,7 +231,7 @@ pub fn load_fc4(infile: &str, n3n: usize) -> Tensor4 {
     f4x
 }
 
-fn load_fc34(infile: &str) -> Vec<f64> {
+fn load_fc34<P: AsRef<Path>>(infile: P) -> Vec<f64> {
     let data = read_to_string(infile).unwrap();
     data.split_whitespace()
         .map(|s| s.parse().unwrap())
@@ -408,9 +421,17 @@ pub fn xcalc(
     f3qcm: &[f64],
     zmat: &Tensor3,
     rotcon: &[f64],
+    fermi1: &[Fermi1],
+    fermi2: &[Fermi2],
 ) -> (Dmat, f64) {
-    // TODO filled by loading fermi resonances
-    let ifrmchk = Tensor3::zeros(30, 30, 30);
+    let mut ifrmchk =
+        tensor::tensor3::Tensor3::<usize>::zeros(nvib, nvib, nvib);
+    for f in fermi1 {
+        ifrmchk[(f.i, f.i, f.j)] = 1;
+    }
+    for f in fermi2 {
+        ifrmchk[(f.i, f.j, f.k)] = 1;
+    }
     let mut xcnst = Dmat::zeros(nvib, nvib);
     // diagonal contributions to the anharmonic constants
     for k in 0..nvib {
@@ -422,7 +443,7 @@ pub fn xcalc(
         for l in 0..nvib {
             let kkl = find3r(k, k, l);
             let val2 = f3qcm[kkl].powi(2);
-            if ifrmchk[(k, k, l)] != 0.0 {
+            if ifrmchk[(k, k, l)] != 0 {
                 // ifrmck = true;
                 todo!();
             } else {
