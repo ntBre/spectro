@@ -1,4 +1,6 @@
 use std::{
+    cmp::{max, min},
+    f64::consts::SQRT_2,
     fmt::{Debug, Display},
     fs::read_to_string,
     iter::zip,
@@ -6,7 +8,7 @@ use std::{
     str::FromStr,
 };
 
-use nalgebra::{SymmetricEigen, Vector3};
+use nalgebra::{dmatrix, SymmetricEigen, Vector3};
 use tensor::Tensor4;
 type Tensor3 = tensor::tensor3::Tensor3<f64>;
 
@@ -614,13 +616,13 @@ pub fn funds(freq: &Dvec, nvib: usize, xcnst: &Dmat) -> Vec<f64> {
 
 /// take a vec of energy: state pairs and print them in SPECTRO's format
 #[allow(dead_code)]
-pub(crate) fn print_vib_states(reng: Vec<(f64, Vec<i32>)>) {
+pub(crate) fn print_vib_states(reng: &[f64], i1sts: &Vec<Vec<usize>>) {
     println!(
         "{:^10}{:^20}{:^20}{:>21}",
         "STATE NO.", "ENERGY (CM-1)", "ABOVE ZPT", "VIBRATIONAL STATE"
     );
-    for (i, (energy, state)) in reng.iter().enumerate() {
-        print!("{:5}{:20.4}{:20.4}", i + 1, energy, *energy - reng[0].0);
+    for (i, (energy, state)) in zip(reng, i1sts).enumerate() {
+        print!("{:5}{:20.4}{:20.4}", i + 1, energy, *energy - reng[0]);
         print!("{:>21}", "NON-DEG (Vs) :");
         for s in state {
             print!("{:5}", s);
@@ -629,22 +631,19 @@ pub(crate) fn print_vib_states(reng: Vec<(f64, Vec<i32>)>) {
     }
 }
 
-/// vibrational energy levels and properties in resonance. TODO needs a
-/// symmetric top implementation, this is for asymmetric tops
+/// vibrational energy levels and properties in resonance. returns the energies
+/// in the same order as the states in `i1sts`
 pub(crate) fn enrgy(
     fund: &[f64],
     freq: &Dvec,
     xcnst: &Dmat,
+    f3qcm: &[f64],
     e0: f64,
     i1sts: &Vec<Vec<usize>>,
     i1mode: &[usize],
-) -> Vec<(f64, Vec<usize>)> {
-    /*
-    TODO get from RESTST:
-    4. iovrtn - indices of overtone states
-    5. ifunda - indices of fundamental states; this and above should be
-        handled as enums probably
-     */
+    fermi1: &[Fermi1],
+    fermi2: &[Fermi2],
+) -> Vec<f64> {
     let nstate = i1sts.len();
     // NOTE: singly degenerate modes. this would change with degeneracies
     let n1dm = fund.len();
@@ -670,12 +669,78 @@ pub(crate) fn enrgy(
 
         eng[nst] = val1 + val2 + e0;
     }
-    // TODO skipped a bunch of resonance stuff here
-    // the r stands for reordered. zip with states to sort them too
-    let reng = eng.clone();
-    let mut reng: Vec<_> = zip(reng, i1sts.clone()).collect();
-    reng.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
-    reng
+    // we don't have to go searching for resonances, we can just iterate over
+    // the ones we actually have and handle those, so omit the loops from
+    // fortran
+    for &Fermi1 { i: ivib, j: jvib } in fermi1 {
+        rsfrm1(ivib, jvib, f3qcm, n1dm, &mut eng);
+    }
+    for &Fermi2 {
+        i: ivib,
+        j: jvib,
+        k: kvib,
+    } in fermi2
+    {
+        rsfrm2(ivib, jvib, kvib, f3qcm, n1dm, &mut eng);
+    }
+    // skip the sort in fortran. much more convenient to have them in the
+    // original order
+    eng
+}
+
+#[allow(unused)]
+fn rsfrm2(
+    ivib: usize,
+    jvib: usize,
+    kvib: usize,
+    f3qcm: &[f64],
+    n1dm: usize,
+    eng: &mut [f64],
+) {
+    let ijk = find3r(ivib, jvib, kvib);
+    // ijst is the combination band of i and j, so take their offset calculation
+    // and add n1dm == nfreq
+    let ijst = ioff(max(ivib + 1, jvib + 1) + 1) + min(ivib, jvib) + n1dm;
+    let kst = kvib + 1;
+    let val = f3qcm[ijk] / (2.0 * SQRT_2);
+    let eres = dmatrix![
+    eng[ijst] - eng[0], val;
+    val, eng[kst] - eng[0];
+    ];
+    // TODO left out error measures
+    let (eigval, _eigvec) = symm_eigen_decomp(eres);
+    eng[ijst] = eigval[0] + eng[0];
+    eng[kst] = eigval[1] + eng[0];
+    // TODO left out properties
+}
+
+fn rsfrm1(
+    ivib: usize,
+    jvib: usize,
+    f3qcm: &[f64],
+    n1dm: usize,
+    eng: &mut [f64],
+) {
+    let iij = find3r(ivib, ivib, jvib);
+    // NOTE skipping degmode check here
+    let val = 0.25 * f3qcm[iij];
+    // ist is the overtone corresponding to i, jst is the fundamental
+    // corresponding to j, basically 2vi = vj or the definition of a fermi 1
+    // resonance. + 1 to skip the ground state
+    let ist = n1dm + ivib + 1;
+    let jst = jvib + 1;
+    // this is actually a symmetric matrix I think
+    let eres = [eng[ist] - eng[0], val, eng[jst] - eng[0]];
+    // TODO left out printed error measures
+    let eres = dmatrix![
+    eres[0], val;
+    val, eres[2];
+    ];
+    // note that mine are sorted already unlike the fortran version
+    let (eigval, _eigvec) = symm_eigen_decomp(eres);
+    eng[ist] = eigval[0] + eng[0];
+    eng[jst] = eigval[1] + eng[0];
+    // TODO left out the calculation of updated properties
 }
 
 pub(crate) fn alpha(

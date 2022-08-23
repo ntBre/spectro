@@ -118,8 +118,8 @@
   | rotrn3.f   |    87 | x      | project out rot/trans for cubics, skipping since we never use   |          |
   | rots.f     |   514 |        | rotational energy levels of symmetric tops                      |          |
   | rs.f       |    60 | x      | eigenvalues and eigenvectors of real symmetric matrix           |          |
-  | rsfrm1.f   |   154 |        |                                                                 |          |
-  | rsfrm2.f   |   140 |        |                                                                 |          |
+  | rsfrm1.f   |   154 | x      | fermi 1 resonance corrections (done minus rot const changes)    |          |
+  | rsfrm2.f   |   140 | x      | fermi 2 resonance corrections (done minus rot const changes)    |          |
   | rsp.f      |    83 | x      | eigen decomposition                                             |          |
   | sextic.f   |   743 |        | sextic distortion constants                                     |          |
   | smxpy.f    |    25 |        |                                                                 |          |

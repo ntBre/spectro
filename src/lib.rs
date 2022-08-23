@@ -766,7 +766,16 @@ impl Spectro {
             &i1sts,
         );
 
-        let _reng = enrgy(&fund, &freq, &xcnst, e0, &i1sts, &i1mode);
+        let reng = enrgy(
+            &fund, &freq, &xcnst, &f3qcm, e0, &i1sts, &i1mode, &fermi1, &fermi2,
+        );
+
+        let mut corrs = Vec::new();
+        for i in 1..self.nvib + 1 {
+            corrs.push(reng[i] - reng[0]);
+        }
+
+        // print_vib_states(&reng, &i1sts);
 
         let rots = self.rota(&rotnst, &i1sts, &rotcon, &quartic, &sextic);
 
@@ -774,6 +783,7 @@ impl Spectro {
             harms: freq,
             funds: fund,
             rots,
+            corrs,
         }
     }
 
@@ -855,12 +865,16 @@ impl Spectro {
 }
 
 /// contains all of the output data from running Spectro
+#[derive(Clone)]
 pub struct Output {
     /// harmonic frequencies
     pub harms: Dvec,
 
-    /// non-resonance-corrected anharmonic frequencies
+    /// partially resonance-corrected anharmonic frequencies
     pub funds: Vec<f64>,
+
+    /// fully resonance-corrected anharmonic frequencies
+    pub corrs: Vec<f64>,
 
     /// vibrationally averaged rotational constants
     pub rots: Vec<Rot>,
