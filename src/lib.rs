@@ -121,6 +121,7 @@ pub struct Spectro {
     pub axes: Mat3,
 }
 
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Restst {
     pub coriolis: Vec<Coriolis>,
     pub fermi1: Vec<Fermi1>,

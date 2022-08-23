@@ -73,7 +73,7 @@ impl Rotor {
                         let diff = freq[i] - freq[j];
                         if diff.abs() <= CTOL {
                             for z in 0..3 {
-                                if zmat[(i, j, z)] >= ZTOL {
+                                if zmat[(i, j, z)].abs() >= ZTOL {
                                     ret.push(Coriolis::new(i, j));
                                 }
                             }
@@ -113,7 +113,7 @@ impl Rotor {
                         let diff = 2.0 * freq[i] - freq[j];
                         if diff.abs() <= FTOL1 {
                             let iij = find3r(i, i, j);
-                            if f3qcm[iij] >= F3TOL {
+                            if f3qcm[iij].abs() >= F3TOL {
                                 ret.push(Fermi1::new(i, j));
                             }
                         }
@@ -153,28 +153,31 @@ impl Rotor {
                     for jj in 0..ii {
                         let j = i1mode[jj];
                         for kk in 0..jj {
-                            let k = i1mode[(kk)];
-                            let diff1 = freq[(i)] - freq[(j)] - freq[(k)];
-                            let diff2 = -freq[(i)] + freq[(j)] - freq[(k)];
-                            let diff3 = -freq[(i)] - freq[(j)] + freq[(k)];
-                            let diff4 = freq[(i)] + freq[(j)] + freq[(k)];
+                            let k = i1mode[kk];
+                            let diff1 = freq[i] - freq[j] - freq[k];
+                            let diff2 = -freq[i] + freq[j] - freq[k];
+                            let diff3 = -freq[i] - freq[j] + freq[k];
+                            let diff4 = freq[i] + freq[j] + freq[k];
                             let delta = diff1 * diff2 * diff3 * diff4;
                             let ijk = find3r(i, j, k);
                             if i != j && j != k && i != k {
-                                // min of the 3 diffs
+                                // min of the 3 diffs, but they take the abs in
+                                // the sort, so take the last element instead of
+                                // first and use abs in the tolerance later
                                 let mut dalet = [diff1, diff2, diff3];
                                 dalet
                                     .sort_by(|a, b| a.partial_cmp(&b).unwrap());
-                                let dalet = dalet[0];
-
+                                let dalet = dalet[2];
                                 if delta.abs() <= DLTOL {
-                                    if f3qcm[ijk] >= F3TOL {
+                                    if f3qcm[ijk].abs() >= F3TOL {
                                         ret.push(Fermi2::new(i, j, k));
+                                        continue;
                                     }
                                 } else {
-                                    if dalet <= DFTOL {
-                                        if f3qcm[ijk] >= F3TOL {
+                                    if dalet.abs() <= DFTOL {
+                                        if f3qcm[ijk].abs() >= F3TOL {
                                             ret.push(Fermi2::new(i, j, k));
+                                            continue;
                                         }
                                     }
                                 }

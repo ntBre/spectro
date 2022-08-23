@@ -1,5 +1,5 @@
 /// coriolis resonance wᵢ = wⱼ
-#[derive(Debug)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Coriolis {
     pub i: usize,
     pub j: usize,
@@ -12,7 +12,7 @@ impl Coriolis {
 }
 
 /// type 1 Fermi resonance 2wᵢ = wⱼ
-#[derive(Debug)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Fermi1 {
     pub i: usize,
     pub j: usize,
@@ -25,7 +25,7 @@ impl Fermi1 {
 }
 
 /// type 2 Fermi resonance wₖ = wⱼ + wᵢ
-#[derive(Debug)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Fermi2 {
     pub i: usize,
     pub j: usize,
@@ -39,7 +39,7 @@ impl Fermi2 {
 }
 
 /// Darling-Dennison resonance 2wᵢ = 2wⱼ
-#[derive(Debug)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Darling {
     pub i: usize,
     pub j: usize,

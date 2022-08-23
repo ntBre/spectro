@@ -538,3 +538,153 @@ fn test_alphaa() {
     ];
     assert_abs_diff_eq!(got, want, epsilon = 2e-5);
 }
+
+#[test]
+fn restst() {
+    struct Test {
+        infile: &'static str,
+        fort15: &'static str,
+        fort30: &'static str,
+        want: Restst,
+    }
+    let tests = [
+        Test {
+            infile: "testfiles/h2o.in",
+            fort15: "testfiles/fort.15",
+            fort30: "testfiles/fort.30",
+            want: Restst {
+                coriolis: vec![],
+                fermi1: vec![],
+                fermi2: vec![],
+                darling: vec![Darling::new(1, 0)],
+                i1sts: vec![
+                    vec![0, 0, 0],
+                    vec![1, 0, 0],
+                    vec![0, 1, 0],
+                    vec![0, 0, 1],
+                    vec![2, 0, 0],
+                    vec![0, 2, 0],
+                    vec![0, 0, 2],
+                    vec![1, 1, 0],
+                    vec![1, 0, 1],
+                    vec![0, 1, 1],
+                ],
+                i1mode: vec![0, 1, 2],
+            },
+        },
+        Test {
+            infile: "testfiles/c3h2.in",
+            fort15: "testfiles/c3h2.15",
+            fort30: "testfiles/c3h2.30",
+            want: Restst {
+                coriolis: vec![
+                    Coriolis::new(5, 4),
+                    Coriolis::new(6, 5),
+                    Coriolis::new(7, 4),
+                    Coriolis::new(7, 5),
+                    Coriolis::new(7, 6),
+                    Coriolis::new(8, 6),
+                    Coriolis::new(8, 7),
+                ],
+                fermi1: vec![
+                    Fermi1::new(2, 0),
+                    Fermi1::new(6, 2),
+                    Fermi1::new(7, 2),
+                    Fermi1::new(8, 2),
+                ],
+                fermi2: vec![],
+                darling: vec![
+                    Darling::new(1, 0),
+                    Darling::new(5, 4),
+                    Darling::new(6, 5),
+                    Darling::new(7, 5),
+                    Darling::new(7, 6),
+                    Darling::new(8, 6),
+                    Darling::new(8, 7),
+                ],
+                i1sts: vec![
+                    vec![0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    vec![1, 0, 0, 0, 0, 0, 0, 0, 0],
+                    vec![0, 1, 0, 0, 0, 0, 0, 0, 0],
+                    vec![0, 0, 1, 0, 0, 0, 0, 0, 0],
+                    vec![0, 0, 0, 1, 0, 0, 0, 0, 0],
+                    vec![0, 0, 0, 0, 1, 0, 0, 0, 0],
+                    vec![0, 0, 0, 0, 0, 1, 0, 0, 0],
+                    vec![0, 0, 0, 0, 0, 0, 1, 0, 0],
+                    vec![0, 0, 0, 0, 0, 0, 0, 1, 0],
+                    vec![0, 0, 0, 0, 0, 0, 0, 0, 1],
+                    vec![2, 0, 0, 0, 0, 0, 0, 0, 0],
+                    vec![0, 2, 0, 0, 0, 0, 0, 0, 0],
+                    vec![0, 0, 2, 0, 0, 0, 0, 0, 0],
+                    vec![0, 0, 0, 2, 0, 0, 0, 0, 0],
+                    vec![0, 0, 0, 0, 2, 0, 0, 0, 0],
+                    vec![0, 0, 0, 0, 0, 2, 0, 0, 0],
+                    vec![0, 0, 0, 0, 0, 0, 2, 0, 0],
+                    vec![0, 0, 0, 0, 0, 0, 0, 2, 0],
+                    vec![0, 0, 0, 0, 0, 0, 0, 0, 2],
+                    vec![1, 1, 0, 0, 0, 0, 0, 0, 0],
+                    vec![1, 0, 1, 0, 0, 0, 0, 0, 0],
+                    vec![1, 0, 0, 1, 0, 0, 0, 0, 0],
+                    vec![1, 0, 0, 0, 1, 0, 0, 0, 0],
+                    vec![1, 0, 0, 0, 0, 1, 0, 0, 0],
+                    vec![1, 0, 0, 0, 0, 0, 1, 0, 0],
+                    vec![1, 0, 0, 0, 0, 0, 0, 1, 0],
+                    vec![1, 0, 0, 0, 0, 0, 0, 0, 1],
+                    vec![0, 1, 1, 0, 0, 0, 0, 0, 0],
+                    vec![0, 1, 0, 1, 0, 0, 0, 0, 0],
+                    vec![0, 1, 0, 0, 1, 0, 0, 0, 0],
+                    vec![0, 1, 0, 0, 0, 1, 0, 0, 0],
+                    vec![0, 1, 0, 0, 0, 0, 1, 0, 0],
+                    vec![0, 1, 0, 0, 0, 0, 0, 1, 0],
+                    vec![0, 1, 0, 0, 0, 0, 0, 0, 1],
+                    vec![0, 0, 1, 1, 0, 0, 0, 0, 0],
+                    vec![0, 0, 1, 0, 1, 0, 0, 0, 0],
+                    vec![0, 0, 1, 0, 0, 1, 0, 0, 0],
+                    vec![0, 0, 1, 0, 0, 0, 1, 0, 0],
+                    vec![0, 0, 1, 0, 0, 0, 0, 1, 0],
+                    vec![0, 0, 1, 0, 0, 0, 0, 0, 1],
+                    vec![0, 0, 0, 1, 1, 0, 0, 0, 0],
+                    vec![0, 0, 0, 1, 0, 1, 0, 0, 0],
+                    vec![0, 0, 0, 1, 0, 0, 1, 0, 0],
+                    vec![0, 0, 0, 1, 0, 0, 0, 1, 0],
+                    vec![0, 0, 0, 1, 0, 0, 0, 0, 1],
+                    vec![0, 0, 0, 0, 1, 1, 0, 0, 0],
+                    vec![0, 0, 0, 0, 1, 0, 1, 0, 0],
+                    vec![0, 0, 0, 0, 1, 0, 0, 1, 0],
+                    vec![0, 0, 0, 0, 1, 0, 0, 0, 1],
+                    vec![0, 0, 0, 0, 0, 1, 1, 0, 0],
+                    vec![0, 0, 0, 0, 0, 1, 0, 1, 0],
+                    vec![0, 0, 0, 0, 0, 1, 0, 0, 1],
+                    vec![0, 0, 0, 0, 0, 0, 1, 1, 0],
+                    vec![0, 0, 0, 0, 0, 0, 1, 0, 1],
+                    vec![0, 0, 0, 0, 0, 0, 0, 1, 1],
+                ],
+                i1mode: vec![0, 1, 2, 3, 4, 5, 6, 7, 8],
+            },
+        },
+    ];
+    for test in tests {
+        let s = Spectro::load(test.infile);
+        let fc2 = load_fc2(test.fort15, s.n3n);
+        let fc2 = s.rot2nd(fc2, s.axes);
+        let fc2 = FACT2 * fc2;
+        let w = s.geom.weights();
+        let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
+        let fxm = s.form_sec(fc2, s.n3n, &sqm);
+        let (harms, lxm) = symm_eigen_decomp(fxm);
+        let freq = to_wavenumbers(harms);
+        let lx = s.make_lx(s.n3n, &sqm, &lxm);
+        let (zmat, _biga, _wila) = s.zeta(s.natom, s.nvib, &lxm, &w);
+        let f3x = load_fc3(test.fort30, s.n3n);
+        let mut f3x = s.rot3rd(f3x, s.axes);
+        let f3qcm = force3(s.n3n, &mut f3x, &lx, s.nvib, &freq, s.i3vib);
+        let got = s.restst(&zmat, &f3qcm, &freq);
+        assert_eq!(got.coriolis, test.want.coriolis);
+        assert_eq!(got.fermi1, test.want.fermi1);
+        assert_eq!(got.fermi2, test.want.fermi2);
+        assert_eq!(got.darling, test.want.darling);
+        assert_eq!(got.i1sts, test.want.i1sts);
+        assert_eq!(got.i1mode, test.want.i1mode);
+        assert_eq!(got, test.want);
+    }
+}
