@@ -426,8 +426,10 @@ pub fn xcalc(
 ) -> (Dmat, f64) {
     let mut ifrmchk =
         tensor::tensor3::Tensor3::<usize>::zeros(nvib, nvib, nvib);
+    let mut ifrm1 = vec![0; nvib];
     for f in fermi1 {
         ifrmchk[(f.i, f.i, f.j)] = 1;
+        ifrm1[f.i] = f.j;
     }
     for f in fermi2 {
         ifrmchk[(f.i, f.j, f.k)] = 1;
@@ -532,7 +534,6 @@ pub fn xcalc(
         let wk = freq[k].powi(2);
 
         // kkl terms
-        let _ifrmck = false;
         for l in 0..nvib {
             let kkl = find3r(k, k, l);
             if k == l {
@@ -540,10 +541,14 @@ pub fn xcalc(
             }
             let wl = freq[l].powi(2);
             let zval1 = f3qcm[kkl].powi(2);
-            // TODO fermi goto stuff
-            let znum1 = freq[l];
-            let delta = 4.0 * wk - wl;
-            f3kkl += 3.0 * zval1 * znum1 / (64.0 * delta);
+            if ifrm1[k] == l {
+                let delta = 2.0 * (2.0 * freq[k] + freq[l]);
+                f3kkl += 3.0 * zval1 / (64.0 * delta);
+            } else {
+                let znum1 = freq[l];
+                let delta = 4.0 * wk - wl;
+                f3kkl += 3.0 * zval1 * znum1 / (64.0 * delta);
+            }
         }
     }
 
@@ -567,13 +572,23 @@ pub fn xcalc(
                 let _wm = freq[m].powi(2);
                 let _km = ioff(k.max(m)) + k.min(m);
                 let _lm = ioff(l.max(m)) + l.min(m);
-                // TODO resonance stuff
                 let d1 = freq[k] + freq[l] + freq[m];
                 let d2 = freq[k] - freq[l] + freq[m];
                 let d3 = freq[k] + freq[l] - freq[m];
                 let d4 = freq[k] - freq[l] - freq[m];
-                let delta2 = d1 * d2 * d3 * d4;
-                f3klm -= zval3 * xklm / (4.0 * delta2);
+                if ifrmchk[(k, l, m)] != 0 {
+                    let delta1 = 1.0 / d1 + 1.0 / d2 + 1.0 / d4;
+                    f3klm -= zval3 * delta1 / 16.0;
+                } else if ifrmchk[(l, m, k)] != 0 {
+                    let delta1 = 1.0 / d1 + 1.0 / d2 - 1.0 / d3;
+                    f3klm -= zval3 * delta1 / 16.0;
+                } else if ifrmchk[(k, m, l)] != 0 {
+                    let delta1 = 1.0 / d1 - 1.0 / d3 + 1.0 / d4;
+                    f3klm -= zval3 * delta1 / 16.0;
+                } else {
+                    let delta2 = d1 * d2 * d3 * d4;
+                    f3klm -= zval3 * xklm / (4.0 * delta2);
+                }
             }
         }
     }

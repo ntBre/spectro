@@ -154,7 +154,7 @@
   | wcals.f    |   427 |        |                                                                 |          |
   | wpadti.f   |     4 |        |                                                                 |          |
   | wreadw.f   |    34 |        |                                                                 |          |
-  | xcalc.f    |   404 | x      | done until resonances                                           |          |
+  | xcalc.f    |   404 | x      | compute anharmonic constants for asym tops                      | done     |
   | xcals.f    |   984 |        |                                                                 |          |
   | xtcalc.f   |   509 |        |                                                                 |          |
   | xtcals.f   |  1635 |        |                                                                 |          |
