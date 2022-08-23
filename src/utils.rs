@@ -431,6 +431,7 @@ pub fn xcalc(
     }
     for f in fermi2 {
         ifrmchk[(f.i, f.j, f.k)] = 1;
+        ifrmchk[(f.j, f.i, f.k)] = 1;
     }
     let mut xcnst = Dmat::zeros(nvib, nvib);
     // diagonal contributions to the anharmonic constants
@@ -439,13 +440,13 @@ pub fn xcalc(
         let val1 = f4qcm[kkkk] / 16.0;
         let wk = freq[k].powi(2);
         let mut valu = 0.0;
-        let mut _ifrmck = false; // probably a bool
         for l in 0..nvib {
             let kkl = find3r(k, k, l);
             let val2 = f3qcm[kkl].powi(2);
             if ifrmchk[(k, k, l)] != 0 {
-                // ifrmck = true;
-                todo!();
+                let val3 = 1.0 / (8.0 * freq[l]);
+                let val4 = 1.0 / (32.0 * (2.0 * freq[k] + freq[l]));
+                valu -= val2 * (val3 + val4);
             } else {
                 let wl = freq[l].powi(2);
                 let val3 = 8.0 * wk - 3.0 * wl;
@@ -469,7 +470,6 @@ pub fn xcalc(
             }
 
             let mut valu = 0.0;
-            let mut _ifrmck = false;
             for m in 0..nvib {
                 let _lm = ioff(l.max(m)) + l.min(m);
                 let _km = ioff(k.max(m)) + k.min(m);
@@ -478,14 +478,33 @@ pub fn xcalc(
                 let d3 = freq[k] + freq[l] - freq[m];
                 let d4 = -freq[k] + freq[l] + freq[m];
                 let klm = find3r(k, l, m);
-                // TODO fermi check stuff
-                // if ifrmchk[(l, m, k)] != 0.0 && m != l {
-                // 	ifrmck = true;
-                // 	todo!();
-                // }
-                let delta = -d1 * d2 * d3 * d4;
-                let val3 = freq[m].powi(2) - freq[k].powi(2) - freq[l].powi(2);
-                valu -= 0.5 * f3qcm[klm].powi(2) * freq[m] * val3 / delta;
+                if ifrmchk[(l, m, k)] != 0 && m == l {
+                    // case 1
+                    let delta = 8.0 * (2.0 * freq[l] + freq[k]);
+                    valu -= f3qcm[klm].powi(2) / delta;
+                } else if ifrmchk[(k, m, l)] != 0 && k == m {
+                    // case 2
+                    let delta = 8.0 * (2.0 * freq[k] + freq[l]);
+                    valu -= f3qcm[klm].powi(2) / delta;
+                } else if ifrmchk[(k, l, m)] != 0 {
+                    // case 3
+                    let delta = 1.0 / d1 + 1.0 / d2 + 1.0 / d4;
+                    valu -= f3qcm[klm].powi(2) * delta / 8.0;
+                } else if ifrmchk[(l, m, k)] != 0 {
+                    // case 4
+                    let delta = 1.0 / d1 + 1.0 / d2 - 1.0 / d3;
+                    valu -= f3qcm[klm].powi(2) * delta / 8.0;
+                } else if ifrmchk[(k, m, l)] != 0 {
+                    // case 5
+                    let delta = 1.0 / d1 - 1.0 / d3 + 1.0 / d4;
+                    valu -= f3qcm[klm].powi(2) * delta / 8.0;
+                } else {
+                    // default
+                    let delta = -d1 * d2 * d3 * d4;
+                    let val3 =
+                        freq[m].powi(2) - freq[k].powi(2) - freq[l].powi(2);
+                    valu -= 0.5 * f3qcm[klm].powi(2) * freq[m] * val3 / delta;
+                }
             }
             let val5 = freq[k] / freq[l];
             let val6 = freq[l] / freq[k];

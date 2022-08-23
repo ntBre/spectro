@@ -278,22 +278,121 @@ fn test_run() {
         fort40: &'static str,
         want: Output,
     }
-    let tests = [Test {
-        infile: "testfiles/h2o.in",
-        fort15: "testfiles/fort.15",
-        fort30: "testfiles/fort.30",
-        fort40: "testfiles/fort.40",
-        want: Output {
-            harms: dvector![3943.7, 3833.7, 1650.9],
-            funds: vec![3753.2, 3656.5, 1598.5],
-            rots: vec![
-                Rot::new(vec![0, 0, 0], 27.65578, 14.50450, 9.26320),
-                Rot::new(vec![1, 0, 0], 26.49932, 14.40582, 9.12023),
-                Rot::new(vec![0, 1, 0], 26.96677, 14.28519, 9.08617),
-                Rot::new(vec![0, 0, 1], 30.25411, 14.66636, 9.11681),
-            ],
+    let tests = [
+        Test {
+            infile: "testfiles/h2o.in",
+            fort15: "testfiles/fort.15",
+            fort30: "testfiles/fort.30",
+            fort40: "testfiles/fort.40",
+            want: Output {
+                harms: dvector![3943.7, 3833.7, 1650.9],
+                funds: vec![3753.2, 3656.5, 1598.5],
+                rots: vec![
+                    Rot::new(vec![0, 0, 0], 27.65578, 14.50450, 9.26320),
+                    Rot::new(vec![1, 0, 0], 26.49932, 14.40582, 9.12023),
+                    Rot::new(vec![0, 1, 0], 26.96677, 14.28519, 9.08617),
+                    Rot::new(vec![0, 0, 1], 30.25411, 14.66636, 9.11681),
+                ],
+            },
         },
-    }];
+        Test {
+            infile: "testfiles/h2co.in",
+            fort15: "testfiles/h2co.15",
+            fort30: "testfiles/h2co.30",
+            fort40: "testfiles/h2co.40",
+            want: Output {
+                harms: dvector![3004.6, 2932.6, 1778.7, 1534.1, 1269.8, 1186.9],
+                funds: vec![2842.9, 2780.1, 1747.8, 1499.4, 1246.8, 1166.9],
+                rots: vec![
+                    Rot::new(vec![0, 0, 0, 0, 0, 0], 9.39885, 1.29151, 1.13102),
+                    Rot::new(vec![1, 0, 0, 0, 0, 0], 9.30907, 1.29000, 1.12956),
+                    Rot::new(vec![0, 1, 0, 0, 0, 0], 9.23556, 1.29111, 1.12877),
+                    Rot::new(vec![0, 0, 1, 0, 0, 0], 9.39585, 1.28435, 1.12225),
+                    Rot::new(vec![0, 0, 0, 1, 0, 0], 9.46174, 1.30001, 1.12842),
+                    Rot::new(vec![0, 0, 0, 0, 1, 0], 9.51923, 1.29405, 1.12472),
+                    Rot::new(vec![0, 0, 0, 0, 0, 1], 9.25579, 1.27912, 1.13234),
+                ],
+            },
+        },
+        Test {
+            infile: "testfiles/c3h2.in",
+            fort15: "testfiles/c3h2.15",
+            fort30: "testfiles/c3h2.30",
+            fort40: "testfiles/c3h2.40",
+            want: Output {
+                harms: dvector![
+                    3281.2, 3247.5, 1623.3, 1307.6, 1090.7, 993.0, 908.5,
+                    901.5, 785.4
+                ],
+                funds: vec![
+                    3140.1, 3113.3, 1589.1, 1273.1, 1059.5, 967.5, 887.1,
+                    846.2, 769.6,
+                ],
+                rots: vec![
+                    Rot::new(
+                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0],
+                        1.16424,
+                        1.06982,
+                        0.55583,
+                    ),
+                    Rot::new(
+                        vec![1, 0, 0, 0, 0, 0, 0, 0, 0],
+                        1.16232,
+                        1.06543,
+                        0.55420,
+                    ),
+                    Rot::new(
+                        vec![0, 1, 0, 0, 0, 0, 0, 0, 0],
+                        1.16233,
+                        1.06571,
+                        0.55431,
+                    ),
+                    Rot::new(
+                        vec![0, 0, 1, 0, 0, 0, 0, 0, 0],
+                        1.16451,
+                        1.06367,
+                        0.55439,
+                    ),
+                    Rot::new(
+                        vec![0, 0, 0, 1, 0, 0, 0, 0, 0],
+                        1.16114,
+                        1.07017,
+                        0.55620,
+                    ),
+                    Rot::new(
+                        vec![0, 0, 0, 0, 1, 0, 0, 0, 0],
+                        1.15978,
+                        1.07109,
+                        0.55131,
+                    ),
+                    Rot::new(
+                        vec![0, 0, 0, 0, 0, 1, 0, 0, 0],
+                        1.16512,
+                        1.06609,
+                        0.55637,
+                    ),
+                    Rot::new(
+                        vec![0, 0, 0, 0, 0, 0, 1, 0, 0],
+                        1.16260,
+                        1.07277,
+                        0.55390,
+                    ),
+                    Rot::new(
+                        vec![0, 0, 0, 0, 0, 0, 0, 1, 0],
+                        1.16618,
+                        1.07216,
+                        0.55534,
+                    ),
+                    Rot::new(
+                        vec![0, 0, 0, 0, 0, 0, 0, 0, 1],
+                        1.15985,
+                        1.06958,
+                        0.55663,
+                    ),
+                ],
+            },
+        },
+    ];
     for test in tests {
         let spectro = Spectro::load(test.infile);
         let got = spectro.run(test.fort15, test.fort30, test.fort40);

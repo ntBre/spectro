@@ -618,7 +618,7 @@ fn c_mat(
     primat: &Vec3,
     wila: &Dmat,
 ) -> Dmat {
-    let mut c = Dmat::zeros(maxcor, 6);
+    let mut c = Dmat::zeros(nvib, 6);
     for i in 0..nvib {
         let cnst = (SQLAM * SQLAM * freq[i]).powf(1.5);
         for ixyz in 0..maxcor {
