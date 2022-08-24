@@ -649,11 +649,11 @@ pub(crate) fn enrgy(
     i1mode: &[usize],
     fermi1: &[Fermi1],
     fermi2: &[Fermi2],
-) -> Vec<f64> {
+    eng: &mut [f64],
+) {
     let nstate = i1sts.len();
     // NOTE: singly degenerate modes. this would change with degeneracies
     let n1dm = fund.len();
-    let mut eng = vec![0.0; nstate];
     for nst in 0..nstate {
         let mut val1 = 0.0;
         // why are these separate loops?
@@ -679,7 +679,7 @@ pub(crate) fn enrgy(
     // the ones we actually have and handle those, so omit the loops from
     // fortran
     for &Fermi1 { i: ivib, j: jvib } in fermi1 {
-        rsfrm1(ivib, jvib, f3qcm, n1dm, &mut eng);
+        rsfrm1(ivib, jvib, f3qcm, n1dm, eng);
     }
     for &Fermi2 {
         i: ivib,
@@ -687,11 +687,8 @@ pub(crate) fn enrgy(
         k: kvib,
     } in fermi2
     {
-        rsfrm2(ivib, jvib, kvib, f3qcm, n1dm, &mut eng);
+        rsfrm2(ivib, jvib, kvib, f3qcm, n1dm, eng);
     }
-    // skip the sort in fortran. much more convenient to have them in the
-    // original order
-    eng
 }
 
 #[allow(unused)]
@@ -714,9 +711,16 @@ fn rsfrm2(
     val, eng[kst] - eng[0];
     ];
     // TODO left out error measures
-    let (eigval, _eigvec) = symm_eigen_decomp(eres);
-    eng[ijst] = eigval[0] + eng[0];
-    eng[kst] = eigval[1] + eng[0];
+    let (eigval, eigvec) = symm_eigen_decomp(eres);
+    let a = eigvec[(0, 0)];
+    let b = eigvec[(1, 0)];
+    if a.abs() > b.abs() {
+        eng[ijst] = eigval[0] + eng[0];
+        eng[kst] = eigval[1] + eng[0];
+    } else {
+        eng[kst] = eigval[0] + eng[0];
+        eng[ijst] = eigval[1] + eng[0];
+    }
     // TODO left out properties
 }
 
@@ -742,10 +746,16 @@ fn rsfrm1(
     eres[0], val;
     val, eres[2];
     ];
-    // note that mine are sorted already unlike the fortran version
-    let (eigval, _eigvec) = symm_eigen_decomp(eres);
-    eng[ist] = eigval[0] + eng[0];
-    eng[jst] = eigval[1] + eng[0];
+    let (eigval, eigvec) = symm_eigen_decomp(eres);
+    let a = eigvec[(0, 0)];
+    let b = eigvec[(1, 0)];
+    if a.abs() > b.abs() {
+        eng[ist] = eigval[0] + eng[0];
+        eng[jst] = eigval[1] + eng[0];
+    } else {
+        eng[ist] = eigval[1] + eng[0];
+        eng[jst] = eigval[0] + eng[0];
+    }
     // TODO left out the calculation of updated properties
 }
 
