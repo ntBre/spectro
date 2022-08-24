@@ -1,5 +1,4 @@
 use std::{
-    cmp::{max, min},
     collections::HashMap,
     f64::consts::SQRT_2,
     fmt::{Debug, Display},
@@ -687,7 +686,7 @@ pub(crate) fn enrgy(
         k: kvib,
     } in fermi2
     {
-        rsfrm2(ivib, jvib, kvib, f3qcm, n1dm, eng);
+        rsfrm2(ivib, jvib, kvib, f3qcm, i1sts, eng);
     }
 }
 
@@ -696,13 +695,15 @@ fn rsfrm2(
     jvib: usize,
     kvib: usize,
     f3qcm: &[f64],
-    n1dm: usize,
+    i1sts: &Vec<Vec<usize>>,
     eng: &mut [f64],
 ) {
     let ijk = find3r(ivib, jvib, kvib);
-    // ijst is the combination band of i and j, so take their offset calculation
-    // and add n1dm == nfreq
-    let ijst = ioff(max(ivib + 1, jvib + 1) + 1) + min(ivib, jvib) + n1dm;
+    // I can't figure out the formula so just search for it
+    let ijst = i1sts
+        .iter()
+        .position(|x| x[ivib] == 1 && x[jvib] == 1)
+        .unwrap();
     let kst = kvib + 1;
     let val = f3qcm[ijk] / (2.0 * SQRT_2);
     let eres = dmatrix![

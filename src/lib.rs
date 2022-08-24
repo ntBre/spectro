@@ -870,7 +870,7 @@ impl Spectro {
             corrs.push(eng[i] - eng[0]);
         }
 
-        // print_vib_states(&reng, &i1sts);
+        // print_vib_states(&eng, &i1sts);
 
         let rots = self.rota(&rotnst, &i1sts, &rotcon, &quartic, &sextic);
 
