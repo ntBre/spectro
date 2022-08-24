@@ -1,5 +1,6 @@
 use std::{
     cmp::{max, min},
+    collections::HashMap,
     f64::consts::SQRT_2,
     fmt::{Debug, Display},
     fs::read_to_string,
@@ -428,10 +429,14 @@ pub fn xcalc(
 ) -> (Dmat, f64) {
     let mut ifrmchk =
         tensor::tensor3::Tensor3::<usize>::zeros(nvib, nvib, nvib);
-    let mut ifrm1 = vec![0; nvib];
+    // using a hash here instead of an array because I need some way to signal
+    // that the value is not there. in fortran they use an array of zeros
+    // because zero will never be a valid index. I could use -1, but then the
+    // vec has to be of isize and I have to do a lot of casting.
+    let mut ifrm1: HashMap<usize, usize> = HashMap::new();
     for f in fermi1 {
         ifrmchk[(f.i, f.i, f.j)] = 1;
-        ifrm1[f.i] = f.j;
+        ifrm1.insert(f.i, f.j);
     }
     for f in fermi2 {
         ifrmchk[(f.i, f.j, f.k)] = 1;
@@ -543,7 +548,8 @@ pub fn xcalc(
             }
             let wl = freq[l].powi(2);
             let zval1 = f3qcm[kkl].powi(2);
-            if ifrm1[k] == l {
+            let res = ifrm1.get(&k);
+            if res.is_some() && *res.unwrap() == l {
                 let delta = 2.0 * (2.0 * freq[k] + freq[l]);
                 f3kkl += 3.0 * zval1 / (64.0 * delta);
             } else {

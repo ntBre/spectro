@@ -514,32 +514,102 @@ fn test_force4() {
 
 #[test]
 fn test_funds_and_e0() {
-    let s = Spectro::load("testfiles/h2o.in");
-    let fc2 = load_fc2("testfiles/fort.15", s.n3n);
-    let fc2 = s.rot2nd(fc2, s.axes);
-    let fc2 = FACT2 * fc2;
-    let w = s.geom.weights();
-    let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
-    let fxm = s.form_sec(fc2, s.n3n, &sqm);
-    let (harms, lxm) = symm_eigen_decomp(fxm);
-    let freq = to_wavenumbers(harms);
-    let lx = s.make_lx(s.n3n, &sqm, &lxm);
-    let (zmat, _biga, _wila) = s.zeta(s.natom, s.nvib, &lxm, &w);
-    let f3x = load_fc3("testfiles/fort.30", s.n3n);
-    let mut f3x = s.rot3rd(f3x, s.axes);
-    let f3qcm = force3(s.n3n, &mut f3x, &lx, s.nvib, &freq, s.i3vib);
-    let f4x = load_fc4("testfiles/fort.40", s.n3n);
-    let mut f4x = s.rot4th(f4x, s.axes);
-    let f4qcm = force4(s.n3n, &mut f4x, &lx, s.nvib, &freq, s.i4vib);
-    let moments = s.geom.principal_moments();
-    let rotcon: Vec<_> = moments.iter().map(|m| CONST / m).collect();
-    let (xcnst, e0) =
-        xcalc(s.nvib, &f4qcm, &freq, &f3qcm, &zmat, &rotcon, &[], &[]);
-    let wante0 = 20.057563725859055;
-    assert_abs_diff_eq!(e0, wante0, epsilon = 6e-8);
-    let got = funds(&freq, s.nvib, &xcnst);
-    let want = vec![3753.166, 3656.537, 1598.516];
-    assert_abs_diff_eq!(Dvec::from(got), Dvec::from(want), epsilon = 1e-3);
+    #[derive(Clone)]
+    struct Test {
+        infile: &'static str,
+        fort15: &'static str,
+        fort30: &'static str,
+        fort40: &'static str,
+        want_e0: f64,
+        want_fund: Vec<f64>,
+        e_eps: f64,
+    }
+    let tests = [
+        Test {
+            infile: "testfiles/h2o.in",
+            fort15: "testfiles/fort.15",
+            fort30: "testfiles/fort.30",
+            fort40: "testfiles/fort.40",
+            want_e0: 20.057563725859055,
+            want_fund: vec![3753.166, 3656.537, 1598.516],
+            e_eps: 6e-8,
+        },
+        Test {
+            infile: "testfiles/h2co.in",
+            fort15: "testfiles/h2co.15",
+            fort30: "testfiles/h2co.30",
+            fort40: "testfiles/h2co.40",
+            want_e0: 11.49172492996696,
+            want_fund: vec![
+                2842.9498684325331,
+                2780.0927479723691,
+                1747.8239712488792,
+                1499.4165366400482,
+                1246.8067957023538,
+                1166.9312314784524,
+            ],
+            e_eps: 6e-8,
+        },
+        Test {
+            infile: "testfiles/c3h2.in",
+            fort15: "testfiles/c3h2.15",
+            fort30: "testfiles/c3h2.30",
+            fort40: "testfiles/c3h2.40",
+            want_e0: 4.2142433303609623,
+            want_fund: vec![
+                3140.1433372410634,
+                3113.2905071971295,
+                1589.145000387535,
+                1273.1343017671454,
+                1059.5183326828769,
+                967.49835061508804,
+                887.12367115864799,
+                846.15735546423639,
+                769.62107643057936,
+            ],
+            e_eps: 1e-8,
+        },
+    ];
+    for test in Vec::from(&tests[..]) {
+        let s = Spectro::load(test.infile);
+        let fc2 = load_fc2(test.fort15, s.n3n);
+        let fc2 = s.rot2nd(fc2, s.axes);
+        let fc2 = FACT2 * fc2;
+        let w = s.geom.weights();
+        let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
+        let fxm = s.form_sec(fc2, s.n3n, &sqm);
+        let (harms, lxm) = symm_eigen_decomp(fxm);
+        let freq = to_wavenumbers(harms);
+        let lx = s.make_lx(s.n3n, &sqm, &lxm);
+        let (zmat, _biga, _wila) = s.zeta(s.natom, s.nvib, &lxm, &w);
+        let f3x = load_fc3(test.fort30, s.n3n);
+        let mut f3x = s.rot3rd(f3x, s.axes);
+        let f3qcm = force3(s.n3n, &mut f3x, &lx, s.nvib, &freq, s.i3vib);
+        let f4x = load_fc4(test.fort40, s.n3n);
+        let mut f4x = s.rot4th(f4x, s.axes);
+        let f4qcm = force4(s.n3n, &mut f4x, &lx, s.nvib, &freq, s.i4vib);
+        let Restst {
+            coriolis: _,
+            fermi1,
+            fermi2,
+            darling: _,
+            i1sts: _,
+            i1mode: _,
+        } = s.restst(&zmat, &f3qcm, &freq);
+        let moments = s.geom.principal_moments();
+        let rotcon: Vec<_> = moments.iter().map(|m| CONST / m).collect();
+        let (xcnst, e0) = xcalc(
+            s.nvib, &f4qcm, &freq, &f3qcm, &zmat, &rotcon, &fermi1, &fermi2,
+        );
+        assert_abs_diff_eq!(e0, test.want_e0, epsilon = test.e_eps);
+
+        let got = funds(&freq, s.nvib, &xcnst);
+        assert_abs_diff_eq!(
+            Dvec::from(got),
+            Dvec::from(test.want_fund),
+            epsilon = 1e-3
+        );
+    }
 }
 
 #[test]
