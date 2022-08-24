@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use approx::assert_abs_diff_eq;
+use approx::{abs_diff_eq, assert_abs_diff_eq};
 use symm::Molecule;
 
 use crate::Curvil::*;
@@ -399,6 +399,106 @@ fn test_run() {
                 ],
             },
         },
+        Test {
+            infile: "testfiles/c2h4.in",
+            fort15: "testfiles/c2h4.15",
+            fort30: "testfiles/c2h4.30",
+            fort40: "testfiles/c2h4.40",
+            want: Output {
+                harms: dvector![
+                    3247.5, 3221.7, 3154.8, 3139.9, 1670.8, 1477.2, 1368.4,
+                    1248.2, 1050.4, 963.6, 949.5, 825.3
+                ],
+                funds: vec![
+                    3100.4, 3077.3, 3018.5, 3002.3, 1628.4, 1438.9, 1341.5,
+                    1226.7, 1026.0, 951.3, 941.6, 824.8,
+                ],
+                rots: vec![
+                    Rot::new(
+                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                        4.84948,
+                        0.99704,
+                        0.82481,
+                    ),
+                    Rot::new(
+                        vec![1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                        4.82436,
+                        0.99477,
+                        0.82283,
+                    ),
+                    Rot::new(
+                        vec![0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                        4.82311,
+                        0.99493,
+                        0.82316,
+                    ),
+                    Rot::new(
+                        vec![0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                        4.80755,
+                        0.99557,
+                        0.82262,
+                    ),
+                    Rot::new(
+                        vec![0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+                        4.81459,
+                        0.99584,
+                        0.82285,
+                    ),
+                    Rot::new(
+                        vec![0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+                        4.86289,
+                        0.99421,
+                        0.82000,
+                    ),
+                    Rot::new(
+                        vec![0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+                        4.91390,
+                        1.00341,
+                        0.82323,
+                    ),
+                    Rot::new(
+                        vec![0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+                        4.86105,
+                        0.99789,
+                        0.82273,
+                    ),
+                    Rot::new(
+                        vec![0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+                        4.98630,
+                        0.99858,
+                        0.82268,
+                    ),
+                    Rot::new(
+                        vec![0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+                        4.75974,
+                        1.00892,
+                        0.82482,
+                    ),
+                    Rot::new(
+                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+                        4.81452,
+                        0.99151,
+                        0.82616,
+                    ),
+                    Rot::new(
+                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+                        4.72227,
+                        0.99150,
+                        0.82550,
+                    ),
+                    Rot::new(
+                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                        4.89932,
+                        0.98215,
+                        0.82324,
+                    ),
+                ],
+                corrs: vec![
+                    3100.4, 3077.3, 3015.8, 2979.3, 1623.3, 1438.9, 1341.5,
+                    1226.7, 1026.0, 951.3, 941.6, 824.8,
+                ],
+            },
+        },
     ];
     for test in Vec::from(&tests[..]) {
         let spectro = Spectro::load(test.infile);
@@ -409,11 +509,24 @@ fn test_run() {
             Dvec::from(test.want.funds),
             epsilon = 0.1
         );
-        assert_abs_diff_eq!(
-            Dvec::from(got.corrs),
-            Dvec::from(test.want.corrs),
+        assert!(got.corrs.len() == test.want.corrs.len());
+        if !abs_diff_eq!(
+            Dvec::from(got.corrs.clone()),
+            Dvec::from(test.want.corrs.clone()),
             epsilon = 0.1
-        );
+        ) {
+            println!("\n{:>5}{:>8}{:>8}{:>8}", "Mode", "Got", "Want", "Diff");
+            for i in 0..got.corrs.len() {
+                println!(
+                    "{:5}{:8.1}{:8.1}{:8.1}",
+                    i + 1,
+                    got.corrs[i],
+                    test.want.corrs[i],
+                    got.corrs[i] - test.want.corrs[i],
+                );
+            }
+            assert!(false, "corrs differ");
+        }
         assert_abs_diff_eq!(
             DVector::from(got.rots),
             DVector::from(test.want.rots),
