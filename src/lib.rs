@@ -1,4 +1,5 @@
 use std::{
+    cmp::{max, min},
     collections::{HashMap, HashSet},
     f64::consts::PI,
     fmt::Debug,
@@ -580,11 +581,69 @@ impl Spectro {
         lx
     }
 
+    /// helper method for alpha matrix in `alphaa`
+    fn alpha(
+        &self,
+        rotcon: &[f64],
+        freq: &Dvec,
+        wila: &Dmat,
+        primat: &Vec3,
+        zmat: &Tensor3,
+        f3qcm: &[f64],
+        coriolis: &[Coriolis],
+    ) -> Dmat {
+        /// CONST IS THE PI*SQRT(C/H) FACTOR
+        const CONST: f64 = 0.086112;
+        let mut alpha = Dmat::zeros(self.nvib, 3);
+        let mut icorol = DMatrix::<usize>::zeros(self.i2vib, 3);
+        for &Coriolis { i, j, axis } in coriolis {
+            let ijvib = ioff(max(i, j)) + min(i, j);
+            icorol[(ijvib, axis as usize)] = 1;
+        }
+        for ixyz in 0..3 {
+            for i in 0..self.nvib {
+                let ii = ioff(ixyz + 2) - 1;
+                let valu0 = 2.0 * rotcon[ixyz].powi(2) / freq[i];
+                let mut valu1 = 0.0;
+                for jxyz in 0..3 {
+                    let ij = ioff(ixyz.max(jxyz) + 1) + ixyz.min(jxyz);
+                    valu1 += wila[(i, ij)].powi(2) / primat[jxyz];
+                }
+                valu1 *= 0.75;
+
+                let mut valu2 = 0.0;
+                let mut valu3 = 0.0;
+                for j in 0..self.nvib {
+                    if j != i {
+                        let ijvib = ioff(i.max(j)) + i.min(j);
+                        let wisq = freq[i].powi(2);
+                        let wjsq = freq[j].powi(2);
+                        if icorol[(ijvib, ixyz)] == 1 {
+                            valu2 -= 0.5
+                                * zmat[(i, j, ixyz)].powi(2)
+                                * (freq[i] - freq[j]).powi(2)
+                                / (freq[j] * (freq[i] + freq[j]));
+                        } else {
+                            valu2 += zmat[(i, j, ixyz)].powi(2)
+                                * (3.0 * wisq + wjsq)
+                                / (wisq - wjsq);
+                        }
+                    }
+                    let wj32 = freq[j].powf(1.5);
+                    let iij = find3r(j, i, i);
+                    valu3 += wila[(j, ii)] * f3qcm[iij] * freq[i] / wj32;
+                }
+                // valu3 issue on fourth iteration
+                alpha[(i, ixyz)] = valu0 * (valu1 + valu2 + valu3 * CONST);
+            }
+        }
+        alpha
+    }
+
     /// compute the vibrationally-averaged rotational constants for asymmetric
     /// tops
     fn alphaa(
         &self,
-        nvib: usize,
         rotcon: &[f64],
         freq: &Dvec,
         wila: &Dmat,
@@ -593,9 +652,11 @@ impl Spectro {
         fund: &[f64],
         i1mode: &[usize],
         i1sts: &Vec<Vec<usize>>,
+        coriolis: &[Coriolis],
     ) -> Dmat {
         let primat = self.geom.principal_moments();
-        let alpha = alpha(nvib, rotcon, freq, &wila, &primat, &zmat, f3qcm);
+        let alpha =
+            self.alpha(rotcon, freq, &wila, &primat, &zmat, f3qcm, coriolis);
         let nstop = 4;
         let n1dm = fund.len();
         let mut rotnst = Dmat::zeros(nstop, 3);
@@ -746,7 +807,7 @@ impl Spectro {
             force4(self.n3n, &mut f4x, &lx, self.nvib, &freq, self.i4vib);
 
         let Restst {
-            coriolis: _,
+            coriolis,
             fermi1,
             fermi2,
             darling: _,
@@ -763,8 +824,8 @@ impl Spectro {
         let fund = funds(&freq, self.nvib, &xcnst);
 
         let rotnst = self.alphaa(
-            self.nvib, &rotcon, &freq, &wila, &zmat, &f3qcm, &fund, &i1mode,
-            &i1sts,
+            &rotcon, &freq, &wila, &zmat, &f3qcm, &fund, &i1mode, &i1sts,
+            &coriolis,
         );
         // this is worked on by resona and then enrgy so keep it out here
         let nstate = i1sts.len();

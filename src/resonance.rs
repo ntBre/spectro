@@ -1,13 +1,31 @@
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub enum Axis {
+    #[default]
+    A = 0,
+    B = 1,
+    C = 2,
+}
+
 /// coriolis resonance wᵢ = wⱼ
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Coriolis {
     pub i: usize,
     pub j: usize,
+    pub axis: Axis,
 }
 
 impl Coriolis {
-    pub fn new(i: usize, j: usize) -> Self {
-        Self { i, j }
+    pub fn new(i: usize, j: usize, axis: usize) -> Self {
+        Self {
+            i,
+            j,
+            axis: match axis {
+                0 => Axis::A,
+                1 => Axis::B,
+                2 => Axis::C,
+                _ => panic!(),
+            },
+        }
     }
 }
 

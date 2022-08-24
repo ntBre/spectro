@@ -685,7 +685,15 @@ fn test_alpha() {
     let moments = s.geom.principal_moments();
     let rotcon: Vec<_> = moments.iter().map(|m| CONST / m).collect();
     let primat = s.geom.principal_moments();
-    let got = alpha(s.nvib, &rotcon, &freq, &wila, &primat, &zmat, &f3qcm);
+    let Restst {
+        coriolis,
+        fermi1: _,
+        fermi2: _,
+        darling: _,
+        i1sts: _,
+        i1mode: _,
+    } = s.restst(&zmat, &f3qcm, &freq);
+    let got = s.alpha(&rotcon, &freq, &wila, &primat, &zmat, &f3qcm, &coriolis);
     let want = dmatrix![
        -1.1564648277177876, -0.68900933871743675, 2.5983329447479688;
     -0.09868782762986765, -0.21931495793096034, 0.16185995232026804;
@@ -719,7 +727,7 @@ fn test_alphaa() {
         xcalc(s.nvib, &f4qcm, &freq, &f3qcm, &zmat, &rotcon, &[], &[]);
     let fund = funds(&freq, s.nvib, &xcnst);
     let Restst {
-        coriolis: _,
+        coriolis,
         fermi1: _,
         fermi2: _,
         darling: _,
@@ -727,7 +735,7 @@ fn test_alphaa() {
         i1mode,
     } = s.restst(&zmat, &f3qcm, &freq);
     let got = s.alphaa(
-        s.nvib, &rotcon, &freq, &wila, &zmat, &f3qcm, &fund, &i1mode, &i1sts,
+        &rotcon, &freq, &wila, &zmat, &f3qcm, &fund, &i1mode, &i1sts, &coriolis,
     );
     let want = dmatrix![
     27.657417987118755, 14.498766626639174, 9.2673038449583238;
@@ -776,7 +784,7 @@ fn restst() {
             fort15: "testfiles/h2co.15",
             fort30: "testfiles/h2co.30",
             want: Restst {
-                coriolis: vec![Coriolis::new(5, 4)],
+                coriolis: vec![Coriolis::new(5, 4, 0)],
                 fermi1: vec![Fermi1::new(3, 1)],
                 fermi2: vec![Fermi2::new(4, 2, 0)],
                 darling: vec![Darling::new(1, 0), Darling::new(5, 4)],
@@ -819,13 +827,13 @@ fn restst() {
             fort30: "testfiles/c3h2.30",
             want: Restst {
                 coriolis: vec![
-                    Coriolis::new(5, 4),
-                    Coriolis::new(6, 5),
-                    Coriolis::new(7, 4),
-                    Coriolis::new(7, 5),
-                    Coriolis::new(7, 6),
-                    Coriolis::new(8, 6),
-                    Coriolis::new(8, 7),
+                    Coriolis::new(5, 4, 0),
+                    Coriolis::new(6, 5, 0),
+                    Coriolis::new(7, 4, 2),
+                    Coriolis::new(7, 5, 1),
+                    Coriolis::new(7, 6, 2),
+                    Coriolis::new(8, 6, 1),
+                    Coriolis::new(8, 7, 0),
                 ],
                 fermi1: vec![
                     Fermi1::new(2, 0),

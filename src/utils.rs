@@ -9,7 +9,7 @@ use std::{
     str::FromStr,
 };
 
-use nalgebra::{dmatrix, SymmetricEigen, Vector3};
+use nalgebra::{dmatrix, SymmetricEigen};
 use tensor::Tensor4;
 type Tensor3 = tensor::tensor3::Tensor3<f64>;
 
@@ -756,51 +756,6 @@ fn rsfrm1(
         eng[jst] = eigval[0] + eng[0];
     }
     // TODO left out the calculation of updated properties
-}
-
-pub(crate) fn alpha(
-    nvib: usize,
-    rotcon: &[f64],
-    freq: &Dvec,
-    wila: &Dmat,
-    primat: &Vector3<f64>,
-    zmat: &Tensor3,
-    f3qcm: &[f64],
-) -> Dmat {
-    /// CONST IS THE PI*SQRT(C/H) FACTOR
-    const CONST: f64 = 0.086112;
-    let mut alpha = Dmat::zeros(nvib, 3);
-    for ixyz in 0..3 {
-        for i in 0..nvib {
-            let ii = ioff(ixyz + 2) - 1;
-            let valu0 = 2.0 * rotcon[ixyz].powi(2) / freq[i];
-            let mut valu1 = 0.0;
-            for jxyz in 0..3 {
-                let ij = ioff(ixyz.max(jxyz) + 1) + ixyz.min(jxyz);
-                valu1 += wila[(i, ij)].powi(2) / primat[jxyz];
-            }
-            valu1 *= 0.75;
-
-            let mut valu2 = 0.0;
-            let mut valu3 = 0.0;
-            for j in 0..nvib {
-                if j != i {
-                    let _ijvib = ioff(i.max(j)) + i.min(j);
-                    let wisq = freq[i].powi(2);
-                    let wjsq = freq[j].powi(2);
-                    // TODO should be if icorol stuff
-                    valu2 += zmat[(i, j, ixyz)].powi(2) * (3.0 * wisq + wjsq)
-                        / (wisq - wjsq);
-                }
-                let wj32 = freq[j].powf(1.5);
-                let iij = find3r(j, i, i);
-                valu3 += wila[(j, ii)] * f3qcm[iij] * freq[i] / wj32;
-            }
-            // valu3 issue on fourth iteration
-            alpha[(i, ixyz)] = valu0 * (valu1 + valu2 + valu3 * CONST);
-        }
-    }
-    alpha
 }
 
 /// convert tau to tau prime in wavenumbers

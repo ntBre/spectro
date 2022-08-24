@@ -73,7 +73,7 @@ impl Rotor {
                         if diff.abs() <= CTOL {
                             for z in 0..3 {
                                 if zmat[(i, j, z)].abs() >= ZTOL {
-                                    ret.push(Coriolis::new(i, j));
+                                    ret.push(Coriolis::new(i, j, z));
                                 }
                             }
                         }
