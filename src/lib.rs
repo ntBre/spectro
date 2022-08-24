@@ -1,5 +1,4 @@
 use std::{
-    cmp::min,
     collections::{HashMap, HashSet},
     f64::consts::PI,
     fmt::Debug,
@@ -798,25 +797,6 @@ impl Spectro {
             }
             eng[ist] = e - zpe;
         }
-
-        // TODO confirm that this doesn't change any values anywhere. as far as
-        // I can tell it doesn't modify anything, but I might not know until I
-        // go all the way through the implementation
-
-        // let dnom = inidnm(n1dm, &freq, &fermi1, &fermi2);
-        // let idimen = nreson * (nreson + 1) / 2;
-        // let mut resmat = Vec::with_capacity(idimen);
-        // for ii in 0..nreson {
-        //     for jj in 0..=ii {
-        //         if jj == ii {
-        //             resmat.push(eng[ii]);
-        //         } else {
-        //             resmat.push(genrsa(
-        //                 n1dm, &zmat, &f3qcm, &f4qcm, &iirst, &dnom, ii, jj,
-        //             ));
-        //         }
-        //     }
-        // }
         // end resona
 
         enrgy(
@@ -918,145 +898,6 @@ impl Spectro {
     }
 }
 
-/// compute general resonance element between states `istate` and `jstate` for
-/// an asymmetric top. `iirst` is a matrix containing the quantum numbers of the
-/// states involved in the resonance polyad. programmed from KK Lehmann, MolPhys
-/// 66(6), 1129-1137 (1988) + erratum MolPhys 75(3), 739(1993) and reference
-/// implementation from JML Martin. Martin's code has the NOTE "we still need to
-/// add some bookkeeping to avoid double-counting Fermi type resonance elements
-/// which may not have been deperturbed
-#[allow(unused)]
-fn genrsa(
-    n1dm: usize,
-    zmat: &tensor::Tensor3<f64>,
-    f3qcm: &[f64],
-    f4qcm: &[f64],
-    iirst: &DMatrix<usize>,
-    dnm: &tensor::Tensor3<f64>,
-    istate: usize,
-    jstate: usize,
-) -> f64 {
-    let mut idiff = 0;
-    let mut ndelta = 0;
-    let mut ndel = 0;
-    // lots of parallel arrays
-    let mut nleft = Vec::new();
-    let mut nright = Vec::new();
-    let mut ndiff = Vec::new();
-    let mut nmin = Vec::new();
-    let mut indx = Vec::new();
-    for i in 0..n1dm {
-        let nnleft = iirst[(istate, i)];
-        let nnright = iirst[(jstate, i)];
-        let ndiffer = nnright as isize - nnleft as isize;
-        if ndiffer != 0 {
-            ndelta += ndiffer.abs();
-            ndel += ndiffer;
-            if idiff > 4 || ndelta > 4 {
-                return 0.0;
-            }
-            nleft.push(nnleft);
-            nright.push(nnright);
-            ndiff.push(ndiffer);
-            nmin.push(min(nnleft, nnright));
-            indx.push(i);
-            idiff += 1;
-        }
-    }
-    match &idiff {
-        4 => {
-            let (ii, jj, kk, ll) = (indx[0], indx[1], indx[2], indx[3]);
-            let (na, nb, nc, nd) = (nmin[0], nmin[1], nmin[2], nmin[3]);
-            if ndel == 0 {
-                // ii etc in equivalence block with elements of indx
-                // na etc in equivalence block with elements of nmin
-                res2a(zmat, f3qcm, f4qcm, ii, jj, kk, ll)
-                    * (((na + 1) * (nb + 1) * (nc + 1) * (nd + 1)) as f64
-                        / 16.0)
-                        .sqrt()
-            } else {
-                todo!()
-            }
-        }
-        3 => todo!(),
-        2 => {
-            let (ii, jj) = (indx[0], indx[1]);
-            let (na, nb) = (nmin[0], nmin[1]);
-            match &ndelta {
-                4 => {
-                    if ndel == 0 {
-                        // case 3a: Darling-Dennison resonance
-                        res2a(zmat, f3qcm, f4qcm, ii, ii, jj, jj)
-                            * (((na + 1) * (na + 2) * (nb + 1) * (nb + 2))
-                                as f64
-                                / 16.0)
-                                .sqrt()
-                    } else {
-                        // case 3b b resonance
-                        todo!();
-                        // not sure where this i comes from
-                        // if ndiff[i].abs() == 3 {
-                        //     res2a(zmat, f3qcm, f4qcm, ii, ii, jj, jj)
-                        //         * (((na + 1) * (na + 2) * (nb + 1) * (nb + 2))
-                        //             as f64
-                        //             / 16.0)
-                        //             .sqrt()
-                        // } else {
-                        // res2a(zmat, f3qcm, f4qcm, ii, ii, jj, jj)
-                        //     * (((na + 1) * (na + 2) * (nb + 1) * (nb + 2))
-                        //         as f64
-                        //         / 16.0)
-                        //         .sqrt()
-                        // }
-                    }
-                }
-                // case 3c: Fermi type 1 resonance
-                3 => {
-                    if ndiff[0].abs() == 2 {
-                        if dnm[(jj, ii, ii)] == 0.0 {
-                            let iij = find3r(ii, ii, jj);
-                            0.5 * f3qcm[iij]
-                                * (((na + 1) * (na + 2) * (nb + 1)) as f64
-                                    / 8.0)
-                                    .sqrt()
-                        } else {
-                            0.0
-                        }
-                    } else {
-                        if dnm[(ii, jj, jj)] == 0.0 {
-                            let ijj = find3r(ii, jj, jj);
-                            0.5 * f3qcm[ijj]
-                                * (((nb + 1) * (nb + 2) * (na + 1)) as f64
-                                    / 8.0)
-                                    .sqrt()
-                        } else {
-                            0.0
-                        }
-                    }
-                }
-                _ => {
-                    dbg!(ndelta);
-                    todo!()
-                }
-            }
-        }
-        _ => 0.0,
-    }
-}
-
-#[allow(unused)]
-fn res2a(
-    zmat: &tensor::Tensor3<f64>,
-    f3qcm: &[f64],
-    f4qcm: &[f64],
-    ii: usize,
-    jj: usize,
-    kk: usize,
-    ll: usize,
-) -> f64 {
-    todo!()
-}
-
 /// construct the RESIN Fermi polyad matrix. NOTE that the comments in resona.f
 /// mention multiple blocks for different symmetries. However, the only way we
 /// use it is with a single block, so I'm writing this code with that in mind.
@@ -1091,34 +932,6 @@ fn make_resin(
     let resin =
         DMatrix::<usize>::from_row_slice(data.len() / n1dm, n1dm, &data);
     resin
-}
-
-/// initialize the tensor of inverse resonance denominators and zero elements
-/// corresponding to Fermi resonances that were deleted in the contact
-/// transformation
-#[allow(unused)]
-fn inidnm(
-    n1dm: usize,
-    freq: &Dvec,
-    fermi1: &Vec<Fermi1>,
-    fermi2: &Vec<Fermi2>,
-) -> Tensor3 {
-    let mut dnom = Tensor3::zeros(n1dm, n1dm, n1dm);
-    for i in 0..n1dm {
-        for j in 0..n1dm {
-            for k in 0..n1dm {
-                dnom[(i, j, k)] = 1.0 / (freq[i] - freq[j] - freq[k]);
-            }
-        }
-    }
-    for &Fermi1 { i, j } in fermi1 {
-        dnom[(j, i, i)] = 0.0;
-    }
-    for &Fermi2 { i, j, k } in fermi2 {
-        dnom[(i, j, k)] = 0.0;
-        dnom[(i, k, j)] = 0.0;
-    }
-    dnom
 }
 
 /// contains all of the output data from running Spectro
