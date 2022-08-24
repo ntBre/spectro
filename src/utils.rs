@@ -691,7 +691,6 @@ pub(crate) fn enrgy(
     }
 }
 
-#[allow(unused)]
 fn rsfrm2(
     ivib: usize,
     jvib: usize,
