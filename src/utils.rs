@@ -674,19 +674,27 @@ pub(crate) fn enrgy(
 
         eng[nst] = val1 + val2 + e0;
     }
-    // we don't have to go searching for resonances, we can just iterate over
-    // the ones we actually have and handle those, so omit the loops from
-    // fortran
-    for &Fermi1 { i: ivib, j: jvib } in fermi1 {
-        rsfrm1(ivib, jvib, f3qcm, n1dm, eng);
+    // these do need to be in the same loop because they feed back on each
+    // other, so make these hashes and access them that way
+    let mut ifrm1: HashMap<usize, usize> = HashMap::new();
+    for f in fermi1 {
+        ifrm1.insert(f.i, f.j);
     }
-    for &Fermi2 {
-        i: ivib,
-        j: jvib,
-        k: kvib,
-    } in fermi2
-    {
-        rsfrm2(ivib, jvib, kvib, f3qcm, i1sts, eng);
+    let mut ifrm2: HashMap<(usize, usize), usize> = HashMap::new();
+    for f in fermi2 {
+        ifrm2.insert((f.i, f.j), f.k);
+    }
+    for iii in 0..n1dm {
+        let ivib = i1mode[iii];
+        if let Some(jvib) = ifrm1.get(&ivib) {
+            rsfrm1(ivib, *jvib, f3qcm, n1dm, eng);
+        }
+        for jjj in iii + 1..n1dm {
+            let jvib = i1mode[jjj];
+            if let Some(kvib) = ifrm2.get(&(jvib, ivib)) {
+                rsfrm2(ivib, jvib, *kvib, f3qcm, i1sts, eng);
+            }
+        }
     }
 }
 
