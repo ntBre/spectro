@@ -657,7 +657,8 @@ impl Spectro {
         let primat = self.geom.principal_moments();
         let alpha =
             self.alpha(rotcon, freq, &wila, &primat, &zmat, f3qcm, coriolis);
-        let nstop = 4;
+        // do the fundamentals + the ground state
+        let nstop = fund.len() + 1;
         let n1dm = fund.len();
         let mut rotnst = Dmat::zeros(nstop, 3);
         for axis in 0..3 {
@@ -737,7 +738,9 @@ impl Spectro {
         // TODO take this from actual i1sts when I have that. currently i1sts is
         // all states, but I want to partition it to the singly-degenerate
         // states.
-        let nstop = 4;
+
+        // use the nstop determined earlier
+        let (nstop, _) = rotnst.shape();
         let nderiv = self.header[7];
         // this is a 600 line loop fml
         let mut ret = Vec::new();

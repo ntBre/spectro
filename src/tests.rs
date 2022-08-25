@@ -1,6 +1,7 @@
-use std::str::FromStr;
+use std::{fs::read_to_string, str::FromStr};
 
 use approx::{abs_diff_eq, assert_abs_diff_eq};
+use serde::Deserialize;
 use symm::Molecule;
 
 use crate::Curvil::*;
@@ -267,6 +268,41 @@ fn test_normfx() {
     ];
     assert_abs_diff_eq!(to_wavenumbers(harms), want_harms, epsilon = 1e-2);
     assert_abs_diff_eq!(lxm, want_lxm, epsilon = 1e-7);
+}
+
+fn load_want(filename: &'static str) -> Output {
+    #[derive(Clone, Deserialize, Debug)]
+    #[allow(unused)]
+    struct Want {
+        harms: Vec<f64>,
+        funds: Vec<f64>,
+        corrs: Vec<f64>,
+        rots: Vec<Vec<f64>>,
+    }
+    let data = read_to_string(filename).unwrap();
+    let want: Want = serde_json::from_str(&data).unwrap();
+    let mut rots = vec![Rot::new(
+        vec![0; want.harms.len()],
+        want.rots[0][2],
+        want.rots[0][0],
+        want.rots[0][1],
+    )];
+    for i in 0..want.harms.len() {
+        let mut tmp = vec![0; want.harms.len()];
+        tmp[i] = 1;
+        rots.push(Rot::new(
+            tmp,
+            want.rots[i + 1][2],
+            want.rots[i + 1][0],
+            want.rots[i + 1][1],
+        ));
+    }
+    Output {
+        harms: Dvec::from(want.harms),
+        funds: want.funds,
+        corrs: want.corrs,
+        rots,
+    }
 }
 
 #[test]
@@ -695,6 +731,13 @@ fn test_run() {
                 ],
             },
         },
+        Test {
+            infile: "testfiles/c3hcn/spectro.in",
+            fort15: "testfiles/c3hcn/fort.15",
+            fort30: "testfiles/c3hcn/fort.30",
+            fort40: "testfiles/c3hcn/fort.40",
+            want: load_want("testfiles/c3hcn/summary.json"),
+        },
     ];
     for test in Vec::from(&tests[..]) {
         let spectro = Spectro::load(test.infile);
@@ -723,11 +766,22 @@ fn test_run() {
             }
             assert!(false, "corrs differ");
         }
-        assert_abs_diff_eq!(
-            DVector::from(got.rots),
-            DVector::from(test.want.rots),
+        assert_eq!(got.rots.len(), test.want.rots.len());
+        if !abs_diff_eq!(
+            DVector::from(got.rots.clone()),
+            DVector::from(test.want.rots.clone()),
             epsilon = 3e-5
-        );
+        ) {
+            println!("{}", "got");
+            for g in got.rots {
+                println!("{}", g);
+            }
+            println!("{}", "want");
+            for g in test.want.rots {
+                println!("{}", g);
+            }
+            assert!(false, "rots differ");
+        }
     }
 }
 

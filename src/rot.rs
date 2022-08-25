@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use approx::AbsDiffEq;
 
 /// a rotational constant. eventually this will probably be an enum depending on
@@ -28,5 +30,14 @@ impl AbsDiffEq for Rot {
             && self.a.abs_diff_eq(&other.a, epsilon)
             && self.b.abs_diff_eq(&other.b, epsilon)
             && self.c.abs_diff_eq(&other.c, epsilon)
+    }
+}
+
+impl Display for Rot {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for s in &self.state {
+            write!(f, "{:5}", s)?
+        }
+        write!(f, "{:12.6}{:12.6}{:12.6}", self.a, self.b, self.c)
     }
 }
