@@ -393,12 +393,24 @@ fn test_run() {
             epsilon = 3e-5
         ) {
             println!("{}", "got");
-            for g in got.rots {
+            for g in &got.rots {
                 println!("{}", g);
             }
             println!("{}", "want");
-            for g in test.want.rots {
+            for g in &test.want.rots {
                 println!("{}", g);
+            }
+            println!("{}", "diff");
+            for g in 0..got.rots.len() {
+                println!(
+                    "{}",
+                    Rot::new(
+                        got.rots[g].state.clone(),
+                        got.rots[g].a - test.want.rots[g].a,
+                        got.rots[g].b - test.want.rots[g].b,
+                        got.rots[g].c - test.want.rots[g].c,
+                    )
+                );
             }
             assert!(false, "rots differ at {}", test.infile);
         }
