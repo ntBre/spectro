@@ -676,23 +676,29 @@ pub(crate) fn enrgy(
     }
     // these do need to be in the same loop because they feed back on each
     // other, so make these hashes and access them that way
-    let mut ifrm1: HashMap<usize, usize> = HashMap::new();
+    let mut ifrm1: HashMap<usize, Vec<usize>> = HashMap::new();
     for f in fermi1 {
-        ifrm1.insert(f.i, f.j);
+        let tmp = ifrm1.entry(f.i).or_insert(vec![]);
+        tmp.push(f.j);
     }
-    let mut ifrm2: HashMap<(usize, usize), usize> = HashMap::new();
+    let mut ifrm2: HashMap<(usize, usize), Vec<usize>> = HashMap::new();
     for f in fermi2 {
-        ifrm2.insert((f.i, f.j), f.k);
+        let tmp = ifrm2.entry((f.i, f.j)).or_insert(vec![]);
+        tmp.push(f.k);
     }
     for iii in 0..n1dm {
         let ivib = i1mode[iii];
         if let Some(jvib) = ifrm1.get(&ivib) {
-            rsfrm1(ivib, *jvib, f3qcm, n1dm, eng);
+            for j in jvib {
+                rsfrm1(ivib, *j, f3qcm, n1dm, eng);
+            }
         }
         for jjj in iii + 1..n1dm {
             let jvib = i1mode[jjj];
             if let Some(kvib) = ifrm2.get(&(jvib, ivib)) {
-                rsfrm2(ivib, jvib, *kvib, f3qcm, i1sts, eng);
+                for &k in kvib {
+                    rsfrm2(ivib, jvib, k, f3qcm, i1sts, eng);
+                }
             }
         }
     }
