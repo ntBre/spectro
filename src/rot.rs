@@ -38,6 +38,6 @@ impl Display for Rot {
         for s in &self.state {
             write!(f, "{:5}", s)?
         }
-        write!(f, "{:12.6}{:12.6}{:12.6}", self.a, self.b, self.c)
+        write!(f, "{:12.7}{:12.7}{:12.7}", self.a, self.b, self.c)
     }
 }

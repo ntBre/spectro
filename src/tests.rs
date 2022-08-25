@@ -174,7 +174,7 @@ fn test_load_fc2() {
 
 #[test]
 fn test_rot2nd() {
-    let mut spectro = Spectro::load("testfiles/h2o.in");
+    let mut spectro = Spectro::load("testfiles/h2o/spectro.in");
     spectro.geom.to_angstrom();
     spectro.geom.normalize();
     let fc2 = load_fc2("testfiles/fort.15", 9);
@@ -204,7 +204,7 @@ fn test_rot2nd() {
 
 #[test]
 fn test_sec() {
-    let mut spectro = Spectro::load("testfiles/h2o.in");
+    let mut spectro = Spectro::load("testfiles/h2o/spectro.in");
     spectro.geom.to_angstrom();
     spectro.geom.normalize();
     let fc2 = load_fc2("testfiles/fort.15", 9);
@@ -231,7 +231,7 @@ fn test_sec() {
 
 #[test]
 fn test_normfx() {
-    let mut s = Spectro::load("testfiles/h2o.in");
+    let mut s = Spectro::load("testfiles/h2o/spectro.in");
     s.geom.to_angstrom();
     s.geom.normalize();
     let fc2 = load_fc2("testfiles/fort.15", 9);
@@ -317,419 +317,39 @@ fn test_run() {
     }
     let tests = [
         Test {
-            infile: "testfiles/h2o.in",
-            fort15: "testfiles/fort.15",
-            fort30: "testfiles/fort.30",
-            fort40: "testfiles/fort.40",
-            want: Output {
-                harms: dvector![3943.7, 3833.7, 1650.9],
-                funds: vec![3753.2, 3656.5, 1598.5],
-                rots: vec![
-                    Rot::new(vec![0, 0, 0], 27.65578, 14.50450, 9.26320),
-                    Rot::new(vec![1, 0, 0], 26.49932, 14.40582, 9.12023),
-                    Rot::new(vec![0, 1, 0], 26.96677, 14.28519, 9.08617),
-                    Rot::new(vec![0, 0, 1], 30.25411, 14.66636, 9.11681),
-                ],
-                corrs: vec![3753.2, 3656.5, 1598.5],
-            },
+            infile: "testfiles/h2o/spectro.in",
+            fort15: "testfiles/h2o/fort.15",
+            fort30: "testfiles/h2o/fort.30",
+            fort40: "testfiles/h2o/fort.40",
+            want: load_want("testfiles/h2o/summary.json"),
         },
         Test {
-            infile: "testfiles/h2co.in",
-            fort15: "testfiles/h2co.15",
-            fort30: "testfiles/h2co.30",
-            fort40: "testfiles/h2co.40",
-            want: Output {
-                harms: dvector![3004.6, 2932.6, 1778.7, 1534.1, 1269.8, 1186.9],
-                funds: vec![2842.9, 2780.1, 1747.8, 1499.4, 1246.8, 1166.9],
-                rots: vec![
-                    Rot::new(vec![0, 0, 0, 0, 0, 0], 9.39885, 1.29151, 1.13102),
-                    Rot::new(vec![1, 0, 0, 0, 0, 0], 9.30907, 1.29000, 1.12956),
-                    Rot::new(vec![0, 1, 0, 0, 0, 0], 9.23556, 1.29111, 1.12877),
-                    Rot::new(vec![0, 0, 1, 0, 0, 0], 9.39585, 1.28435, 1.12225),
-                    Rot::new(vec![0, 0, 0, 1, 0, 0], 9.46174, 1.30001, 1.12842),
-                    Rot::new(vec![0, 0, 0, 0, 1, 0], 9.51923, 1.29405, 1.12472),
-                    Rot::new(vec![0, 0, 0, 0, 0, 1], 9.25579, 1.27912, 1.13234),
-                ],
-                corrs: vec![2826.6, 2778.4, 1747.8, 1499.4, 1246.8, 1166.9],
-            },
+            infile: "testfiles/h2co/spectro.in",
+            fort15: "testfiles/h2co/fort.15",
+            fort30: "testfiles/h2co/fort.30",
+            fort40: "testfiles/h2co/fort.40",
+            want: load_want("testfiles/h2co/summary.json"),
         },
         Test {
-            infile: "testfiles/c3h2.in",
-            fort15: "testfiles/c3h2.15",
-            fort30: "testfiles/c3h2.30",
-            fort40: "testfiles/c3h2.40",
-            want: Output {
-                harms: dvector![
-                    3281.2, 3247.5, 1623.3, 1307.6, 1090.7, 993.0, 908.5,
-                    901.5, 785.4
-                ],
-                funds: vec![
-                    3140.1, 3113.3, 1589.1, 1273.1, 1059.5, 967.5, 887.1,
-                    846.2, 769.6,
-                ],
-                rots: vec![
-                    Rot::new(
-                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0],
-                        1.16424,
-                        1.06982,
-                        0.55583,
-                    ),
-                    Rot::new(
-                        vec![1, 0, 0, 0, 0, 0, 0, 0, 0],
-                        1.16232,
-                        1.06543,
-                        0.55420,
-                    ),
-                    Rot::new(
-                        vec![0, 1, 0, 0, 0, 0, 0, 0, 0],
-                        1.16233,
-                        1.06571,
-                        0.55431,
-                    ),
-                    Rot::new(
-                        vec![0, 0, 1, 0, 0, 0, 0, 0, 0],
-                        1.16451,
-                        1.06367,
-                        0.55439,
-                    ),
-                    Rot::new(
-                        vec![0, 0, 0, 1, 0, 0, 0, 0, 0],
-                        1.16114,
-                        1.07017,
-                        0.55620,
-                    ),
-                    Rot::new(
-                        vec![0, 0, 0, 0, 1, 0, 0, 0, 0],
-                        1.15978,
-                        1.07109,
-                        0.55131,
-                    ),
-                    Rot::new(
-                        vec![0, 0, 0, 0, 0, 1, 0, 0, 0],
-                        1.16512,
-                        1.06609,
-                        0.55637,
-                    ),
-                    Rot::new(
-                        vec![0, 0, 0, 0, 0, 0, 1, 0, 0],
-                        1.16260,
-                        1.07277,
-                        0.55390,
-                    ),
-                    Rot::new(
-                        vec![0, 0, 0, 0, 0, 0, 0, 1, 0],
-                        1.16618,
-                        1.07216,
-                        0.55534,
-                    ),
-                    Rot::new(
-                        vec![0, 0, 0, 0, 0, 0, 0, 0, 1],
-                        1.15985,
-                        1.06958,
-                        0.55663,
-                    ),
-                ],
-                corrs: vec![
-                    3128.0, 3113.3, 1590.5, 1273.1, 1059.5, 967.5, 887.1,
-                    846.2, 769.6,
-                ],
-            },
+            infile: "testfiles/c3h2/spectro.in",
+            fort15: "testfiles/c3h2/fort.15",
+            fort30: "testfiles/c3h2/fort.30",
+            fort40: "testfiles/c3h2/fort.40",
+            want: load_want("testfiles/c3h2/summary.json"),
         },
         Test {
-            infile: "testfiles/c2h4.in",
-            fort15: "testfiles/c2h4.15",
-            fort30: "testfiles/c2h4.30",
-            fort40: "testfiles/c2h4.40",
-            want: Output {
-                harms: dvector![
-                    3247.5, 3221.7, 3154.8, 3139.9, 1670.8, 1477.2, 1368.4,
-                    1248.2, 1050.4, 963.6, 949.5, 825.3
-                ],
-                funds: vec![
-                    3100.4, 3077.3, 3018.5, 3002.3, 1628.4, 1438.9, 1341.5,
-                    1226.7, 1026.0, 951.3, 941.6, 824.8,
-                ],
-                rots: vec![
-                    Rot::new(
-                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                        4.84948,
-                        0.99704,
-                        0.82481,
-                    ),
-                    Rot::new(
-                        vec![1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                        4.82436,
-                        0.99477,
-                        0.82283,
-                    ),
-                    Rot::new(
-                        vec![0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                        4.82311,
-                        0.99493,
-                        0.82316,
-                    ),
-                    Rot::new(
-                        vec![0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                        4.80755,
-                        0.99557,
-                        0.82262,
-                    ),
-                    Rot::new(
-                        vec![0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-                        4.81459,
-                        0.99584,
-                        0.82285,
-                    ),
-                    Rot::new(
-                        vec![0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
-                        4.86289,
-                        0.99421,
-                        0.82000,
-                    ),
-                    Rot::new(
-                        vec![0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
-                        4.91390,
-                        1.00341,
-                        0.82323,
-                    ),
-                    Rot::new(
-                        vec![0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-                        4.86105,
-                        0.99789,
-                        0.82273,
-                    ),
-                    Rot::new(
-                        vec![0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-                        4.98630,
-                        0.99858,
-                        0.82268,
-                    ),
-                    Rot::new(
-                        vec![0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-                        4.75974,
-                        1.00892,
-                        0.82482,
-                    ),
-                    Rot::new(
-                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
-                        4.81452,
-                        0.99151,
-                        0.82616,
-                    ),
-                    Rot::new(
-                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
-                        4.72227,
-                        0.99150,
-                        0.82550,
-                    ),
-                    Rot::new(
-                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-                        4.89932,
-                        0.98215,
-                        0.82324,
-                    ),
-                ],
-                corrs: vec![
-                    3100.4, 3077.3, 3015.8, 2979.3, 1623.3, 1438.9, 1341.5,
-                    1226.7, 1026.0, 951.3, 941.6, 824.8,
-                ],
-            },
+            infile: "testfiles/c2h4/spectro.in",
+            fort15: "testfiles/c2h4/fort.15",
+            fort30: "testfiles/c2h4/fort.30",
+            fort40: "testfiles/c2h4/fort.40",
+            want: load_want("testfiles/c2h4/summary.json"),
         },
         Test {
-            infile: "testfiles/allyl.in",
-            fort15: "testfiles/allyl.15",
-            fort30: "testfiles/allyl.30",
-            fort40: "testfiles/allyl.40",
-            want: Output {
-                harms: dvector![
-                    3253.5, 3251.0, 3214.6, 3141.9, 3139.9, 1625.3, 1556.3,
-                    1451.1, 1320.3, 1296.0, 1153.1, 1145.0, 1057.0, 1041.6,
-                    953.4, 641.3, 443.8, 290.7
-                ],
-                funds: vec![
-                    3109.9, 3105.6, 3072.3, 3007.4, 3003.6, 1587.6, 1517.3,
-                    1413.2, 1292.2, 1271.1, 1128.5, 1119.8, 1035.6, 1008.7,
-                    940.0, 622.8, 432.8, 188.3,
-                ],
-                corrs: vec![
-                    3109.9, 3105.6, 3072.3, 3011.8, 2991.9, 1585.9, 1518.5,
-                    1413.2, 1292.5, 1269.5, 1136.4, 1119.8, 1035.8, 1008.7,
-                    940.0, 622.8, 439.2, 188.3,
-                ],
-                rots: vec![
-                    Rot::new(
-                        vec![
-                            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                            0,
-                        ],
-                        1.63349,
-                        0.36891,
-                        0.30075,
-                    ),
-                    Rot::new(
-                        vec![
-                            1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                            0,
-                        ],
-                        1.63034,
-                        0.36845,
-                        0.30039,
-                    ),
-                    Rot::new(
-                        vec![
-                            0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                            0,
-                        ],
-                        1.63016,
-                        0.36852,
-                        0.30044,
-                    ),
-                    Rot::new(
-                        vec![
-                            0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                            0,
-                        ],
-                        1.62858,
-                        0.36834,
-                        0.30024,
-                    ),
-                    Rot::new(
-                        vec![
-                            0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                            0,
-                        ],
-                        1.62930,
-                        0.36857,
-                        0.30038,
-                    ),
-                    Rot::new(
-                        vec![
-                            0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                            0,
-                        ],
-                        1.62965,
-                        0.36853,
-                        0.30036,
-                    ),
-                    Rot::new(
-                        vec![
-                            0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                            0,
-                        ],
-                        1.62631,
-                        0.36866,
-                        0.30001,
-                    ),
-                    Rot::new(
-                        vec![
-                            0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                            0,
-                        ],
-                        1.64364,
-                        0.36876,
-                        0.30002,
-                    ),
-                    Rot::new(
-                        vec![
-                            0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                            0,
-                        ],
-                        1.64161,
-                        0.36956,
-                        0.30037,
-                    ),
-                    Rot::new(
-                        vec![
-                            0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-                            0,
-                        ],
-                        1.64124,
-                        0.36792,
-                        0.29966,
-                    ),
-                    Rot::new(
-                        vec![
-                            0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0,
-                            0,
-                        ],
-                        1.62677,
-                        0.37027,
-                        0.30080,
-                    ),
-                    Rot::new(
-                        vec![
-                            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0,
-                            0,
-                        ],
-                        1.62143,
-                        0.36806,
-                        0.30080,
-                    ),
-                    Rot::new(
-                        vec![
-                            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
-                            0,
-                        ],
-                        1.62461,
-                        0.36790,
-                        0.30077,
-                    ),
-                    Rot::new(
-                        vec![
-                            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0,
-                            0,
-                        ],
-                        1.64336,
-                        0.36844,
-                        0.30019,
-                    ),
-                    Rot::new(
-                        vec![
-                            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0,
-                            0,
-                        ],
-                        1.62022,
-                        0.36809,
-                        0.30094,
-                    ),
-                    Rot::new(
-                        vec![
-                            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0,
-                            0,
-                        ],
-                        1.64195,
-                        0.36876,
-                        0.30026,
-                    ),
-                    Rot::new(
-                        vec![
-                            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0,
-                            0,
-                        ],
-                        1.63637,
-                        0.36631,
-                        0.30009,
-                    ),
-                    Rot::new(
-                        vec![
-                            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-                            0,
-                        ],
-                        1.65203,
-                        0.36786,
-                        0.29982,
-                    ),
-                    Rot::new(
-                        vec![
-                            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                            1,
-                        ],
-                        1.60676,
-                        0.37195,
-                        0.30313,
-                    ),
-                ],
-            },
+            infile: "testfiles/allyl/spectro.in",
+            fort15: "testfiles/allyl/fort.15",
+            fort30: "testfiles/allyl/fort.30",
+            fort40: "testfiles/allyl/fort.40",
+            want: load_want("testfiles/allyl/summary.json"),
         },
         Test {
             infile: "testfiles/c3hcn/spectro.in",
@@ -764,7 +384,7 @@ fn test_run() {
                     got.corrs[i] - test.want.corrs[i],
                 );
             }
-            assert!(false, "corrs differ");
+            assert!(false, "corrs differ at {}", test.infile);
         }
         assert_eq!(got.rots.len(), test.want.rots.len());
         if !abs_diff_eq!(
@@ -780,14 +400,14 @@ fn test_run() {
             for g in test.want.rots {
                 println!("{}", g);
             }
-            assert!(false, "rots differ");
+            assert!(false, "rots differ at {}", test.infile);
         }
     }
 }
 
 #[test]
 fn test_zeta() {
-    let s = Spectro::load("testfiles/h2o.in");
+    let s = Spectro::load("testfiles/h2o/spectro.in");
     let fc2 = load_fc2("testfiles/fort.15", s.n3n);
     let fc2 = s.rot2nd(fc2, s.axes);
     let fc2 = FACT2 * fc2;
@@ -808,7 +428,7 @@ fn test_zeta() {
 
 #[test]
 fn test_force3() {
-    let s = Spectro::load("testfiles/h2o.in");
+    let s = Spectro::load("testfiles/h2o/spectro.in");
     let fc2 = load_fc2("testfiles/fort.15", s.n3n);
     let fc2 = s.rot2nd(fc2, s.axes);
     let fc2 = FACT2 * fc2;
@@ -840,7 +460,7 @@ fn test_force3() {
 
 #[test]
 fn test_force4() {
-    let s = Spectro::load("testfiles/h2o.in");
+    let s = Spectro::load("testfiles/h2o/spectro.in");
     let fc2 = load_fc2("testfiles/fort.15", s.n3n);
     let fc2 = s.rot2nd(fc2, s.axes);
     let fc2 = FACT2 * fc2;
@@ -888,19 +508,19 @@ fn test_funds_and_e0() {
     }
     let tests = [
         Test {
-            infile: "testfiles/h2o.in",
-            fort15: "testfiles/fort.15",
-            fort30: "testfiles/fort.30",
-            fort40: "testfiles/fort.40",
+            infile: "testfiles/h2o/spectro.in",
+            fort15: "testfiles/h2o/fort.15",
+            fort30: "testfiles/h2o/fort.30",
+            fort40: "testfiles/h2o/fort.40",
             want_e0: 20.057563725859055,
             want_fund: vec![3753.166, 3656.537, 1598.516],
             e_eps: 6e-8,
         },
         Test {
-            infile: "testfiles/h2co.in",
-            fort15: "testfiles/h2co.15",
-            fort30: "testfiles/h2co.30",
-            fort40: "testfiles/h2co.40",
+            infile: "testfiles/h2co/spectro.in",
+            fort15: "testfiles/h2co/fort.15",
+            fort30: "testfiles/h2co/fort.30",
+            fort40: "testfiles/h2co/fort.40",
             want_e0: 11.49172492996696,
             want_fund: vec![
                 2842.9498684325331,
@@ -913,10 +533,10 @@ fn test_funds_and_e0() {
             e_eps: 6e-8,
         },
         Test {
-            infile: "testfiles/c3h2.in",
-            fort15: "testfiles/c3h2.15",
-            fort30: "testfiles/c3h2.30",
-            fort40: "testfiles/c3h2.40",
+            infile: "testfiles/c3h2/spectro.in",
+            fort15: "testfiles/c3h2/fort.15",
+            fort30: "testfiles/c3h2/fort.30",
+            fort40: "testfiles/c3h2/fort.40",
             want_e0: 4.2142433303609623,
             want_fund: vec![
                 3140.1433372410634,
@@ -976,7 +596,7 @@ fn test_funds_and_e0() {
 
 #[test]
 fn test_enrgy() {
-    let s = Spectro::load("testfiles/h2o.in");
+    let s = Spectro::load("testfiles/h2o/spectro.in");
     let fc2 = load_fc2("testfiles/fort.15", s.n3n);
     let fc2 = s.rot2nd(fc2, s.axes);
     let fc2 = FACT2 * fc2;
@@ -1031,7 +651,7 @@ fn test_enrgy() {
 
 #[test]
 fn test_alpha() {
-    let s = Spectro::load("testfiles/h2o.in");
+    let s = Spectro::load("testfiles/h2o/spectro.in");
     let fc2 = load_fc2("testfiles/fort.15", s.n3n);
     let fc2 = s.rot2nd(fc2, s.axes);
     let fc2 = FACT2 * fc2;
@@ -1067,7 +687,7 @@ fn test_alpha() {
 
 #[test]
 fn test_alphaa() {
-    let s = Spectro::load("testfiles/h2o.in");
+    let s = Spectro::load("testfiles/h2o/spectro.in");
     let fc2 = load_fc2("testfiles/fort.15", s.n3n);
     let fc2 = s.rot2nd(fc2, s.axes);
     let fc2 = FACT2 * fc2;
@@ -1119,9 +739,9 @@ fn restst() {
     }
     let tests = [
         Test {
-            infile: "testfiles/h2o.in",
-            fort15: "testfiles/fort.15",
-            fort30: "testfiles/fort.30",
+            infile: "testfiles/h2o/spectro.in",
+            fort15: "testfiles/h2o/fort.15",
+            fort30: "testfiles/h2o/fort.30",
             want: Restst {
                 coriolis: vec![],
                 fermi1: vec![],
@@ -1143,9 +763,9 @@ fn restst() {
             },
         },
         Test {
-            infile: "testfiles/h2co.in",
-            fort15: "testfiles/h2co.15",
-            fort30: "testfiles/h2co.30",
+            infile: "testfiles/h2co/spectro.in",
+            fort15: "testfiles/h2co/fort.15",
+            fort30: "testfiles/h2co/fort.30",
             want: Restst {
                 coriolis: vec![Coriolis::new(5, 4, 0)],
                 fermi1: vec![Fermi1::new(3, 1)],
@@ -1185,9 +805,9 @@ fn restst() {
             },
         },
         Test {
-            infile: "testfiles/c3h2.in",
-            fort15: "testfiles/c3h2.15",
-            fort30: "testfiles/c3h2.30",
+            infile: "testfiles/c3h2/spectro.in",
+            fort15: "testfiles/c3h2/fort.15",
+            fort30: "testfiles/c3h2/fort.30",
             want: Restst {
                 coriolis: vec![
                     Coriolis::new(5, 4, 0),

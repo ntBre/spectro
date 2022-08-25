@@ -4,8 +4,8 @@
 # the input files from the corresponding directory on woods (argument 1). then
 # it will run summarize to build a file that can be loaded by test_run
 
-# mkdir $2
-# scp woods:$1/{spectro.in,spectro2.out,fort.15,fort.30,fort.40} $2/.
+mkdir $2
+scp woods:$1/{spectro.in,spectro2.out,fort.15,fort.30,fort.40} $2/.
 
 # delete unused count lines
 sed -i 1d $2/fort.15 $2/fort.30 $2/fort.40
