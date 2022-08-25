@@ -337,58 +337,7 @@ impl Spectro {
         w: &[f64],
     ) -> (Tensor3, Tensor3, Dmat) {
         // calculate the zeta matrix for the coriolis coupling constants
-        let mut zmat = Tensor3::zeros(nvib, nvib, 3);
-        let mut biga = Tensor3::zeros(nvib, nvib, 6);
-        for k in 0..nvib {
-            for l in 0..nvib {
-                let mut valux = 0.0;
-                let mut valuy = 0.0;
-                let mut valuz = 0.0;
-                let mut valuxx = 0.0;
-                let mut valuyy = 0.0;
-                let mut valuxy = 0.0;
-                let mut valuxz = 0.0;
-                let mut valuyz = 0.0;
-                let mut valuzz = 0.0;
-                for i in 0..natom {
-                    let ix = 3 * i;
-                    let iy = ix + 1;
-                    let iz = iy + 1;
-                    // TODO use add assign here after writing a test. also
-                    // consider adding directly to the tensors instead of these
-                    // intermediate values. might be a lot of array accesses,
-                    // but it simplifies the code at least. a benchmark might
-                    // help decide
-                    valux = valux + lxm[(iy, k)] * lxm[(iz, l)]
-                        - lxm[(iz, k)] * lxm[(iy, l)];
-                    valuy = valuy + lxm[(iz, k)] * lxm[(ix, l)]
-                        - lxm[(ix, k)] * lxm[(iz, l)];
-                    valuz = valuz + lxm[(ix, k)] * lxm[(iy, l)]
-                        - lxm[(iy, k)] * lxm[(ix, l)];
-                    valuxx = valuxx
-                        + lxm[(iy, k)] * lxm[(iy, l)]
-                        + lxm[(iz, k)] * lxm[(iz, l)];
-                    valuyy = valuyy
-                        + lxm[(ix, k)] * lxm[(ix, l)]
-                        + lxm[(iz, k)] * lxm[(iz, l)];
-                    valuzz = valuzz
-                        + lxm[(ix, k)] * lxm[(ix, l)]
-                        + lxm[(iy, k)] * lxm[(iy, l)];
-                    valuxy = valuxy - lxm[(ix, k)] * lxm[(iy, l)];
-                    valuxz = valuxz - lxm[(ix, k)] * lxm[(iz, l)];
-                    valuyz = valuyz - lxm[(iy, k)] * lxm[(iz, l)];
-                }
-                zmat[(k, l, 0)] = valux;
-                zmat[(k, l, 1)] = valuy;
-                zmat[(k, l, 2)] = valuz;
-                biga[(k, l, 0)] = valuxx;
-                biga[(k, l, 1)] = valuxy;
-                biga[(k, l, 2)] = valuyy;
-                biga[(k, l, 3)] = valuxz;
-                biga[(k, l, 4)] = valuyz;
-                biga[(k, l, 5)] = valuzz;
-            }
-        }
+        let (zmat, biga) = zmat_biga(nvib, natom, lxm);
         let mut wila = Dmat::zeros(nvib, 6);
         // calculate the A vectors. says only half is formed since it's
         // symmetric
@@ -398,9 +347,6 @@ impl Spectro {
             let mut valuzz = 0.0;
             let mut valuxy = 0.0;
             let mut valuxz = 0.0;
-            let mut valuyx = 0.0;
-            let mut valuzx = 0.0;
-            let mut valuzy = 0.0;
             let mut valuyz = 0.0;
             for i in 0..natom {
                 let ix = 3 * i;
@@ -410,18 +356,12 @@ impl Spectro {
                 let ycm = self.geom.atoms[i].y;
                 let zcm = self.geom.atoms[i].z;
                 let rmass = w[i].sqrt();
-                valuxx =
-                    valuxx + rmass * (ycm * lxm[(iy, k)] + zcm * lxm[(iz, k)]);
-                valuyy =
-                    valuyy + rmass * (xcm * lxm[(ix, k)] + zcm * lxm[(iz, k)]);
-                valuzz =
-                    valuzz + rmass * (xcm * lxm[(ix, k)] + ycm * lxm[(iy, k)]);
-                valuxy = valuxy - rmass * xcm * lxm[(iy, k)];
-                valuxz = valuxz - rmass * xcm * lxm[(iz, k)];
-                valuyz = valuyz - rmass * ycm * lxm[(iz, k)];
-                valuyx = valuyx - rmass * ycm * lxm[(ix, k)];
-                valuzx = valuzx - rmass * zcm * lxm[(ix, k)];
-                valuzy = valuzy - rmass * zcm * lxm[(iy, k)];
+                valuxx += rmass * (ycm * lxm[(iy, k)] + zcm * lxm[(iz, k)]);
+                valuyy += rmass * (xcm * lxm[(ix, k)] + zcm * lxm[(iz, k)]);
+                valuzz += rmass * (xcm * lxm[(ix, k)] + ycm * lxm[(iy, k)]);
+                valuxy -= rmass * xcm * lxm[(iy, k)];
+                valuxz -= rmass * xcm * lxm[(iz, k)];
+                valuyz -= rmass * ycm * lxm[(iz, k)];
             }
             wila[(k, 0)] = 2.0 * valuxx;
             wila[(k, 1)] = 2.0 * valuxy;
@@ -936,6 +876,67 @@ impl Spectro {
             i1mode,
         }
     }
+}
+
+/// compute the `zmat` and Wilson Big A matrices for `zeta`
+fn zmat_biga(
+    nvib: usize,
+    natom: usize,
+    lxm: &Dmat,
+) -> (tensor::Tensor3<f64>, tensor::Tensor3<f64>) {
+    let mut zmat = Tensor3::zeros(nvib, nvib, 3);
+    let mut biga = Tensor3::zeros(nvib, nvib, 6);
+    for k in 0..nvib {
+        for l in 0..nvib {
+            let mut valux = 0.0;
+            let mut valuy = 0.0;
+            let mut valuz = 0.0;
+            let mut valuxx = 0.0;
+            let mut valuyy = 0.0;
+            let mut valuxy = 0.0;
+            let mut valuxz = 0.0;
+            let mut valuyz = 0.0;
+            let mut valuzz = 0.0;
+            for i in 0..natom {
+                let ix = 3 * i;
+                let iy = ix + 1;
+                let iz = iy + 1;
+                // TODO use add assign here after writing a test. also
+                // consider adding directly to the tensors instead of these
+                // intermediate values. might be a lot of array accesses,
+                // but it simplifies the code at least. a benchmark might
+                // help decide
+                valux = valux + lxm[(iy, k)] * lxm[(iz, l)]
+                    - lxm[(iz, k)] * lxm[(iy, l)];
+                valuy = valuy + lxm[(iz, k)] * lxm[(ix, l)]
+                    - lxm[(ix, k)] * lxm[(iz, l)];
+                valuz = valuz + lxm[(ix, k)] * lxm[(iy, l)]
+                    - lxm[(iy, k)] * lxm[(ix, l)];
+                valuxx = valuxx
+                    + lxm[(iy, k)] * lxm[(iy, l)]
+                    + lxm[(iz, k)] * lxm[(iz, l)];
+                valuyy = valuyy
+                    + lxm[(ix, k)] * lxm[(ix, l)]
+                    + lxm[(iz, k)] * lxm[(iz, l)];
+                valuzz = valuzz
+                    + lxm[(ix, k)] * lxm[(ix, l)]
+                    + lxm[(iy, k)] * lxm[(iy, l)];
+                valuxy = valuxy - lxm[(ix, k)] * lxm[(iy, l)];
+                valuxz = valuxz - lxm[(ix, k)] * lxm[(iz, l)];
+                valuyz = valuyz - lxm[(iy, k)] * lxm[(iz, l)];
+            }
+            zmat[(k, l, 0)] = valux;
+            zmat[(k, l, 1)] = valuy;
+            zmat[(k, l, 2)] = valuz;
+            biga[(k, l, 0)] = valuxx;
+            biga[(k, l, 1)] = valuxy;
+            biga[(k, l, 2)] = valuyy;
+            biga[(k, l, 3)] = valuxz;
+            biga[(k, l, 4)] = valuyz;
+            biga[(k, l, 5)] = valuzz;
+        }
+    }
+    (zmat, biga)
 }
 
 fn resona(
