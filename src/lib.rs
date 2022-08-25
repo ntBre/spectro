@@ -827,38 +827,14 @@ impl Spectro {
             &rotcon, &freq, &wila, &zmat, &f3qcm, &fund, &i1mode, &i1sts,
             &coriolis,
         );
+
         // this is worked on by resona and then enrgy so keep it out here
         let nstate = i1sts.len();
         let mut eng = vec![0.0; nstate];
 
-        // begin resona
-        let n1dm = fund.len();
-        let mut zpe = e0;
-        for ii in 0..n1dm {
-            let i = i1mode[ii];
-            zpe += freq[i] * 0.5;
-            for jj in 0..=ii {
-                let j = i1mode[jj];
-                zpe += xcnst[(i, j)] * 0.25;
-            }
-        }
-        let iirst = make_resin(&fermi1, n1dm, &fermi2);
-        let (nreson, _) = iirst.shape();
-        for ist in 0..nreson {
-            let mut e = e0;
-            for ii in 0..n1dm {
-                let i = i1mode[ii];
-                e += freq[i] * (iirst[(ist, ii)] as f64 + 0.5);
-                for jj in 0..=ii {
-                    let j = i1mode[jj];
-                    e += xcnst[(i, j)]
-                        * (iirst[(ist, ii)] as f64 + 0.5)
-                        * (iirst[(ist, jj)] as f64 + 0.5);
-                }
-            }
-            eng[ist] = e - zpe;
-        }
-        // end resona
+        resona(
+            &fund, e0, &i1mode, &freq, &xcnst, &fermi1, &fermi2, &mut eng,
+        );
 
         enrgy(
             &fund, &freq, &xcnst, &f3qcm, e0, &i1sts, &i1mode, &fermi1,
@@ -956,6 +932,44 @@ impl Spectro {
             i1sts,
             i1mode,
         }
+    }
+}
+
+fn resona(
+    fund: &Vec<f64>,
+    e0: f64,
+    i1mode: &Vec<usize>,
+    freq: &Dvec,
+    xcnst: &Dmat,
+    fermi1: &Vec<Fermi1>,
+    fermi2: &Vec<Fermi2>,
+    eng: &mut [f64],
+) {
+    let n1dm = fund.len();
+    let mut zpe = e0;
+    for ii in 0..n1dm {
+        let i = i1mode[ii];
+        zpe += freq[i] * 0.5;
+        for jj in 0..=ii {
+            let j = i1mode[jj];
+            zpe += xcnst[(i, j)] * 0.25;
+        }
+    }
+    let iirst = make_resin(fermi1, n1dm, fermi2);
+    let (nreson, _) = iirst.shape();
+    for ist in 0..nreson {
+        let mut e = e0;
+        for ii in 0..n1dm {
+            let i = i1mode[ii];
+            e += freq[i] * (iirst[(ist, ii)] as f64 + 0.5);
+            for jj in 0..=ii {
+                let j = i1mode[jj];
+                e += xcnst[(i, j)]
+                    * (iirst[(ist, ii)] as f64 + 0.5)
+                    * (iirst[(ist, jj)] as f64 + 0.5);
+            }
+        }
+        eng[ist] = e - zpe;
     }
 }
 
