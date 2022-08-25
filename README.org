@@ -163,7 +163,7 @@
   | zgen.f     |    14 |        |                                                                 |                          |
   | zmat.f     |    71 |        |                                                                 |                          |
 
-  #+begin_src awk :stdin lines
+  #+begin_src awk :stdin lines :exports both
     NR > 1 {
 	if ($3 ~ /^x$/) done += $2
 	total += $2
@@ -175,6 +175,7 @@
 
   #+RESULTS:
   : finished 25558/40693 = 62.8%
+
 * Extra code
 ** first sum rule test from zeta.f
    #+begin_src rust
@@ -310,3 +311,17 @@
      }
 
    #+end_src
+
+* References
+  - Watson68 - Simplification of the Molecular Vibration-Rotation Hamiltonian
+  - Hoy72 - Anharmonic Force Constant Calculations
+  - Mills76 - Vibrationally Averaged Interatomic Distances
+  - Hecht61 - The Vibration-Rotation Energies of Tetrahedral XY_4 Molecules Part
+    I. Theory of Spherical Top Molecules
+  - Herranz61 - The Rotational Structure of the Fundamental Infrared Bands of
+    Methane-Type Molecules
+  - Green87 - Kinetic Anharmonic Coupling in the Trihalomethanes: A Mechanism
+    for Rapid Intramolecular Redistribution of CH Stretch Vibrational Energy
+  - Willetts90 - Anharmonic Corrections to Vibrational Transition Intenslties
+  - Pliva90 - Anharmonic Constants for Degenerate Modes of Symmetric Top
+    Molecules
