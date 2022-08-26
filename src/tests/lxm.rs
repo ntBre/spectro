@@ -165,3 +165,25 @@ fn test_lxm() {
         assert_abs_diff_eq!(got, want, epsilon = 2e-9);
     }
 }
+
+#[test]
+fn test_lx() {
+    // just test a hard one here for now
+    let s = Spectro::load("testfiles/c3hf/spectro.in");
+    let fc2 = load_fc2("testfiles/c3hf/fort.15", 15);
+    let fc2 = s.rot2nd(fc2, s.axes);
+    let fc2 = FACT2 * fc2;
+    let w = s.geom.weights();
+    let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
+    let fxm = s.form_sec(fc2, s.n3n, &sqm);
+
+    let (_harms, lxm) = symm_eigen_decomp(fxm);
+    let lx = s.make_lx(s.n3n, &sqm, &lxm);
+
+    let got = lx.slice((0, 0), (s.nvib, s.nvib)).abs();
+    let want = load_dmat("testfiles/c3hf/lx", 15, 15);
+    let want = want.slice((0, 0), (s.nvib, s.nvib)).abs();
+
+    // println!("{:.2e}", (got.clone() - want.clone()).max());
+    assert_abs_diff_eq!(got, want, epsilon = 5e-9);
+}
