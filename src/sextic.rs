@@ -659,7 +659,7 @@ mod tests {
         let (harms, lxm) = symm_eigen_decomp(fxm);
         let freq = to_wavenumbers(harms);
         let lx = s.make_lx(s.n3n, &sqm, &lxm);
-        let (zmat, _biga, wila) = s.zeta(s.natom, s.nvib, &lxm, &w);
+        let (zmat, wila) = s.zeta(&lxm, &w);
         let f3x = load_fc3("testfiles/fort.30", s.n3n);
         let mut f3x = s.rot3rd(f3x, s.axes);
         let f3qcm = force3(s.n3n, &mut f3x, &lx, s.nvib, &freq, s.i3vib);

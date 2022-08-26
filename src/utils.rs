@@ -860,7 +860,7 @@ mod tests {
         let fxm = s.form_sec(fc2, s.n3n, &sqm);
         let (harms, lxm) = symm_eigen_decomp(fxm);
         let freq = to_wavenumbers(harms);
-        let (_zmat, _biga, wila) = s.zeta(s.natom, s.nvib, &lxm, &w);
+        let (_zmat, wila) = s.zeta(&lxm, &w);
         let primat = s.geom.principal_moments();
         let tau = make_tau(3, 3, &freq, &primat, &wila);
         let got = tau_prime(3, &tau);

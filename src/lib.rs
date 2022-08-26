@@ -329,26 +329,20 @@ impl Spectro {
 
     /// Calculate the zeta, big A and Wilson A and J matrices. Zeta is for the
     /// coriolis coupling constants
-    fn zeta(
-        &self,
-        natom: usize,
-        nvib: usize,
-        lxm: &Dmat,
-        w: &[f64],
-    ) -> (Tensor3, Tensor3, Dmat) {
+    fn zeta(&self, lxm: &Dmat, w: &[f64]) -> (Tensor3, Dmat) {
         // calculate the zeta matrix for the coriolis coupling constants
-        let (zmat, biga) = zmat_biga(nvib, natom, lxm);
-        let mut wila = Dmat::zeros(nvib, 6);
+        let (zmat, _biga) = zmat_biga(self.nvib, self.natom, lxm);
+        let mut wila = Dmat::zeros(self.nvib, 6);
         // calculate the A vectors. says only half is formed since it's
         // symmetric
-        for k in 0..nvib {
+        for k in 0..self.nvib {
             let mut valuxx = 0.0;
             let mut valuyy = 0.0;
             let mut valuzz = 0.0;
             let mut valuxy = 0.0;
             let mut valuxz = 0.0;
             let mut valuyz = 0.0;
-            for i in 0..natom {
+            for i in 0..self.natom {
                 let ix = 3 * i;
                 let iy = ix + 1;
                 let iz = iy + 1;
@@ -370,7 +364,7 @@ impl Spectro {
             wila[(k, 4)] = 2.0 * valuyz;
             wila[(k, 5)] = 2.0 * valuzz;
         }
-        (zmat, biga, wila)
+        (zmat, wila)
     }
 
     /// formation of the secular equation
@@ -713,7 +707,6 @@ impl Spectro {
     {
         let moments = self.geom.principal_moments();
         let rotcon: Vec<_> = moments.iter().map(|m| CONST / m).collect();
-        let natom = self.natoms();
 
         // load the force constants, rotate them to the new axes, and convert
         // them to the proper units
@@ -733,7 +726,7 @@ impl Spectro {
         let lx = self.make_lx(self.n3n, &sqm, &lxm);
 
         // biga not used yet
-        let (zmat, _biga, wila) = self.zeta(natom, self.nvib, &lxm, &w);
+        let (zmat, wila) = self.zeta(&lxm, &w);
 
         let quartic = Quartic::new(&self, self.nvib, &freq, &wila, &rotcon);
 
