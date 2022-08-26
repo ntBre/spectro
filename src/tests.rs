@@ -7,6 +7,7 @@ use nalgebra as na;
 
 mod load;
 mod run;
+mod zeta;
 
 #[test]
 fn test_load_fc2() {
@@ -135,27 +136,6 @@ fn test_normfx() {
     ];
     assert_abs_diff_eq!(to_wavenumbers(harms), want_harms, epsilon = 1e-2);
     assert_abs_diff_eq!(lxm, want_lxm, epsilon = 1e-7);
-}
-
-#[test]
-fn test_zeta() {
-    let s = Spectro::load("testfiles/h2o/spectro.in");
-    let fc2 = load_fc2("testfiles/fort.15", s.n3n);
-    let fc2 = s.rot2nd(fc2, s.axes);
-    let fc2 = FACT2 * fc2;
-    let w = s.geom.weights();
-    let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
-    let fxm = s.form_sec(fc2, s.n3n, &sqm);
-    let (_harms, lxm) = symm_eigen_decomp(fxm);
-    // TODO test the other return values
-    let (_zmat, _biga, got) = s.zeta(s.natom, s.nvib, &lxm, &w);
-    // had to swap sign of first row since my LXM has a different sign
-    let want = dmatrix![
-     -3.6123785074337889e-08,      -1.2692098865561809,  -6.6462962133861936e-08,   -2.9957242484449652e-09,  1.8035956714004908e-09,  -1.0258674709717752e-07 ;
-        -0.9155081475600737  ,4.7344317466446739e-08  ,   -1.7484950796657917  ,-2.9480138066186021e-09  ,  2.318919812342448e-09  ,   -2.6640032272258658 ;
-        -1.2781035077371032  ,2.1818979178966913e-08  ,    1.2524505892097131  ,-2.2198838796685475e-08  , 1.7461636243495606e-08  ,  -0.02565291852739008 ;
-    ];
-    assert_abs_diff_eq!(got, want, epsilon = 1e-6);
 }
 
 #[test]
