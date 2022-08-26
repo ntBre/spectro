@@ -352,22 +352,63 @@ fn test_run() {
             want: load_want("testfiles/allyl/summary.json"),
         },
         Test {
-            infile: "testfiles/c3hcn/spectro.in",
-            fort15: "testfiles/c3hcn/fort.15",
-            fort30: "testfiles/c3hcn/fort.30",
-            fort40: "testfiles/c3hcn/fort.40",
-            want: load_want("testfiles/c3hcn/summary.json"),
+            infile: "testfiles/h2o_sic/spectro.in",
+            fort15: "testfiles/h2o_sic/fort.15",
+            fort30: "testfiles/h2o_sic/fort.30",
+            fort40: "testfiles/h2o_sic/fort.40",
+            want: load_want("testfiles/h2o_sic/summary.json"),
         },
+        Test {
+            infile: "testfiles/c3hf/spectro.in",
+            fort15: "testfiles/c3hf/fort.15",
+            fort30: "testfiles/c3hf/fort.30",
+            fort40: "testfiles/c3hf/fort.40",
+            want: load_want("testfiles/c3hf/summary.json"),
+        },
+        Test {
+            infile: "testfiles/c3hcl/spectro.in",
+            fort15: "testfiles/c3hcl/fort.15",
+            fort30: "testfiles/c3hcl/fort.30",
+            fort40: "testfiles/c3hcl/fort.40",
+            want: load_want("testfiles/c3hcl/summary.json"),
+        },
+        // Test {
+        //     infile: "testfiles/c3hcn010/spectro.in",
+        //     fort15: "testfiles/c3hcn010/fort.15",
+        //     fort30: "testfiles/c3hcn010/fort.30",
+        //     fort40: "testfiles/c3hcn010/fort.40",
+        //     want: load_want("testfiles/c3hcn010/summary.json"),
+        // },
+        // Test {
+        //     infile: "testfiles/c3hcn/spectro.in",
+        //     fort15: "testfiles/c3hcn/fort.15",
+        //     fort30: "testfiles/c3hcn/fort.30",
+        //     fort40: "testfiles/c3hcn/fort.40",
+        //     want: load_want("testfiles/c3hcn/summary.json"),
+        // },
     ];
     for test in Vec::from(&tests[..]) {
         let spectro = Spectro::load(test.infile);
         let got = spectro.run(test.fort15, test.fort30, test.fort40);
         assert_abs_diff_eq!(got.harms, test.want.harms, epsilon = 0.1);
-        assert_abs_diff_eq!(
-            Dvec::from(got.funds),
-            Dvec::from(test.want.funds),
+        assert!(got.funds.len() == test.want.funds.len());
+        if !abs_diff_eq!(
+            Dvec::from(got.funds.clone()),
+            Dvec::from(test.want.funds.clone()),
             epsilon = 0.1
-        );
+        ) {
+            println!("\n{:>5}{:>8}{:>8}{:>8}", "Mode", "Got", "Want", "Diff");
+            for i in 0..got.funds.len() {
+                println!(
+                    "{:5}{:8.1}{:8.1}{:8.1}",
+                    i + 1,
+                    got.funds[i],
+                    test.want.funds[i],
+                    got.funds[i] - test.want.funds[i],
+                );
+            }
+            assert!(false, "funds differ at {}", test.infile);
+        }
         assert!(got.corrs.len() == test.want.corrs.len());
         if !abs_diff_eq!(
             Dvec::from(got.corrs.clone()),
