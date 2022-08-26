@@ -133,6 +133,7 @@ fn test_run() {
     ];
     for test in Vec::from(&tests[..]) {
         let infile = test.infile.to_str().unwrap();
+
         let spectro = Spectro::load(infile);
         let got = spectro.run(test.fort15, test.fort30, test.fort40);
 

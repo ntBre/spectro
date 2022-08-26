@@ -275,8 +275,11 @@ impl Spectro {
         }
         // assumes input geometry in bohr
         ret.geom.to_angstrom();
-        ret.geom.normalize();
-        ret.axes = ret.geom.reorder();
+        // you need the initial set of axes, not the ones from reorder
+        let (vals, axes) = ret.geom.normalize();
+        let (_, axes) = symm::eigen_sort(vals, axes);
+        ret.axes = axes;
+        ret.geom.reorder();
         ret.rotor = ret.rotor_type();
         ret.natom = ret.natoms();
         let n3n = 3 * ret.natoms();
@@ -391,13 +394,15 @@ impl Spectro {
                 // grab 3x3 blocks of FX into A, perform Eg × A × Egᵀ and set
                 // that block in the return matrix
                 let a = fx.fixed_slice::<3, 3>(ia, ib);
-                let temp2 = eg * a * eg.transpose();
+                let temp2 = eg.transpose() * a * eg;
                 let mut targ = ret.fixed_slice_mut::<3, 3>(ia, ib);
                 targ.copy_from(&temp2);
             }
         }
         ret
     }
+
+    // TODO come back to rot3rd and rot4th and change to eg^t a eg
 
     /// rotate the cubic force constants in `f3x` to align with the principal
     /// axes in `eg` used to align the geometry
