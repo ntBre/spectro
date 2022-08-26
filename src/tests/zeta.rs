@@ -1,18 +1,7 @@
-use std::fs::read_to_string;
-
 use approx::assert_abs_diff_eq;
 
+use super::*;
 use crate::*;
-
-fn load_dmat(filename: &str, rows: usize, cols: usize) -> Dmat {
-    let data = read_to_string(filename).unwrap();
-    Dmat::from_iterator(
-        cols,
-        rows,
-        data.split_whitespace().map(|s| s.parse().unwrap()),
-    )
-    .transpose()
-}
 
 #[derive(Clone)]
 struct Test {
@@ -48,6 +37,9 @@ fn test_zeta() {
         // had to swap sign of first row of wila since my LXM has a different
         // sign, and had to negate all of zmat from sign of geometry
         Test::new("h2o", 3, 6),
+        // swapped some signs dispersed through wila
+        // Test::new("h2co", 6, 6),
+        // Test::new("c3h2", 9, 6),
     ];
     for test in tests {
         let s = Spectro::load(&test.infile);
@@ -61,6 +53,8 @@ fn test_zeta() {
 
         let (zmat, wila) = s.zeta(&lxm, &w);
 
+        // println!("{:.8}", wila.clone() - test.wila.clone());
+        // println!("{:.8}", test.wila);
         assert_abs_diff_eq!(wila, test.wila, epsilon = 1e-6);
         assert_abs_diff_eq!(zmat, test.zmat, epsilon = 1e-6);
     }
