@@ -402,8 +402,6 @@ impl Spectro {
         ret
     }
 
-    // TODO come back to rot3rd and rot4th and change to eg^t a eg
-
     /// rotate the cubic force constants in `f3x` to align with the principal
     /// axes in `eg` used to align the geometry
     pub fn rot3rd(&self, f3x: Tensor3, eg: Mat3) -> Tensor3 {
@@ -422,7 +420,7 @@ impl Spectro {
                             a[(jj, kk)] = f3x[(ib + jj, ic + kk, i)];
                         }
                     }
-                    let temp2 = eg * a * eg.transpose();
+                    let temp2 = eg.transpose() * a * eg;
                     for jj in 0..3 {
                         for kk in 0..3 {
                             ret[(ib + jj, ic + kk, i)] = temp2[(jj, kk)];
@@ -432,9 +430,6 @@ impl Spectro {
             }
         }
 
-        // have to use the transpose to get the same indices as the fortran
-        // version
-        let eg = eg.transpose();
         for j in 0..self.n3n {
             for k in 0..self.n3n {
                 for i in 0..self.natom {
@@ -472,7 +467,7 @@ impl Spectro {
                                 a[(kk, ll)] = f4x[(i, j, ic + kk, id + ll)];
                             }
                         }
-                        let temp2 = eg * a * eg.transpose();
+                        let temp2 = eg.transpose() * a * eg;
                         for kk in 0..3 {
                             for ll in 0..3 {
                                 ret[(i, j, ic + kk, id + ll)] = temp2[(kk, ll)];
@@ -495,7 +490,7 @@ impl Spectro {
                                 a[(ii, jj)] = ret[(ia + ii, ib + jj, k, l)];
                             }
                         }
-                        let temp2 = eg * a * eg.transpose();
+                        let temp2 = eg.transpose() * a * eg;
                         for ii in 0..3 {
                             for jj in 0..3 {
                                 ret[(ia + ii, ib + jj, k, l)] = temp2[(ii, jj)];

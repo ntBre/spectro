@@ -129,10 +129,11 @@ He     1.76798258  0.00000000  0.00000000
         i4vib: 210,
         natom: 4,
         axes: matrix![
+        0.0, 1.0, 0.0;
         0.0, 0.0, 1.0;
         1.0, 0.0, 0.0;
-        0.0, 1.0, 0.0;
         ],
     };
+    assert_eq!(got.axes, want.axes);
     assert_eq!(got, want);
 }
