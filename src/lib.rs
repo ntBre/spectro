@@ -337,7 +337,7 @@ impl Spectro {
     /// coriolis coupling constants
     fn zeta(&self, lxm: &Dmat, w: &[f64]) -> (Tensor3, Dmat) {
         // calculate the zeta matrix for the coriolis coupling constants
-        let (zmat, _biga) = zmat_biga(self.nvib, self.natom, lxm);
+        let zmat = make_zmat(self.nvib, self.natom, lxm);
         let mut wila = Dmat::zeros(self.nvib, 6);
         // calculate the A vectors. says only half is formed since it's
         // symmetric
@@ -893,65 +893,31 @@ impl Spectro {
     }
 }
 
-/// compute the `zmat` and Wilson Big A matrices for `zeta`
-fn zmat_biga(
-    nvib: usize,
-    natom: usize,
-    lxm: &Dmat,
-) -> (tensor::Tensor3<f64>, tensor::Tensor3<f64>) {
+/// build the zeta matrix
+fn make_zmat(nvib: usize, natom: usize, lxm: &Dmat) -> tensor::Tensor3<f64> {
     let mut zmat = Tensor3::zeros(nvib, nvib, 3);
-    let mut biga = Tensor3::zeros(nvib, nvib, 6);
     for k in 0..nvib {
         for l in 0..nvib {
             let mut valux = 0.0;
             let mut valuy = 0.0;
             let mut valuz = 0.0;
-            let mut valuxx = 0.0;
-            let mut valuyy = 0.0;
-            let mut valuxy = 0.0;
-            let mut valuxz = 0.0;
-            let mut valuyz = 0.0;
-            let mut valuzz = 0.0;
             for i in 0..natom {
                 let ix = 3 * i;
                 let iy = ix + 1;
                 let iz = iy + 1;
-                // TODO use add assign here after writing a test. also
-                // consider adding directly to the tensors instead of these
-                // intermediate values. might be a lot of array accesses,
-                // but it simplifies the code at least. a benchmark might
-                // help decide
-                valux = valux + lxm[(iy, k)] * lxm[(iz, l)]
-                    - lxm[(iz, k)] * lxm[(iy, l)];
-                valuy = valuy + lxm[(iz, k)] * lxm[(ix, l)]
-                    - lxm[(ix, k)] * lxm[(iz, l)];
-                valuz = valuz + lxm[(ix, k)] * lxm[(iy, l)]
-                    - lxm[(iy, k)] * lxm[(ix, l)];
-                valuxx = valuxx
-                    + lxm[(iy, k)] * lxm[(iy, l)]
-                    + lxm[(iz, k)] * lxm[(iz, l)];
-                valuyy = valuyy
-                    + lxm[(ix, k)] * lxm[(ix, l)]
-                    + lxm[(iz, k)] * lxm[(iz, l)];
-                valuzz = valuzz
-                    + lxm[(ix, k)] * lxm[(ix, l)]
-                    + lxm[(iy, k)] * lxm[(iy, l)];
-                valuxy = valuxy - lxm[(ix, k)] * lxm[(iy, l)];
-                valuxz = valuxz - lxm[(ix, k)] * lxm[(iz, l)];
-                valuyz = valuyz - lxm[(iy, k)] * lxm[(iz, l)];
+                valux +=
+                    lxm[(iy, k)] * lxm[(iz, l)] - lxm[(iz, k)] * lxm[(iy, l)];
+                valuy +=
+                    lxm[(iz, k)] * lxm[(ix, l)] - lxm[(ix, k)] * lxm[(iz, l)];
+                valuz +=
+                    lxm[(ix, k)] * lxm[(iy, l)] - lxm[(iy, k)] * lxm[(ix, l)];
             }
             zmat[(k, l, 0)] = valux;
             zmat[(k, l, 1)] = valuy;
             zmat[(k, l, 2)] = valuz;
-            biga[(k, l, 0)] = valuxx;
-            biga[(k, l, 1)] = valuxy;
-            biga[(k, l, 2)] = valuyy;
-            biga[(k, l, 3)] = valuxz;
-            biga[(k, l, 4)] = valuyz;
-            biga[(k, l, 5)] = valuzz;
         }
     }
-    (zmat, biga)
+    zmat
 }
 
 fn resona(

@@ -8,11 +8,18 @@ struct Test {
     fort15: String,
     wila: Dmat,
     zmat: Tensor3,
+    zmat_eps: f64,
     wila_eps: f64,
 }
 
 impl Test {
-    fn new(dir: &'static str, rows: usize, cols: usize, wila_eps: f64) -> Self {
+    fn new(
+        dir: &'static str,
+        rows: usize,
+        cols: usize,
+        zmat_eps: f64,
+        wila_eps: f64,
+    ) -> Self {
         let start = Path::new("testfiles");
         Self {
             infile: String::from(
@@ -27,6 +34,7 @@ impl Test {
                 cols,
             ),
             zmat: Tensor3::load(start.join(dir).join("zmat").to_str().unwrap()),
+            zmat_eps,
             wila_eps,
         }
     }
@@ -37,13 +45,13 @@ fn test_zeta() {
     let tests = [
         // eps increases with mass, which I guess is from mass dependence of lxm
         // and also wila itself
-        Test::new("h2o", 3, 6, 7.6e-7),
-        Test::new("h2co", 6, 6, 1.8e-6),
-        Test::new("c3h2", 9, 6, 2.8e-6),
-        Test::new("c3hf", 9, 6, 4.2e-6),
-        Test::new("c3hcn", 12, 6, 6.6e-6),
+        Test::new("h2o", 3, 6, 1.53e-10, 7.6e-7),
+        Test::new("h2co", 6, 6, 1.41e-9, 1.8e-6),
+        Test::new("c3h2", 9, 6, 1.57e-9, 2.8e-6),
+        Test::new("c3hf", 9, 6, 9.85e-10, 4.2e-6),
+        Test::new("c3hcn", 12, 6, 8.39e-10, 6.6e-6),
     ];
-    for test in tests {
+    for test in Vec::from(&tests[..]) {
         let s = Spectro::load(&test.infile);
         let fc2 = load_fc2(&test.fort15, s.n3n);
         let fc2 = s.rot2nd(fc2);
@@ -61,7 +69,18 @@ fn test_zeta() {
         //     "{:.2e}",
         //     (wila.clone().abs() - test.wila.clone().abs()).max()
         // );
-        assert_abs_diff_eq!(zmat.abs(), test.zmat.abs(), epsilon = 1e-6);
+        // println!("\n{}", test.infile);
+        // println!("got\n{:20.10e}", zmat);
+        // println!("want\n{:20.10e}", test.zmat);
+        // println!(
+        //     "{:.2e}",
+        //     (zmat.clone().abs() - test.zmat.clone().abs()).abs().max()
+        // );
+        assert_abs_diff_eq!(
+            zmat.abs(),
+            test.zmat.abs(),
+            epsilon = test.zmat_eps
+        );
         assert_abs_diff_eq!(
             wila.abs(),
             test.wila.abs(),
