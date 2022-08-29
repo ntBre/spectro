@@ -60,7 +60,7 @@ fn test_rot2nd() {
     spectro.geom.to_angstrom();
     spectro.geom.normalize();
     let fc2 = load_fc2("testfiles/fort.15", 9);
-    let got = spectro.rot2nd(fc2, spectro.axes);
+    let got = spectro.rot2nd(fc2);
     let want = dmatrix![
     0.37452424350000002, 0.23501356370000001, 0.0, -0.34333094920000001,
     -0.20370165770000001, 0.0, -0.031192384199999999, -0.031313796200000001, 0.0;
@@ -90,7 +90,7 @@ fn test_sec() {
     spectro.geom.to_angstrom();
     spectro.geom.normalize();
     let fc2 = load_fc2("testfiles/fort.15", 9);
-    let fc2 = spectro.rot2nd(fc2, spectro.axes);
+    let fc2 = spectro.rot2nd(fc2);
     let fc2 = FACT2 * fc2;
     let n3n = 3 * spectro.natoms();
     let w = spectro.geom.weights();
@@ -115,7 +115,7 @@ fn test_sec() {
 fn test_force3() {
     let s = Spectro::load("testfiles/h2o/spectro.in");
     let fc2 = load_fc2("testfiles/fort.15", s.n3n);
-    let fc2 = s.rot2nd(fc2, s.axes);
+    let fc2 = s.rot2nd(fc2);
     let fc2 = FACT2 * fc2;
     let w = s.geom.weights();
     let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
@@ -147,7 +147,7 @@ fn test_force3() {
 fn test_force4() {
     let s = Spectro::load("testfiles/h2o/spectro.in");
     let fc2 = load_fc2("testfiles/fort.15", s.n3n);
-    let fc2 = s.rot2nd(fc2, s.axes);
+    let fc2 = s.rot2nd(fc2);
     let fc2 = FACT2 * fc2;
     let w = s.geom.weights();
     let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
@@ -240,7 +240,7 @@ fn test_funds_and_e0() {
     for test in Vec::from(&tests[..]) {
         let s = Spectro::load(test.infile);
         let fc2 = load_fc2(test.fort15, s.n3n);
-        let fc2 = s.rot2nd(fc2, s.axes);
+        let fc2 = s.rot2nd(fc2);
         let fc2 = FACT2 * fc2;
         let w = s.geom.weights();
         let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
@@ -281,7 +281,7 @@ fn test_funds_and_e0() {
 fn test_enrgy() {
     let s = Spectro::load("testfiles/h2o/spectro.in");
     let fc2 = load_fc2("testfiles/fort.15", s.n3n);
-    let fc2 = s.rot2nd(fc2, s.axes);
+    let fc2 = s.rot2nd(fc2);
     let fc2 = FACT2 * fc2;
     let w = s.geom.weights();
     let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
@@ -334,7 +334,7 @@ fn test_enrgy() {
 fn test_alpha() {
     let s = Spectro::load("testfiles/h2o/spectro.in");
     let fc2 = load_fc2("testfiles/fort.15", s.n3n);
-    let fc2 = s.rot2nd(fc2, s.axes);
+    let fc2 = s.rot2nd(fc2);
     let fc2 = FACT2 * fc2;
     let w = s.geom.weights();
     let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
@@ -368,7 +368,7 @@ fn test_alpha() {
 fn test_alphaa() {
     let s = Spectro::load("testfiles/h2o/spectro.in");
     let fc2 = load_fc2("testfiles/fort.15", s.n3n);
-    let fc2 = s.rot2nd(fc2, s.axes);
+    let fc2 = s.rot2nd(fc2);
     let fc2 = FACT2 * fc2;
     let w = s.geom.weights();
     let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
@@ -576,7 +576,7 @@ fn restst() {
     for test in tests {
         let s = Spectro::load(test.infile);
         let fc2 = load_fc2(test.fort15, s.n3n);
-        let fc2 = s.rot2nd(fc2, s.axes);
+        let fc2 = s.rot2nd(fc2);
         let fc2 = FACT2 * fc2;
         let w = s.geom.weights();
         let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();

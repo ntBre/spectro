@@ -142,7 +142,7 @@ fn test_lxm() {
     for test in Vec::from(&tests[0..]) {
         let s = Spectro::load(&test.infile);
         let fc2 = load_fc2(&test.fort15, test.nvib);
-        let fc2 = s.rot2nd(fc2, s.axes);
+        let fc2 = s.rot2nd(fc2);
         let fc2 = FACT2 * fc2;
         let w = s.geom.weights();
         let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
@@ -171,7 +171,7 @@ fn test_lx() {
     // just test a hard one here for now
     let s = Spectro::load("testfiles/c3hf/spectro.in");
     let fc2 = load_fc2("testfiles/c3hf/fort.15", 15);
-    let fc2 = s.rot2nd(fc2, s.axes);
+    let fc2 = s.rot2nd(fc2);
     let fc2 = FACT2 * fc2;
     let w = s.geom.weights();
     let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();

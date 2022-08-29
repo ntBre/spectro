@@ -388,8 +388,8 @@ impl Spectro {
     }
 
     /// rotate the harmonic force constants in `fx` to align with the principal
-    /// axes in `eg` used to align the geometry
-    pub fn rot2nd(&self, fx: Dmat, eg: Mat3) -> Dmat {
+    /// axes in `self.axes` used to align the geometry
+    pub fn rot2nd(&self, fx: Dmat) -> Dmat {
         let mut ret = fx.clone();
         let natom = self.natoms();
         for ia in (0..3 * natom).step_by(3) {
@@ -397,7 +397,7 @@ impl Spectro {
                 // grab 3x3 blocks of FX into A, perform Eg × A × Egᵀ and set
                 // that block in the return matrix
                 let a = fx.fixed_slice::<3, 3>(ia, ib);
-                let temp2 = eg.transpose() * a * eg;
+                let temp2 = self.axes.transpose() * a * self.axes;
                 let mut targ = ret.fixed_slice_mut::<3, 3>(ia, ib);
                 targ.copy_from(&temp2);
             }
@@ -717,7 +717,7 @@ impl Spectro {
         // load the force constants, rotate them to the new axes, and convert
         // them to the proper units
         let fc2 = load_fc2(fort15, self.n3n);
-        let fc2 = self.rot2nd(fc2, self.axes);
+        let fc2 = self.rot2nd(fc2);
         let fc2 = FACT2 * fc2;
 
         // form the secular equations and decompose them to get harmonic
@@ -733,9 +733,10 @@ impl Spectro {
 
         let (zmat, wila) = self.zeta(&lxm, &w);
 
-        // TODO good to here
         let quartic =
             Quartic::new(&self, self.nvib, &freq, &wila, &self.rotcon);
+
+        // TODO good to here
 
         // start of cubic analysis
         let f3x = load_fc3(fort30, self.n3n);
