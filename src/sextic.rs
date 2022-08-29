@@ -138,29 +138,6 @@ fn scc(
                         + 2.0
                             * cc[(i, ixyz - 1, ixyz - 1, ixyz - 1)]
                             * cc[(i, jxyz - 1, jxyz - 1, ixyz - 1)];
-                    // 6, 1, 2 first term is bad. should be -1.7e-6, and it's
-                    // actually -5.07e-7
-
-                    // 6, 2, 1 third term has the same issue, same indices I
-                    // think -1.7e-6 is right and I get -5.07e-7
-
-                    // off by a factor of 3 roughly, the indices in cc are 5, 0,
-                    // 1 and 5, 1, 0
-
-                    // i = 5, ixyz = 0, jxyz = 1 in the first term
-                    // corresponds to cc[(5, 1, 0, 0)]
-
-                    // i = 5, ixyz = 1, jxyz = 0 / 5, 2, 1
-                    // other term is cc[(5, 0, 0, 1)]
-
-                    // I think those are the only two issues
-                    println!("{:12}{:12}{:12}", i + 1, ixyz, jxyz);
-                    println!(
-                        "{:12.2e} {:12.2e} {:12.2e}",
-                        cc[(i, jxyz - 1, ixyz - 1, ixyz - 1)],
-                        cc[(i, ixyz - 1, ixyz - 1, ixyz - 1)],
-                        cc[(i, jxyz - 1, jxyz - 1, ixyz - 1)],
-                    );
                     valb += freq[i] * val1;
                 }
 
@@ -278,37 +255,13 @@ fn scc(
                     }
                 }
 
-                // TODO vald looking bad and maybe vale, might point back to tau
                 let value = vala - valb + valc + vald + vale + valf;
-                // vala and valc are okay
-
-                // vala depends on tau and rotcon
-                // valc depends on the c matrix
-
-                // valb on cc tensor
-                // vald on tau
-                // vale on tau and rotcon
-                // valf on tau and rotcon
-
-                // so cc is very suspicious, as is tau because I think rotcon is
-                // good. interesting that tau does not affect a though
-
-                // iterations 1, 3 bad for valb
-                // iterations 2, 4, 5, 6 bad for vald
-                // 1, 3, 5, 6 bad for vale
-                // 1, 2, 3, 4 bad for valf
-                // println!(
-                //     "{:12.2e} {:12.2e} {:12.2e} {:12.2e} {:12.2e} {:12.2e}",
-                //     vala, valb, valc, vald, vale, valf
-                // );
                 scc[(jxyz - 1, ixyz - 1, ixyz - 1)] = value;
                 scc[(ixyz - 1, jxyz - 1, ixyz - 1)] = value;
                 scc[(ixyz - 1, ixyz - 1, jxyz - 1)] = value;
             }
         }
     } // end loop at line 397
-    println!("{:.10e}", scc);
-    todo!();
 
     let mut vala = 0.0;
     for ixyz in 1..=3 {
@@ -381,7 +334,6 @@ fn scc(
     scc[(1, 2, 0)] = value;
     scc[(2, 0, 1)] = value;
     scc[(2, 1, 0)] = value;
-
     scc
 }
 
