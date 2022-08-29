@@ -374,11 +374,11 @@ impl Spectro {
     }
 
     /// formation of the secular equation
-    pub fn form_sec(&self, fx: Dmat, n3n: usize, sqm: &[f64]) -> Dmat {
+    pub fn form_sec(&self, fx: Dmat, sqm: &[f64]) -> Dmat {
         let mut fxm = fx.clone();
-        for i in 0..n3n {
+        for i in 0..self.n3n {
             let ii = i / 3;
-            for j in i..n3n {
+            for j in i..self.n3n {
                 let jj = j / 3;
                 fxm[(i, j)] = sqm[ii] * fx[(i, j)] * sqm[jj];
             }
@@ -724,7 +724,7 @@ impl Spectro {
         // frequencies and the LXM matrix
         let w = self.geom.weights();
         let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
-        let fxm = self.form_sec(fc2, self.n3n, &sqm);
+        let fxm = self.form_sec(fc2, &sqm);
         let (harms, lxm) = symm_eigen_decomp(fxm);
         let freq = to_wavenumbers(harms);
 

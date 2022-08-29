@@ -56,9 +56,7 @@ fn test_load_fc2() {
 
 #[test]
 fn test_rot2nd() {
-    let mut spectro = Spectro::load("testfiles/h2o/spectro.in");
-    spectro.geom.to_angstrom();
-    spectro.geom.normalize();
+    let spectro = Spectro::load("testfiles/h2o/spectro.in");
     let fc2 = load_fc2("testfiles/fort.15", 9);
     let got = spectro.rot2nd(fc2);
     let want = dmatrix![
@@ -86,16 +84,13 @@ fn test_rot2nd() {
 
 #[test]
 fn test_sec() {
-    let mut spectro = Spectro::load("testfiles/h2o/spectro.in");
-    spectro.geom.to_angstrom();
-    spectro.geom.normalize();
+    let spectro = Spectro::load("testfiles/h2o/spectro.in");
     let fc2 = load_fc2("testfiles/fort.15", 9);
     let fc2 = spectro.rot2nd(fc2);
     let fc2 = FACT2 * fc2;
-    let n3n = 3 * spectro.natoms();
     let w = spectro.geom.weights();
     let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
-    let got = spectro.form_sec(fc2, n3n, &sqm);
+    let got = spectro.form_sec(fc2, &sqm);
     let mut want = dmatrix![
     5.7857638, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
     3.6305606, 3.3705523, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
@@ -119,7 +114,7 @@ fn test_force3() {
     let fc2 = FACT2 * fc2;
     let w = s.geom.weights();
     let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
-    let fxm = s.form_sec(fc2, s.n3n, &sqm);
+    let fxm = s.form_sec(fc2, &sqm);
     let (harms, lxm) = symm_eigen_decomp(fxm);
     let freq = to_wavenumbers(harms);
     let lx = s.make_lx(s.n3n, &sqm, &lxm);
@@ -151,7 +146,7 @@ fn test_force4() {
     let fc2 = FACT2 * fc2;
     let w = s.geom.weights();
     let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
-    let fxm = s.form_sec(fc2, s.n3n, &sqm);
+    let fxm = s.form_sec(fc2, &sqm);
     let (harms, lxm) = symm_eigen_decomp(fxm);
     let freq = to_wavenumbers(harms);
     let lx = s.make_lx(s.n3n, &sqm, &lxm);
@@ -244,7 +239,7 @@ fn test_funds_and_e0() {
         let fc2 = FACT2 * fc2;
         let w = s.geom.weights();
         let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
-        let fxm = s.form_sec(fc2, s.n3n, &sqm);
+        let fxm = s.form_sec(fc2, &sqm);
         let (harms, lxm) = symm_eigen_decomp(fxm);
         let freq = to_wavenumbers(harms);
         let lx = s.make_lx(s.n3n, &sqm, &lxm);
@@ -285,7 +280,7 @@ fn test_enrgy() {
     let fc2 = FACT2 * fc2;
     let w = s.geom.weights();
     let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
-    let fxm = s.form_sec(fc2, s.n3n, &sqm);
+    let fxm = s.form_sec(fc2, &sqm);
     let (harms, lxm) = symm_eigen_decomp(fxm);
     let freq = to_wavenumbers(harms);
     let lx = s.make_lx(s.n3n, &sqm, &lxm);
@@ -338,7 +333,7 @@ fn test_alpha() {
     let fc2 = FACT2 * fc2;
     let w = s.geom.weights();
     let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
-    let fxm = s.form_sec(fc2, s.n3n, &sqm);
+    let fxm = s.form_sec(fc2, &sqm);
     let (harms, lxm) = symm_eigen_decomp(fxm);
     let freq = to_wavenumbers(harms);
     let lx = s.make_lx(s.n3n, &sqm, &lxm);
@@ -372,7 +367,7 @@ fn test_alphaa() {
     let fc2 = FACT2 * fc2;
     let w = s.geom.weights();
     let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
-    let fxm = s.form_sec(fc2, s.n3n, &sqm);
+    let fxm = s.form_sec(fc2, &sqm);
     let (harms, lxm) = symm_eigen_decomp(fxm);
     let freq = to_wavenumbers(harms);
     let lx = s.make_lx(s.n3n, &sqm, &lxm);
@@ -580,7 +575,7 @@ fn restst() {
         let fc2 = FACT2 * fc2;
         let w = s.geom.weights();
         let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
-        let fxm = s.form_sec(fc2, s.n3n, &sqm);
+        let fxm = s.form_sec(fc2, &sqm);
         let (harms, lxm) = symm_eigen_decomp(fxm);
         let freq = to_wavenumbers(harms);
         let lx = s.make_lx(s.n3n, &sqm, &lxm);

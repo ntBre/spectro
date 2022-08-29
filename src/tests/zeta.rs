@@ -50,7 +50,7 @@ fn test_zeta() {
         let fc2 = FACT2 * fc2;
         let w = s.geom.weights();
         let sqm: Vec<_> = w.iter().map(|w: &f64| 1.0 / w.sqrt()).collect();
-        let fxm = s.form_sec(fc2, s.n3n, &sqm);
+        let fxm = s.form_sec(fc2, &sqm);
         let (_harms, lxm) = symm_eigen_decomp(fxm);
 
         let (zmat, wila) = s.zeta(&lxm, &w);
