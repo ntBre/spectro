@@ -725,9 +725,9 @@ impl Spectro {
         // form the LX matrix
         let lx = self.make_lx(self.n3n, &sqm, &lxm);
 
-        // biga not used yet
         let (zmat, wila) = self.zeta(&lxm, &w);
 
+        // TODO good to here
         let quartic = Quartic::new(&self, self.nvib, &freq, &wila, &rotcon);
 
         // start of cubic analysis

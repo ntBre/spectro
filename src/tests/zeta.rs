@@ -8,10 +8,11 @@ struct Test {
     fort15: String,
     wila: Dmat,
     zmat: Tensor3,
+    wila_eps: f64,
 }
 
 impl Test {
-    fn new(dir: &'static str, rows: usize, cols: usize) -> Self {
+    fn new(dir: &'static str, rows: usize, cols: usize, wila_eps: f64) -> Self {
         let start = Path::new("testfiles");
         Self {
             infile: String::from(
@@ -26,6 +27,7 @@ impl Test {
                 cols,
             ),
             zmat: Tensor3::load(start.join(dir).join("zmat").to_str().unwrap()),
+            wila_eps,
         }
     }
 }
@@ -33,12 +35,13 @@ impl Test {
 #[test]
 fn test_zeta() {
     let tests = [
-        // had to swap sign of first row of wila since my LXM has a different
-        // sign, and had to negate all of zmat from sign of geometry
-        Test::new("h2o", 3, 6),
-        // swapped some signs dispersed through wila
-        // Test::new("h2co", 6, 6),
-        // Test::new("c3h2", 9, 6),
+        // eps increases with mass, which I guess is from mass dependence of lxm
+        // and also wila itself
+        Test::new("h2o", 3, 6, 7.6e-7),
+        Test::new("h2co", 6, 6, 1.8e-6),
+        Test::new("c3h2", 9, 6, 2.8e-6),
+        Test::new("c3hf", 9, 6, 4.2e-6),
+        Test::new("c3hcn", 12, 6, 6.6e-6),
     ];
     for test in tests {
         let s = Spectro::load(&test.infile);
@@ -46,15 +49,23 @@ fn test_zeta() {
         let fc2 = s.rot2nd(fc2, s.axes);
         let fc2 = FACT2 * fc2;
         let w = s.geom.weights();
-        let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
+        let sqm: Vec<_> = w.iter().map(|w: &f64| 1.0 / w.sqrt()).collect();
         let fxm = s.form_sec(fc2, s.n3n, &sqm);
         let (_harms, lxm) = symm_eigen_decomp(fxm);
 
         let (zmat, wila) = s.zeta(&lxm, &w);
 
-        // println!("{:.8}", wila.clone() - test.wila.clone());
+        // println!("{:.8}", wila);
         // println!("{:.8}", test.wila);
-        assert_abs_diff_eq!(wila, test.wila, epsilon = 1e-6);
-        assert_abs_diff_eq!(zmat, test.zmat, epsilon = 1e-6);
+        // println!(
+        //     "{:.2e}",
+        //     (wila.clone().abs() - test.wila.clone().abs()).max()
+        // );
+        assert_abs_diff_eq!(zmat.abs(), test.zmat.abs(), epsilon = 1e-6);
+        assert_abs_diff_eq!(
+            wila.abs(),
+            test.wila.abs(),
+            epsilon = test.wila_eps
+        );
     }
 }
