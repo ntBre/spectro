@@ -14,6 +14,7 @@ mod lxm;
 mod quartic;
 mod restst;
 mod run;
+mod sextic;
 mod zeta;
 
 fn load_dmat(filename: &str, rows: usize, cols: usize) -> Dmat {

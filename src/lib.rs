@@ -748,7 +748,6 @@ impl Spectro {
         let f4qcm =
             force4(self.n3n, &mut f4x, &lx, self.nvib, &freq, self.i4vib);
 
-        // TODO good to here
         let Restst {
             coriolis,
             fermi1,
@@ -758,6 +757,7 @@ impl Spectro {
             i1mode,
         } = self.restst(&zmat, &f3qcm, &freq);
 
+        // TODO good to here
         let sextic =
             Sextic::new(&self, &wila, &zmat, &freq, &f3qcm, &self.rotcon);
 

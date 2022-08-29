@@ -126,7 +126,7 @@ fn test_run() {
         Test::new("c2h4"),
         Test::new("allyl"),
         Test::new("h2o_sic"),
-        // Test::new("c3hf"),
+        Test::new("c3hf"),
         // Test::new("c3hcl"),
         // Test::new("c3hcn010"),
         // Test::new("c3hcn"),
