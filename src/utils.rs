@@ -14,8 +14,7 @@ type Tensor3 = tensor::tensor3::Tensor3<f64>;
 
 use crate::{
     resonance::{Fermi1, Fermi2},
-    Dmat, Dvec, Spectro, Vec3, FACT3, FACT4, FUNIT3, FUNIT4, ICTOP, IPTOC,
-    WAVE,
+    Dmat, Dvec, Spectro, FACT3, FACT4, FUNIT3, FUNIT4, ICTOP, IPTOC, WAVE,
 };
 
 impl Display for Spectro {
@@ -786,7 +785,7 @@ pub(crate) fn make_tau(
     maxcor: usize,
     nvib: usize,
     freq: &Dvec,
-    primat: &Vec3,
+    primat: &[f64],
     wila: &Dmat,
 ) -> Tensor4 {
     // convert to cm-1 from the biggest mess you've ever seen
@@ -861,8 +860,7 @@ mod tests {
         let (harms, lxm) = symm_eigen_decomp(fxm);
         let freq = to_wavenumbers(harms);
         let (_zmat, wila) = s.zeta(&lxm, &w);
-        let primat = s.geom.principal_moments();
-        let tau = make_tau(3, 3, &freq, &primat, &wila);
+        let tau = make_tau(3, 3, &freq, &s.primat, &wila);
         let got = tau_prime(3, &tau);
         let want = dmatrix![
         -0.08628870,  0.01018052, -0.00283749;

@@ -30,7 +30,6 @@ use symm::{Atom, Molecule};
 mod tests;
 
 type Mat3 = nalgebra::Matrix3<f64>;
-type Vec3 = nalgebra::Vector3<f64>;
 type Dvec = nalgebra::DVector<f64>;
 type Dmat = nalgebra::DMatrix<f64>;
 
@@ -121,6 +120,8 @@ pub struct Spectro {
     pub i4vib: usize,
     pub natom: usize,
     pub axes: Mat3,
+    pub primat: Vec<f64>,
+    pub rotcon: Vec<f64>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -277,7 +278,9 @@ impl Spectro {
         ret.geom.to_angstrom();
         // you need the initial set of axes, not the ones from reorder
         let (vals, axes) = ret.geom.normalize();
-        let (_, axes) = symm::eigen_sort(vals, axes);
+        let (pr, axes) = symm::eigen_sort(vals, axes);
+        ret.primat = Vec::from(pr.as_slice());
+        ret.rotcon = pr.iter().map(|m| CONST / m).collect();
         ret.axes = axes;
         ret.geom.reorder();
         ret.rotor = ret.rotor_type();
@@ -310,7 +313,7 @@ impl Spectro {
             return Rotor::Diatomic;
         }
         let close = |a, b| f64::abs(a - b) < ROTOR_EPS;
-        let moms = self.geom.principal_moments();
+        let moms = &self.primat;
         if moms[0] < ROTOR_EPS {
             Rotor::Linear
         } else if close(moms[0], moms[1]) && close(moms[1], moms[2]) {
@@ -521,7 +524,7 @@ impl Spectro {
         rotcon: &[f64],
         freq: &Dvec,
         wila: &Dmat,
-        primat: &Vec3,
+        primat: &[f64],
         zmat: &Tensor3,
         f3qcm: &[f64],
         coriolis: &[Coriolis],
@@ -588,9 +591,15 @@ impl Spectro {
         i1sts: &Vec<Vec<usize>>,
         coriolis: &[Coriolis],
     ) -> Dmat {
-        let primat = self.geom.principal_moments();
-        let alpha =
-            self.alpha(rotcon, freq, &wila, &primat, &zmat, f3qcm, coriolis);
+        let alpha = self.alpha(
+            &self.rotcon,
+            freq,
+            &wila,
+            &self.primat,
+            &zmat,
+            f3qcm,
+            coriolis,
+        );
         // do the fundamentals + the ground state
         let nstop = fund.len() + 1;
         let n1dm = fund.len();
@@ -705,9 +714,6 @@ impl Spectro {
     where
         P: AsRef<Path>,
     {
-        let moments = self.geom.principal_moments();
-        let rotcon: Vec<_> = moments.iter().map(|m| CONST / m).collect();
-
         // load the force constants, rotate them to the new axes, and convert
         // them to the proper units
         let fc2 = load_fc2(fort15, self.n3n);
@@ -728,7 +734,8 @@ impl Spectro {
         let (zmat, wila) = self.zeta(&lxm, &w);
 
         // TODO good to here
-        let quartic = Quartic::new(&self, self.nvib, &freq, &wila, &rotcon);
+        let quartic =
+            Quartic::new(&self, self.nvib, &freq, &wila, &self.rotcon);
 
         // start of cubic analysis
         let f3x = load_fc3(fort30, self.n3n);
@@ -751,16 +758,31 @@ impl Spectro {
             i1mode,
         } = self.restst(&zmat, &f3qcm, &freq);
 
-        let sextic = Sextic::new(&self, &wila, &zmat, &freq, &f3qcm, &rotcon);
+        let sextic =
+            Sextic::new(&self, &wila, &zmat, &freq, &f3qcm, &self.rotcon);
 
         let (xcnst, e0) = xcalc(
-            self.nvib, &f4qcm, &freq, &f3qcm, &zmat, &rotcon, &fermi1, &fermi2,
+            self.nvib,
+            &f4qcm,
+            &freq,
+            &f3qcm,
+            &zmat,
+            &self.rotcon,
+            &fermi1,
+            &fermi2,
         );
 
         let fund = funds(&freq, self.nvib, &xcnst);
 
         let rotnst = self.alphaa(
-            &rotcon, &freq, &wila, &zmat, &f3qcm, &fund, &i1mode, &i1sts,
+            &self.rotcon,
+            &freq,
+            &wila,
+            &zmat,
+            &f3qcm,
+            &fund,
+            &i1mode,
+            &i1sts,
             &coriolis,
         );
 
@@ -784,7 +806,7 @@ impl Spectro {
 
         // print_vib_states(&eng, &i1sts);
 
-        let rots = self.rota(&rotnst, &i1sts, &rotcon, &quartic, &sextic);
+        let rots = self.rota(&rotnst, &i1sts, &self.rotcon, &quartic, &sextic);
 
         Output {
             harms: freq,

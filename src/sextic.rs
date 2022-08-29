@@ -5,7 +5,7 @@ type Tensor3 = tensor::tensor3::Tensor3<f64>;
 
 use crate::{
     utils::{find3r, ioff, make_tau, princ_cart, tau_prime},
-    Dmat, Dvec, Spectro, Vec3, SQLAM,
+    Dmat, Dvec, Spectro, SQLAM,
 };
 
 /// struct holding the sextic distortion constants
@@ -35,12 +35,11 @@ impl Sextic {
         // convert to Hz from cm⁻¹
         const CONST2: f64 = 2.99792458e10;
         let maxcor = if spectro.is_linear() { 2 } else { 3 };
-        let primat = spectro.geom.principal_moments();
-        let c = c_mat(maxcor, nvib, freq, &primat, wila);
+        let c = c_mat(maxcor, nvib, freq, &spectro.primat, wila);
         // TODO why did we even make this??
         let t = t_mat(maxcor, nvib, freq, &c);
         let cc = cc_tensor(nvib, maxcor, freq, &c, zmat, rotcon);
-        let tau = make_tau(maxcor, nvib, freq, &primat, wila);
+        let tau = make_tau(maxcor, nvib, freq, &spectro.primat, wila);
         let taucpm = tau_prime(maxcor, &tau);
         let scc = scc(maxcor, tau, rotcon, nvib, freq, cc, f3qcm, &c, spectro);
         // says this is the default representation and sets it to 1 if it was
@@ -615,7 +614,7 @@ fn c_mat(
     maxcor: usize,
     nvib: usize,
     freq: &Dvec,
-    primat: &Vec3,
+    primat: &[f64],
     wila: &Dmat,
 ) -> Dmat {
     let mut c = Dmat::zeros(nvib, 6);
@@ -642,7 +641,7 @@ mod tests {
             force3, force4, funds, load_fc2, load_fc3, load_fc4,
             symm_eigen_decomp, to_wavenumbers, xcalc,
         },
-        CONST, FACT2,
+        FACT2,
     };
 
     use super::*;
@@ -666,17 +665,13 @@ mod tests {
         let f4x = load_fc4("testfiles/fort.40", s.n3n);
         let mut f4x = s.rot4th(f4x, s.axes);
         let f4qcm = force4(s.n3n, &mut f4x, &lx, s.nvib, &freq, s.i4vib);
-        let moments = s.geom.principal_moments();
-        let rotcon: Vec<_> = moments.iter().map(|m| CONST / m).collect();
         let (xcnst, _e0) =
-            xcalc(s.nvib, &f4qcm, &freq, &f3qcm, &zmat, &rotcon, &[], &[]);
+            xcalc(s.nvib, &f4qcm, &freq, &f3qcm, &zmat, &s.rotcon, &[], &[]);
         let _fund = funds(&freq, s.nvib, &xcnst);
-
-        let primat = s.geom.principal_moments();
 
         // c_mat
         let c = {
-            let got = c_mat(3, 3, &freq, &primat, &wila);
+            let got = c_mat(3, 3, &freq, &s.primat, &wila);
             // sign of second element is swapped but that's okay since wila
             // comes from LXM
             let want = dmatrix![
@@ -702,7 +697,7 @@ mod tests {
         }
         // new
         {
-            let got = Sextic::new(&s, &wila, &zmat, &freq, &f3qcm, &rotcon);
+            let got = Sextic::new(&s, &wila, &zmat, &freq, &f3qcm, &s.rotcon);
             let want = Sextic {
                 phij: 4.602841007501275e-7,
                 phijk: -2.968676109850574e-6,

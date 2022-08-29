@@ -9,6 +9,7 @@ use nalgebra as na;
 
 mod load;
 mod lxm;
+mod quartic;
 mod run;
 mod zeta;
 
@@ -262,10 +263,8 @@ fn test_funds_and_e0() {
             i1sts: _,
             i1mode: _,
         } = s.restst(&zmat, &f3qcm, &freq);
-        let moments = s.geom.principal_moments();
-        let rotcon: Vec<_> = moments.iter().map(|m| CONST / m).collect();
         let (xcnst, e0) = xcalc(
-            s.nvib, &f4qcm, &freq, &f3qcm, &zmat, &rotcon, &fermi1, &fermi2,
+            s.nvib, &f4qcm, &freq, &f3qcm, &zmat, &s.rotcon, &fermi1, &fermi2,
         );
         assert_abs_diff_eq!(e0, test.want_e0, epsilon = test.e_eps);
 
@@ -297,10 +296,8 @@ fn test_enrgy() {
     let f4x = load_fc4("testfiles/fort.40", s.n3n);
     let mut f4x = s.rot4th(f4x, s.axes);
     let f4qcm = force4(s.n3n, &mut f4x, &lx, s.nvib, &freq, s.i4vib);
-    let moments = s.geom.principal_moments();
-    let rotcon: Vec<_> = moments.iter().map(|m| CONST / m).collect();
     let (xcnst, e0) =
-        xcalc(s.nvib, &f4qcm, &freq, &f3qcm, &zmat, &rotcon, &[], &[]);
+        xcalc(s.nvib, &f4qcm, &freq, &f3qcm, &zmat, &s.rotcon, &[], &[]);
     let wante0 = 20.057563725859055;
     assert_abs_diff_eq!(e0, wante0, epsilon = 6e-8);
     let fund = funds(&freq, s.nvib, &xcnst);
@@ -349,9 +346,6 @@ fn test_alpha() {
     let f3x = load_fc3("testfiles/fort.30", s.n3n);
     let mut f3x = s.rot3rd(f3x, s.axes);
     let f3qcm = force3(s.n3n, &mut f3x, &lx, s.nvib, &freq, s.i3vib);
-    let moments = s.geom.principal_moments();
-    let rotcon: Vec<_> = moments.iter().map(|m| CONST / m).collect();
-    let primat = s.geom.principal_moments();
     let Restst {
         coriolis,
         fermi1: _,
@@ -360,7 +354,8 @@ fn test_alpha() {
         i1sts: _,
         i1mode: _,
     } = s.restst(&zmat, &f3qcm, &freq);
-    let got = s.alpha(&rotcon, &freq, &wila, &primat, &zmat, &f3qcm, &coriolis);
+    let got =
+        s.alpha(&s.rotcon, &freq, &wila, &s.primat, &zmat, &f3qcm, &coriolis);
     let want = dmatrix![
        -1.1564648277177876, -0.68900933871743675, 2.5983329447479688;
     -0.09868782762986765, -0.21931495793096034, 0.16185995232026804;
@@ -388,10 +383,8 @@ fn test_alphaa() {
     let f4x = load_fc4("testfiles/fort.40", s.n3n);
     let mut f4x = s.rot4th(f4x, s.axes);
     let f4qcm = force4(s.n3n, &mut f4x, &lx, s.nvib, &freq, s.i4vib);
-    let moments = s.geom.principal_moments();
-    let rotcon: Vec<_> = moments.iter().map(|m| CONST / m).collect();
     let (xcnst, _e0) =
-        xcalc(s.nvib, &f4qcm, &freq, &f3qcm, &zmat, &rotcon, &[], &[]);
+        xcalc(s.nvib, &f4qcm, &freq, &f3qcm, &zmat, &s.rotcon, &[], &[]);
     let fund = funds(&freq, s.nvib, &xcnst);
     let Restst {
         coriolis,
@@ -402,7 +395,8 @@ fn test_alphaa() {
         i1mode,
     } = s.restst(&zmat, &f3qcm, &freq);
     let got = s.alphaa(
-        &rotcon, &freq, &wila, &zmat, &f3qcm, &fund, &i1mode, &i1sts, &coriolis,
+        &s.rotcon, &freq, &wila, &zmat, &f3qcm, &fund, &i1mode, &i1sts,
+        &coriolis,
     );
     let want = dmatrix![
     27.657417987118755, 14.498766626639174, 9.2673038449583238;

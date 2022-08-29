@@ -58,6 +58,8 @@ H     -1.55759109  0.94685817  0.00000000
         0.0, 1.0, 0.0;
         0.0, 0.0, 1.0;
         ],
+        rotcon: vec![],
+        primat: vec![],
     };
     assert_eq!(got, want);
 }
@@ -133,6 +135,8 @@ He     1.76798258  0.00000000  0.00000000
         0.0, 0.0, 1.0;
         1.0, 0.0, 0.0;
         ],
+        rotcon: vec![],
+        primat: vec![],
     };
     assert_eq!(got.axes, want.axes);
     assert_eq!(got, want);
