@@ -44,8 +44,11 @@ fn test_sextic() {
         //
         Test::new("h2o"),
         Test::new("h2co"),
+        Test::new("c3h2"),
+        Test::new("c3hf"),
+        Test::new("c3hcn"),
     ];
-    for test in Vec::from(&tests[1..]) {
+    for test in Vec::from(&tests[..]) {
         let s = Spectro::load(&test.infile);
         let fc2 = load_fc2(test.fort15, s.n3n);
         let fc2 = s.rot2nd(fc2);
@@ -60,10 +63,10 @@ fn test_sextic() {
         let f3x = load_fc3(test.fort30, s.n3n);
         let mut f3x = s.rot3rd(f3x, s.axes);
         let f3qcm = force3(s.n3n, &mut f3x, &lx, s.nvib, &freq, s.i3vib);
-        println!();
         let got = Sextic::new(&s, &wila, &zmat, &freq, &f3qcm, &s.rotcon);
-        println!("got\n{}", got);
-        println!("want\n{}", test.want);
+        // println!("\n{}", test.infile);
+        // println!("got\n{}", got);
+        // println!("want\n{}", test.want);
         assert_abs_diff_eq!(got, test.want, epsilon = 2e-10);
     }
 }

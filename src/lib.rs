@@ -757,10 +757,10 @@ impl Spectro {
             i1mode,
         } = self.restst(&zmat, &f3qcm, &freq);
 
-        // TODO good to here
         let sextic =
             Sextic::new(&self, &wila, &zmat, &freq, &f3qcm, &self.rotcon);
 
+        // TODO good to here
         let (xcnst, e0) = xcalc(
             self.nvib,
             &f4qcm,

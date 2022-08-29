@@ -495,10 +495,7 @@ impl Sextic {
                 t[(ic[ixyz], ic[jxyz])] = taucpm[(ixyz, jxyz)] / 4.0;
             }
         }
-        // TODO scc looking suspicious
-        println!("{:.10e}", scc);
         let phi = make_phi(maxcor, ic, scc);
-        println!("{:.10e}", phi);
         let t400 = (3.0 * t[(1 - 1, 1 - 1)]
             + 3.0 * t[(2 - 1, 2 - 1)]
             + 2.0 * t[(1 - 1, 2 - 1)])
@@ -522,7 +519,6 @@ impl Sextic {
             / 4.0
             + phi[(1 - 1, 2 - 1, 3 - 1)] / 4.0
             - 3.0 * phi600;
-        // TODO suspicious phi(3, 3, 1), but 3, 3, 2 looks okay
         let phi240 = phi[(3 - 1, 3 - 1, 1 - 1)] + phi[(3 - 1, 3 - 1, 2 - 1)]
             - 2.0 * phi420
             - 3.0 * phi600;
