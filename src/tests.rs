@@ -7,6 +7,7 @@ use crate::*;
 use na::dmatrix;
 use nalgebra as na;
 
+mod force3;
 mod load;
 mod lxm;
 mod quartic;
@@ -104,38 +105,6 @@ fn test_sec() {
        ];
     want.fill_upper_triangle_with_lower_triangle();
     assert_abs_diff_eq!(got, want, epsilon = 1e-7);
-}
-
-#[test]
-fn test_force3() {
-    let s = Spectro::load("testfiles/h2o/spectro.in");
-    let fc2 = load_fc2("testfiles/fort.15", s.n3n);
-    let fc2 = s.rot2nd(fc2);
-    let fc2 = FACT2 * fc2;
-    let w = s.geom.weights();
-    let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
-    let fxm = s.form_sec(fc2, &sqm);
-    let (harms, lxm) = symm_eigen_decomp(fxm);
-    let freq = to_wavenumbers(harms);
-    let lx = s.make_lx(s.n3n, &sqm, &lxm);
-    let f3x = load_fc3("testfiles/fort.30", s.n3n);
-    let mut f3x = s.rot3rd(f3x, s.axes);
-    let got = force3(s.n3n, &mut f3x, &lx, s.nvib, &freq, s.i3vib);
-    // signs are different from fortran version, but I think that's okay. mostly
-    // a regression test anyway
-    let want = vec![
-        0.00028013699326642446,
-        1822.24785969789,
-        -8.833731114767919e-5,
-        1820.1092348470625,
-        266.1186010180256,
-        -4.814160093191156e-5,
-        75.42085160498344,
-        -0.0003478413270064172,
-        -310.8977456046787,
-        -269.0192202516248,
-    ];
-    assert_eq!(got, want);
 }
 
 #[test]

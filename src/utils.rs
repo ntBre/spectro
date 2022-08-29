@@ -232,7 +232,7 @@ where
     f4x
 }
 
-fn load_fc34<P: AsRef<Path>>(infile: P) -> Vec<f64> {
+pub(crate) fn load_fc34<P: AsRef<Path>>(infile: P) -> Vec<f64> {
     let data = read_to_string(infile).unwrap();
     data.split_whitespace()
         .map(|s| s.parse().unwrap())
