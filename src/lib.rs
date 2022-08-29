@@ -736,8 +736,6 @@ impl Spectro {
         let quartic =
             Quartic::new(&self, self.nvib, &freq, &wila, &self.rotcon);
 
-        // TODO good to here
-
         // start of cubic analysis
         let f3x = load_fc3(fort30, self.n3n);
         let mut f3x = self.rot3rd(f3x, self.axes);
@@ -750,6 +748,7 @@ impl Spectro {
         let f4qcm =
             force4(self.n3n, &mut f4x, &lx, self.nvib, &freq, self.i4vib);
 
+        // TODO good to here
         let Restst {
             coriolis,
             fermi1,

@@ -8,6 +8,7 @@ use na::dmatrix;
 use nalgebra as na;
 
 mod force3;
+mod force4;
 mod load;
 mod lxm;
 mod quartic;
@@ -105,42 +106,6 @@ fn test_sec() {
        ];
     want.fill_upper_triangle_with_lower_triangle();
     assert_abs_diff_eq!(got, want, epsilon = 1e-7);
-}
-
-#[test]
-fn test_force4() {
-    let s = Spectro::load("testfiles/h2o/spectro.in");
-    let fc2 = load_fc2("testfiles/fort.15", s.n3n);
-    let fc2 = s.rot2nd(fc2);
-    let fc2 = FACT2 * fc2;
-    let w = s.geom.weights();
-    let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
-    let fxm = s.form_sec(fc2, &sqm);
-    let (harms, lxm) = symm_eigen_decomp(fxm);
-    let freq = to_wavenumbers(harms);
-    let lx = s.make_lx(s.n3n, &sqm, &lxm);
-    let f4x = load_fc4("testfiles/fort.40", s.n3n);
-    let mut f4x = s.rot4th(f4x, s.axes);
-    let got = force4(s.n3n, &mut f4x, &lx, s.nvib, &freq, s.i4vib);
-    // signs different from fortran again, probably okay
-    let want = vec![
-        769.3358855094393,
-        -0.002712912620238425,
-        763.1685129051438,
-        -0.001501171784219294,
-        758.2529262030582,
-        -0.002431235632620156,
-        118.32792953849406,
-        0.0003713553455663881,
-        62.10500925390422,
-        -368.39066135682094,
-        -0.0025126784870662354,
-        -306.5011074516508,
-        0.0031153319021852573,
-        -156.84468164852024,
-        -54.958677005925686,
-    ];
-    assert_eq!(got, want);
 }
 
 #[test]
