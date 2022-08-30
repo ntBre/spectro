@@ -127,11 +127,11 @@ fn test_run() {
         Test::new("allyl"),
         Test::new("h2o_sic"),
         Test::new("c3hf"),
-        // Test::new("c3hcl"),
+        Test::new("c3hcl"),
+        Test::new("c3hcn"),
         // Test::new("c3hcn010"),
-        // Test::new("c3hcn"),
     ];
-    for test in Vec::from(&tests[6..]) {
+    for test in Vec::from(&tests[..]) {
         let infile = test.infile.to_str().unwrap();
 
         let spectro = Spectro::load(infile);
