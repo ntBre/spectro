@@ -138,6 +138,30 @@ fn test_lxm() {
                 -0.016734163693373296,
             ],
         ),
+        Test::new(
+            "c3hcn010",
+            18,
+            vec![
+                3271.1795755233238,
+                2280.0924448154542,
+                1728.134307968186,
+                1277.1806063711706,
+                1116.4518271280579,
+                947.10751012130777,
+                904.09844247318347,
+                680.79594896651645,
+                532.75583438253011,
+                530.11422631349251,
+                221.14178982563286,
+                203.562478678129,
+                0.012154875257174607,
+                0.010985078565658966,
+                -0.0090818588711545824,
+                -0.0098588933562224201,
+                -0.013180931940242106,
+                -0.020806633490717621,
+            ],
+        ),
     ];
     for test in Vec::from(&tests[0..]) {
         let s = Spectro::load(&test.infile);
@@ -158,8 +182,8 @@ fn test_lxm() {
 
         // only really care about the part with frequencies. there is more noise
         // in the rotations and translations, so this allows tightening epsilon
-        let got = lxm.slice((0, 0), (s.nvib, s.nvib)).abs();
-        let want = test.lxm.slice((0, 0), (s.nvib, s.nvib)).abs();
+        let got = lxm.slice((0, 0), (s.n3n, s.nvib)).abs();
+        let want = test.lxm.slice((0, 0), (s.n3n, s.nvib)).abs();
 
         // println!("{:.2e}", (got.clone() - want.clone()).max());
         assert_abs_diff_eq!(got, want, epsilon = 2e-9);
