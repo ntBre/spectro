@@ -1,4 +1,4 @@
-use approx::assert_abs_diff_eq;
+use approx::abs_diff_ne;
 
 use super::*;
 
@@ -50,6 +50,7 @@ fn test_zeta() {
         Test::new("c3h2", 9, 6, 1.57e-9, 2.8e-6),
         Test::new("c3hf", 9, 6, 9.85e-10, 4.2e-6),
         Test::new("c3hcn", 12, 6, 8.39e-10, 6.6e-6),
+        Test::new("c3hcn010", 12, 6, 8.39e-10, 6.6e-6),
     ];
     for test in Vec::from(&tests[..]) {
         let s = Spectro::load(&test.infile);
@@ -63,28 +64,24 @@ fn test_zeta() {
 
         let (zmat, wila) = s.zeta(&lxm, &w);
 
-        // println!("{:.8}", wila);
-        // println!("{:.8}", test.wila);
-        // println!(
-        //     "{:.2e}",
-        //     (wila.clone().abs() - test.wila.clone().abs()).max()
-        // );
-        // println!("\n{}", test.infile);
-        // println!("got\n{:20.10e}", zmat);
-        // println!("want\n{:20.10e}", test.zmat);
-        // println!(
-        //     "{:.2e}",
-        //     (zmat.clone().abs() - test.zmat.clone().abs()).abs().max()
-        // );
-        assert_abs_diff_eq!(
-            zmat.abs(),
-            test.zmat.abs(),
-            epsilon = test.zmat_eps
-        );
-        assert_abs_diff_eq!(
-            wila.abs(),
-            test.wila.abs(),
-            epsilon = test.wila_eps
-        );
+        if abs_diff_ne!(zmat.abs(), test.zmat.abs(), epsilon = test.zmat_eps) {
+            println!("got\n{:.8}", zmat);
+            println!("want\n{:.8}", test.zmat);
+            println!(
+                "max diff = {:.2e}",
+                (zmat.clone().abs() - test.zmat.clone().abs()).abs().max()
+            );
+            assert!(false, "zmat failed on {}", test.infile);
+        }
+
+        if abs_diff_ne!(wila.abs(), test.wila.abs(), epsilon = test.wila_eps) {
+            println!("got\n{:.8}", wila);
+            println!("want\n{:.8}", test.wila);
+            println!(
+                "max diff = {:.2e}",
+                (wila.clone().abs() - test.wila.clone().abs()).abs().max()
+            );
+            assert!(false, "wila failed on {}", test.infile);
+        }
     }
 }

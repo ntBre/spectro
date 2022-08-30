@@ -1,4 +1,4 @@
-use approx::assert_abs_diff_eq;
+use approx::abs_diff_ne;
 
 use crate::*;
 
@@ -60,12 +60,13 @@ pub(crate) fn test_sec() {
         let w = s.geom.weights();
         let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
         let got = s.form_sec(fc2, &sqm);
-        // println!("{:.8}", got);
-        // println!("{:.8}", test.want);
-        println!(
-            "{:.2e}",
-            (got.clone().abs() - test.want.clone().abs()).abs().max()
-        );
-        assert_abs_diff_eq!(got.abs(), test.want.abs(), epsilon = 1.73e-8);
+        if abs_diff_ne!(got.abs(), test.want.abs(), epsilon = 1.73e-8) {
+            println!("got\n{:.8}", got);
+            println!("want\n{:.8}", test.want);
+            println!(
+                "max diff = {:.2e}",
+                (got.clone().abs() - test.want.clone().abs()).abs().max()
+            );
+        }
     }
 }

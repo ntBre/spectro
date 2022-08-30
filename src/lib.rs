@@ -278,13 +278,10 @@ impl Spectro {
         }
         // assumes input geometry in bohr
         ret.geom.to_angstrom();
-        // you need the initial set of axes, not the ones from reorder
-        let (vals, axes) = ret.geom.normalize();
-        let (pr, axes) = symm::eigen_sort(vals, axes);
+        let (pr, axes) = ret.geom.normalize();
         ret.primat = Vec::from(pr.as_slice());
         ret.rotcon = pr.iter().map(|m| CONST / m).collect();
         ret.axes = axes;
-        ret.geom.reorder();
         ret.rotor = ret.rotor_type();
         ret.natom = ret.natoms();
         let n3n = 3 * ret.natoms();
@@ -333,16 +330,13 @@ impl Spectro {
         self.geom.atoms.len()
     }
 
-    // run spectro
-
     /// Calculate the zeta, big A and Wilson A and J matrices. Zeta is for the
     /// coriolis coupling constants
     fn zeta(&self, lxm: &Dmat, w: &[f64]) -> (Tensor3, Dmat) {
-        // calculate the zeta matrix for the coriolis coupling constants
         let zmat = make_zmat(self.nvib, self.natom, lxm);
-        let mut wila = Dmat::zeros(self.nvib, 6);
         // calculate the A vectors. says only half is formed since it's
         // symmetric
+        let mut wila = Dmat::zeros(self.nvib, 6);
         for k in 0..self.nvib {
             let mut valuxx = 0.0;
             let mut valuyy = 0.0;
@@ -392,7 +386,8 @@ impl Spectro {
     /// rotate the harmonic force constants in `fx` to align with the principal
     /// axes in `self.axes` used to align the geometry
     pub fn rot2nd(&self, fx: Dmat) -> Dmat {
-        let mut ret = fx.clone();
+        let (a, b) = fx.shape();
+        let mut ret = Dmat::zeros(a, b);
         let natom = self.natoms();
         for ia in (0..3 * natom).step_by(3) {
             for ib in (0..3 * natom).step_by(3) {
@@ -532,8 +527,8 @@ impl Spectro {
         /// CONST IS THE PI*SQRT(C/H) FACTOR
         const CONST: f64 = 0.086112;
         let mut alpha = Dmat::zeros(self.nvib, 3);
-        // like the fermi resonances, this overwrites earlier resonances. should
-        // it use them all?
+        // NOTE like the fermi resonances, this overwrites earlier resonances.
+        // should it use them all?
         let mut icorol: HashMap<(usize, usize), usize> = HashMap::new();
         for &Coriolis { i, j, axis } in coriolis {
             icorol.insert((i, j), axis as usize);
@@ -572,7 +567,6 @@ impl Spectro {
                     let iij = find3r(j, i, i);
                     valu3 += wila[(j, ii)] * f3qcm[iij] * freq[i] / wj32;
                 }
-                // valu3 issue on fourth iteration
                 alpha[(i, ixyz)] = valu0 * (valu1 + valu2 + valu3 * CONST);
             }
         }

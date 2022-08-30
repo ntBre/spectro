@@ -163,7 +163,7 @@ fn test_lxm() {
             ],
         ),
     ];
-    for test in Vec::from(&tests[0..]) {
+    for test in Vec::from(&tests[..]) {
         let s = Spectro::load(&test.infile);
         let fc2 = load_fc2(&test.fort15, test.nvib);
         let fc2 = s.rot2nd(fc2);

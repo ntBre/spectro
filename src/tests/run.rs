@@ -129,7 +129,7 @@ fn test_run() {
         Test::new("c3hf"),
         Test::new("c3hcl"),
         Test::new("c3hcn"),
-        // Test::new("c3hcn010"),
+        Test::new("c3hcn010"),
     ];
     for test in Vec::from(&tests[..]) {
         let infile = test.infile.to_str().unwrap();

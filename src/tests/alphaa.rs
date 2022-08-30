@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use approx::assert_abs_diff_eq;
+use approx::{abs_diff_ne, assert_abs_diff_eq};
 use nalgebra::dmatrix;
 
 use crate::*;
@@ -36,6 +36,7 @@ fn test_alpha() {
         Test::new("c3h2", "alpha", 9),
         Test::new("c3hf", "alpha", 9),
         Test::new("c3hcn", "alpha", 12),
+        Test::new("c3hcn010", "alpha", 12),
     ];
     for test in Vec::from(&tests[..]) {
         let s = Spectro::load(test.infile);
@@ -54,14 +55,15 @@ fn test_alpha() {
         let f3qcm = force3(s.n3n, &mut f3x, &lx, s.nvib, &freq, s.i3vib);
         let r = s.restst(&zmat, &f3qcm, &freq);
         let got = s.alpha(&freq, &wila, &zmat, &f3qcm, &r.coriolis);
-        // println!("{:.8}", got);
-        // println!("{:.8}", test.want);
-        // println!("{:.8}", got.clone() - test.want.clone());
-        // println!(
-        //     "max diff = {:.2e}",
-        //     (got.clone() - test.want.clone()).abs().max()
-        // );
-        assert_abs_diff_eq!(got, test.want, epsilon = 3e-6);
+        if abs_diff_ne!(got, test.want, epsilon = 3e-6) {
+            println!("got\n{:.8}", got);
+            println!("want\n{:.8}", test.want);
+            println!("diff\n{:.8}", got.clone() - test.want.clone());
+            println!(
+                "max diff = {:.2e}",
+                (got.clone() - test.want.clone()).abs().max()
+            );
+        }
     }
 }
 
