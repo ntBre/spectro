@@ -169,7 +169,7 @@ where
     P: AsRef<Path>,
 {
     let mut f3x = Tensor3::zeros(n3n, n3n, n3n);
-    let f33 = load_fc34(infile);
+    let f33 = load_vec(infile);
     let mut labc = 0;
     for iabc in 0..n3n {
         for jabc in 0..=iabc {
@@ -193,7 +193,7 @@ where
     P: AsRef<Path>,
 {
     let mut f4x = Tensor4::zeros(n3n, n3n, n3n, n3n);
-    let f44 = load_fc34(infile);
+    let f44 = load_vec(infile);
     let mut mabc = 0;
     for iabc in 0..n3n {
         for jabc in 0..=iabc {
@@ -232,7 +232,7 @@ where
     f4x
 }
 
-pub(crate) fn load_fc34<P: AsRef<Path>>(infile: P) -> Vec<f64> {
+pub(crate) fn load_vec<P: AsRef<Path>>(infile: P) -> Vec<f64> {
     let data = read_to_string(infile).unwrap();
     data.split_whitespace()
         .map(|s| s.parse().unwrap())

@@ -24,7 +24,7 @@ impl Test {
             fort40: String::from(
                 start.join(dir).join("fort.40").to_str().unwrap(),
             ),
-            want: load_fc34(start.join(dir).join("f4qcm")),
+            want: load_vec(start.join(dir).join("f4qcm")),
             eps,
         }
     }

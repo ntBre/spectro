@@ -312,6 +312,32 @@
 
    #+end_src
 
+* Debugging run tests
+** Failure in rotational constants
+   1. Check the alpha matrix in alphaa.rs
+      - this depends on
+	- harmonic frequencies (freq)
+	- wila matrix (wila)
+	- zmat tensor (zmat)
+	- cubic force constants (f3qcm)
+	- coriolis resonances
+      - narrow it down by printing valu0, valu1, valu2, and valu3 that go into
+        each entry in alpha
+      - narrow it down further by printing the components of the valu that is
+        wrong
+   2. If the issue was valu3 -> wila, check the wila matrix in zeta.rs
+      - wila depends on
+	- the geometry
+	- the atomic masses
+	- the lxm matrix
+      - narrow it down by printing these values, probably the issue will be with
+        the lxm matrix
+   3. If the issue is in the lxm matrix, check that in lxm.rs
+      - if that looks okay then just start crying because nothing makes sense
+      - alternatively, maybe it's a sign consistency issue so look at
+	- rot2nd
+	- form_sec
+
 * References
   - Watson68 - Simplification of the Molecular Vibration-Rotation Hamiltonian
   - Hoy72 - Anharmonic Force Constant Calculations
