@@ -760,7 +760,6 @@ impl Spectro {
         let sextic =
             Sextic::new(&self, &wila, &zmat, &freq, &f3qcm, &self.rotcon);
 
-        // TODO good to here
         let (xcnst, e0) = xcalc(
             self.nvib,
             &f4qcm,
@@ -772,15 +771,16 @@ impl Spectro {
             &fermi2,
         );
 
-        let fund = funds(&freq, self.nvib, &xcnst);
+        let funds = make_funds(&freq, self.nvib, &xcnst);
 
+        // TODO good to here
         let rotnst = self.alphaa(
             &self.rotcon,
             &freq,
             &wila,
             &zmat,
             &f3qcm,
-            &fund,
+            &funds,
             &i1mode,
             &i1sts,
             &coriolis,
@@ -791,11 +791,11 @@ impl Spectro {
         let mut eng = vec![0.0; nstate];
 
         resona(
-            &fund, e0, &i1mode, &freq, &xcnst, &fermi1, &fermi2, &mut eng,
+            &funds, e0, &i1mode, &freq, &xcnst, &fermi1, &fermi2, &mut eng,
         );
 
         enrgy(
-            &fund, &freq, &xcnst, &f3qcm, e0, &i1sts, &i1mode, &fermi1,
+            &funds, &freq, &xcnst, &f3qcm, e0, &i1sts, &i1mode, &fermi1,
             &fermi2, &mut eng,
         );
 
@@ -810,7 +810,7 @@ impl Spectro {
 
         Output {
             harms: freq,
-            funds: fund,
+            funds,
             rots,
             corrs,
         }

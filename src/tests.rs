@@ -15,9 +15,10 @@ mod quartic;
 mod restst;
 mod run;
 mod sextic;
+mod xcalc;
 mod zeta;
 
-fn load_dmat(filename: &str, rows: usize, cols: usize) -> Dmat {
+fn load_dmat<P: AsRef<Path>>(filename: P, rows: usize, cols: usize) -> Dmat {
     let data = read_to_string(filename).unwrap();
     Dmat::from_iterator(
         cols,
@@ -199,7 +200,7 @@ fn test_funds_and_e0() {
         );
         assert_abs_diff_eq!(e0, test.want_e0, epsilon = test.e_eps);
 
-        let got = funds(&freq, s.nvib, &xcnst);
+        let got = make_funds(&freq, s.nvib, &xcnst);
         assert_abs_diff_eq!(
             Dvec::from(got),
             Dvec::from(test.want_fund),
@@ -231,7 +232,7 @@ fn test_enrgy() {
         xcalc(s.nvib, &f4qcm, &freq, &f3qcm, &zmat, &s.rotcon, &[], &[]);
     let wante0 = 20.057563725859055;
     assert_abs_diff_eq!(e0, wante0, epsilon = 6e-8);
-    let fund = funds(&freq, s.nvib, &xcnst);
+    let fund = make_funds(&freq, s.nvib, &xcnst);
     let Restst {
         coriolis: _,
         fermi1,
@@ -316,7 +317,7 @@ fn test_alphaa() {
     let f4qcm = force4(s.n3n, &mut f4x, &lx, s.nvib, &freq, s.i4vib);
     let (xcnst, _e0) =
         xcalc(s.nvib, &f4qcm, &freq, &f3qcm, &zmat, &s.rotcon, &[], &[]);
-    let fund = funds(&freq, s.nvib, &xcnst);
+    let fund = make_funds(&freq, s.nvib, &xcnst);
     let Restst {
         coriolis,
         fermi1: _,

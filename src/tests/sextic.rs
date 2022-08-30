@@ -41,7 +41,6 @@ impl Display for Sextic {
 #[test]
 fn test_sextic() {
     let tests = [
-        //
         Test::new("h2o"),
         Test::new("h2co"),
         Test::new("c3h2"),

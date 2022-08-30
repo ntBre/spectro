@@ -524,6 +524,18 @@ pub fn xcalc(
             xcnst[(l, k)] = value;
         }
     }
+    let e0 = make_e0(nvib, f4qcm, f3qcm, freq, ifrm1, ifrmchk);
+    (xcnst, e0)
+}
+
+fn make_e0(
+    nvib: usize,
+    f4qcm: &[f64],
+    f3qcm: &[f64],
+    freq: &Dvec,
+    ifrm1: HashMap<usize, usize>,
+    ifrmchk: tensor::Tensor3<usize>,
+) -> f64 {
     // NOTE: took out some weird IA stuff here and reproduced their results.
     // maybe my signs are actually right and theirs are wrong.
     let mut f4k = 0.0;
@@ -557,27 +569,14 @@ pub fn xcalc(
             }
         }
     }
-
     // klm terms
     let mut f3klm = 0.0;
-    let mut _ifrmck = false;
     for k in 0..nvib {
-        for l in 0..nvib {
-            // TODO just start l at k? lol
-            if k <= l {
-                continue;
-            }
-            for m in 0..nvib {
-                // TODO see above
-                if l <= m {
-                    continue;
-                }
+        for l in 0..k {
+            for m in 0..l {
                 let klm = find3r(k, l, m);
                 let zval3 = f3qcm[klm].powi(2);
                 let xklm = freq[k] * freq[l] * freq[m];
-                let _wm = freq[m].powi(2);
-                let _km = ioff(k.max(m)) + k.min(m);
-                let _lm = ioff(l.max(m)) + l.min(m);
                 let d1 = freq[k] + freq[l] + freq[m];
                 let d2 = freq[k] - freq[l] + freq[m];
                 let d3 = freq[k] + freq[l] - freq[m];
@@ -598,13 +597,14 @@ pub fn xcalc(
             }
         }
     }
+    // biggest differences in f4k and f3klm, but I think it's okay
     let e0 = f4k + f3k + f3kkl + f3klm;
-    (xcnst, e0)
+    e0
 }
 
 /// compute the fundamental frequencies from the harmonic frequencies and the
 /// anharmonic constants
-pub fn funds(freq: &Dvec, nvib: usize, xcnst: &Dmat) -> Vec<f64> {
+pub fn make_funds(freq: &Dvec, nvib: usize, xcnst: &Dmat) -> Vec<f64> {
     let mut fund = Vec::with_capacity(freq.len());
     for i in 0..nvib {
         let mut val = freq[i] + 2.0 * xcnst[(i, i)];
