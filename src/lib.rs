@@ -1,5 +1,4 @@
 use std::{
-    cmp::{max, min},
     collections::{HashMap, HashSet},
     f64::consts::PI,
     fmt::Debug,
@@ -154,11 +153,14 @@ impl Spectro {
         }
     }
 
-    pub fn load(filename: &str) -> Self {
-        let f = match File::open(filename) {
+    pub fn load<P>(filename: P) -> Self
+    where
+        P: AsRef<Path> + Debug + Clone,
+    {
+        let f = match File::open(filename.clone()) {
             Ok(f) => f,
             Err(_) => {
-                eprintln!("failed to open infile '{}'", filename);
+                eprintln!("failed to open infile '{:?}'", filename);
                 std::process::exit(1);
             }
         };
@@ -521,10 +523,8 @@ impl Spectro {
     /// helper method for alpha matrix in `alphaa`
     fn alpha(
         &self,
-        rotcon: &[f64],
         freq: &Dvec,
         wila: &Dmat,
-        primat: &[f64],
         zmat: &Tensor3,
         f3qcm: &[f64],
         coriolis: &[Coriolis],
@@ -532,19 +532,21 @@ impl Spectro {
         /// CONST IS THE PI*SQRT(C/H) FACTOR
         const CONST: f64 = 0.086112;
         let mut alpha = Dmat::zeros(self.nvib, 3);
-        let mut icorol = DMatrix::<usize>::zeros(self.i2vib, 3);
+        // like the fermi resonances, this overwrites earlier resonances. should
+        // it use them all?
+        let mut icorol: HashMap<(usize, usize), usize> = HashMap::new();
         for &Coriolis { i, j, axis } in coriolis {
-            let ijvib = ioff(max(i, j)) + min(i, j);
-            icorol[(ijvib, axis as usize)] = 1;
+            icorol.insert((i, j), axis as usize);
+            icorol.insert((j, i), axis as usize);
         }
         for ixyz in 0..3 {
             for i in 0..self.nvib {
                 let ii = ioff(ixyz + 2) - 1;
-                let valu0 = 2.0 * rotcon[ixyz].powi(2) / freq[i];
+                let valu0 = 2.0 * self.rotcon[ixyz].powi(2) / freq[i];
                 let mut valu1 = 0.0;
                 for jxyz in 0..3 {
                     let ij = ioff(ixyz.max(jxyz) + 1) + ixyz.min(jxyz);
-                    valu1 += wila[(i, ij)].powi(2) / primat[jxyz];
+                    valu1 += wila[(i, ij)].powi(2) / self.primat[jxyz];
                 }
                 valu1 *= 0.75;
 
@@ -552,10 +554,10 @@ impl Spectro {
                 let mut valu3 = 0.0;
                 for j in 0..self.nvib {
                     if j != i {
-                        let ijvib = ioff(i.max(j)) + i.min(j);
                         let wisq = freq[i].powi(2);
                         let wjsq = freq[j].powi(2);
-                        if icorol[(ijvib, ixyz)] == 1 {
+                        let tmp = icorol.get(&(i, j));
+                        if tmp.is_some() && *tmp.unwrap() == ixyz {
                             valu2 -= 0.5
                                 * zmat[(i, j, ixyz)].powi(2)
                                 * (freq[i] - freq[j]).powi(2)
@@ -591,15 +593,7 @@ impl Spectro {
         i1sts: &Vec<Vec<usize>>,
         coriolis: &[Coriolis],
     ) -> Dmat {
-        let alpha = self.alpha(
-            &self.rotcon,
-            freq,
-            &wila,
-            &self.primat,
-            &zmat,
-            f3qcm,
-            coriolis,
-        );
+        let alpha = self.alpha(freq, &wila, &zmat, f3qcm, coriolis);
         // do the fundamentals + the ground state
         let nstop = fund.len() + 1;
         let n1dm = fund.len();

@@ -7,6 +7,7 @@ use crate::*;
 use na::dmatrix;
 use nalgebra as na;
 
+mod alphaa;
 mod force3;
 mod force4;
 mod load;
@@ -260,81 +261,4 @@ fn test_enrgy() {
         9895.66935813587,
     ];
     assert_eq!(got, want);
-}
-
-#[test]
-fn test_alpha() {
-    let s = Spectro::load("testfiles/h2o/spectro.in");
-    let fc2 = load_fc2("testfiles/fort.15", s.n3n);
-    let fc2 = s.rot2nd(fc2);
-    let fc2 = FACT2 * fc2;
-    let w = s.geom.weights();
-    let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
-    let fxm = s.form_sec(fc2, &sqm);
-    let (harms, lxm) = symm_eigen_decomp(fxm);
-    let freq = to_wavenumbers(harms);
-    let lx = s.make_lx(s.n3n, &sqm, &lxm);
-    let (zmat, wila) = s.zeta(&lxm, &w);
-    let f3x = load_fc3("testfiles/fort.30", s.n3n);
-    let mut f3x = s.rot3rd(f3x, s.axes);
-    let f3qcm = force3(s.n3n, &mut f3x, &lx, s.nvib, &freq, s.i3vib);
-    let Restst {
-        coriolis,
-        fermi1: _,
-        fermi2: _,
-        darling: _,
-        i1sts: _,
-        i1mode: _,
-    } = s.restst(&zmat, &f3qcm, &freq);
-    let got =
-        s.alpha(&s.rotcon, &freq, &wila, &s.primat, &zmat, &f3qcm, &coriolis);
-    let want = dmatrix![
-       -1.1564648277177876, -0.68900933871743675, 2.5983329447479688;
-    -0.09868782762986765, -0.21931495793096034, 0.16185995232026804;
-    -0.14297483172390801, -0.17703802340977196, -0.14639237714841669;
-                                                                         ];
-    assert_abs_diff_eq!(got, want.transpose(), epsilon = 3e-6);
-}
-
-#[test]
-fn test_alphaa() {
-    let s = Spectro::load("testfiles/h2o/spectro.in");
-    let fc2 = load_fc2("testfiles/fort.15", s.n3n);
-    let fc2 = s.rot2nd(fc2);
-    let fc2 = FACT2 * fc2;
-    let w = s.geom.weights();
-    let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
-    let fxm = s.form_sec(fc2, &sqm);
-    let (harms, lxm) = symm_eigen_decomp(fxm);
-    let freq = to_wavenumbers(harms);
-    let lx = s.make_lx(s.n3n, &sqm, &lxm);
-    let (zmat, wila) = s.zeta(&lxm, &w);
-    let f3x = load_fc3("testfiles/fort.30", s.n3n);
-    let mut f3x = s.rot3rd(f3x, s.axes);
-    let f3qcm = force3(s.n3n, &mut f3x, &lx, s.nvib, &freq, s.i3vib);
-    let f4x = load_fc4("testfiles/fort.40", s.n3n);
-    let mut f4x = s.rot4th(f4x, s.axes);
-    let f4qcm = force4(s.n3n, &mut f4x, &lx, s.nvib, &freq, s.i4vib);
-    let (xcnst, _e0) =
-        xcalc(s.nvib, &f4qcm, &freq, &f3qcm, &zmat, &s.rotcon, &[], &[]);
-    let fund = make_funds(&freq, s.nvib, &xcnst);
-    let Restst {
-        coriolis,
-        fermi1: _,
-        fermi2: _,
-        darling: _,
-        i1sts,
-        i1mode,
-    } = s.restst(&zmat, &f3qcm, &freq);
-    let got = s.alphaa(
-        &s.rotcon, &freq, &wila, &zmat, &f3qcm, &fund, &i1mode, &i1sts,
-        &coriolis,
-    );
-    let want = dmatrix![
-    27.657417987118755, 14.498766626639174, 9.2673038449583238;
-     26.500953159400968, 14.400078799009306, 9.1243290132344157;
-     26.968408648401319, 14.279451668708212, 9.0902658215485506;
-     30.255750931866725, 14.660626578959441, 9.1209114678099059;
-    ];
-    assert_abs_diff_eq!(got, want, epsilon = 2e-5);
 }
