@@ -120,16 +120,38 @@ fn check_rots(got: Vec<Rot>, want: Vec<Rot>, infile: &str) {
 #[test]
 fn test_run() {
     let tests = [
+        // asymmetric tops
         Test::new("h2o"),
         Test::new("h2co"),
         Test::new("c3h2"),
         Test::new("c2h4"),
+        Test::new("c4h3+"),
         Test::new("allyl"),
         Test::new("h2o_sic"),
         Test::new("c3hf"),
         Test::new("c3hcl"),
         Test::new("c3hcn"),
         Test::new("c3hcn010"),
+        Test::new("c-hoco"),
+        Test::new("hno"),
+        Test::new("hocn"),
+        Test::new("hoco+"),
+        Test::new("hpsi"),
+        Test::new("hso"),
+        Test::new("hss"),
+        Test::new("nh2-"),
+        Test::new("nnoh+"),
+        Test::new("sic2"),
+        Test::new("t-hoco"),
+        // symmetric tops
+        // Test::new("nh3"),
+
+        // linear
+        // Test::new("c2h-"),
+        // Test::new("hcn"),
+        // Test::new("hco+"),
+        // Test::new("hmgnc"),
+        // Test::new("hnc"),
     ];
     for test in Vec::from(&tests[..]) {
         let infile = test.infile.to_str().unwrap();

@@ -77,7 +77,7 @@ where
     <T as FromStr>::Err: Debug,
 {
     line.split_whitespace()
-        .map(|s| s.parse::<T>().unwrap())
+        .map(|s| s.parse::<T>().expect(&format!("failed to parse {}", s)))
         .collect::<Vec<_>>()
 }
 
