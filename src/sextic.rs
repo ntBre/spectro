@@ -419,29 +419,6 @@ fn cc_tensor(
     cc
 }
 
-// went with the fortran indexing here and then subtracting one since that was
-// easier than figuring out the normal indexing
-pub(crate) fn t_mat(maxcor: usize, nvib: usize, freq: &Dvec, c: &Dmat) -> Dmat {
-    let mut t = Dmat::zeros(maxcor, maxcor);
-    for ixyz in 1..=maxcor {
-        let iixyz = ioff(ixyz + 1);
-        for jxyz in 1..=maxcor {
-            let ijxyz = ioff(max(ixyz, jxyz)) + min(ixyz, jxyz);
-            let jjxyz = ioff(jxyz + 1);
-            let mut val = 0.0;
-            for i in 0..nvib {
-                val += freq[i] * c[(i, iixyz - 1)] * c[(i, jjxyz - 1)];
-                if ixyz != jxyz {
-                    val +=
-                        2.0 * freq[i] * c[(i, ijxyz - 1)] * c[(i, ijxyz - 1)];
-                }
-            }
-            t[(ixyz - 1, jxyz - 1)] = -0.5 * val;
-        }
-    }
-    t
-}
-
 pub(crate) fn c_mat(
     maxcor: usize,
     nvib: usize,
@@ -463,28 +440,22 @@ pub(crate) fn c_mat(
     c
 }
 
-#[allow(unused)]
 impl Sextic {
     pub(crate) fn new(
-        spectro: &Spectro,
+        s: &Spectro,
         wila: &Dmat,
         zmat: &Tensor3,
         freq: &Dvec,
         f3qcm: &[f64],
-        rotcon: &[f64],
     ) -> Self {
         let mut ret = Self::default();
-        let nvib = spectro.nvib;
-        // convert to Hz from cm⁻¹
-        const CONST2: f64 = 2.99792458e10;
-        let maxcor = if spectro.is_linear() { 2 } else { 3 };
-        let c = c_mat(maxcor, nvib, freq, &spectro.primat, wila);
-        // TODO why did we even make this??
-        let t = t_mat(maxcor, nvib, freq, &c);
-        let cc = cc_tensor(nvib, maxcor, freq, &c, zmat, rotcon);
-        let tau = make_tau(maxcor, nvib, freq, &spectro.primat, wila);
+        let nvib = s.nvib;
+        let maxcor = if s.is_linear() { 2 } else { 3 };
+        let c = c_mat(maxcor, nvib, freq, &s.primat, wila);
+        let cc = cc_tensor(nvib, maxcor, freq, &c, zmat, &s.rotcon);
+        let tau = make_tau(maxcor, nvib, freq, &s.primat, wila);
         let taucpm = tau_prime(maxcor, &tau);
-        let scc = scc(maxcor, tau, rotcon, nvib, freq, cc, f3qcm, &c, spectro);
+        let scc = scc(maxcor, tau, &s.rotcon, nvib, freq, cc, f3qcm, &c, s);
         // says this is the default representation and sets it to 1 if it was
         // originally 0. NOTE my 0 is fortran 1
         let irep = 0;
@@ -507,9 +478,7 @@ impl Sextic {
         let t004 = (t[(1 - 1, 1 - 1)] + t[(2 - 1, 2 - 1)]
             - 2.0 * t[(1 - 1, 2 - 1)])
             / 16.0;
-        let b200 = 0.5e0 * (rotcon[id[1 - 1]] + rotcon[id[2 - 1]]) - 4.0 * t004;
-        let b020 = rotcon[id[3 - 1]] - b200 + 6.0 * t004;
-        let b002 = 0.25e0 * (rotcon[id[1 - 1]] - rotcon[id[2 - 1]]);
+        let b002 = 0.25e0 * (s.rotcon[id[1 - 1]] - s.rotcon[id[2 - 1]]);
         let phi600 = 5.0
             * (phi[(1 - 1, 1 - 1, 1 - 1)] + phi[(2 - 1, 2 - 1, 2 - 1)])
             / 16.0
@@ -546,15 +515,12 @@ impl Sextic {
             / 64.0
             - (phi[(1 - 1, 1 - 1, 2 - 1)] - phi[(2 - 1, 2 - 1, 1 - 1)]) / 32.0;
 
-        let sigma = if !spectro.rotor.is_sym_top() {
+        if !s.rotor.is_sym_top() {
             // asymmetric top
-            let sigma = (2.0 * rotcon[id[3 - 1]]
-                - rotcon[id[1 - 1]]
-                - rotcon[id[2 - 1]])
-                / (rotcon[id[1 - 1]] - rotcon[id[2 - 1]]);
-            let rkappa =
-                (2.0 * rotcon[(3 - 1)] - rotcon[(1 - 1)] - rotcon[(2 - 1)])
-                    / (rotcon[(1 - 1)] - rotcon[(2 - 1)]);
+            let sigma = (2.0 * s.rotcon[id[3 - 1]]
+                - s.rotcon[id[1 - 1]]
+                - s.rotcon[id[2 - 1]])
+                / (s.rotcon[id[1 - 1]] - s.rotcon[id[2 - 1]]);
             ret.phij = phi600 + 2.0 * phi204;
             ret.phijk = phi420 - 12.0 * phi204
                 + 2.0 * phi024
@@ -577,65 +543,9 @@ impl Sextic {
                         - 2.0 * (sigma * sigma - 2.0) * t004)
                     * t004
                     / b002;
-            sigma
         } else {
             todo!()
         };
-
-        // symmetric top representation
-        let irep = if spectro.rotor.is_sym_top() {
-            if spectro.rotor.is_prolate() {
-                1
-            } else {
-                6
-            }
-        } else {
-            1
-        };
-        let (ic, id) = princ_cart(irep);
-        let rkappa =
-            (2.0 * rotcon[id[1 - 1]] - rotcon[id[2 - 1]] - rotcon[id[3 - 1]])
-                / (rotcon[id[2 - 1]] - rotcon[id[3 - 1]]);
-        // NOTE BP = BO in our case instead of having two variables. TODO use
-        // this at some point.
-
-        assert!(!spectro.rotor.is_sym_top());
-        // let (bp, sigma, irep) = if spectro.rotor_type.is_sym_top() {
-        //     // rkappa = -1 => prolate
-        //     // rkappa = +1 => oblate
-        //     if rkappa < 0.0 {
-        // 	let bp = (rkappa + 1.0) / (rkappa - 3.0);
-        // 	// interesting choice..
-        // 	let sigma = -9999999999999.0;
-        // 	let irep = 3;
-        // 	(bp, sigma, irep)
-        //     } else {
-        // };
-        let rho = t022 / (4.0 * sigma);
-        let div = 2.0 * sigma * sigma + 27.0 / 16.0;
-        let mu = (sigma * phi042 - 9.0 * phi024 / 8.0
-            + (-2.0 * sigma * t040 + (sigma * sigma + 3.0) * t022
-                - 5.0 * sigma * t004)
-                * t022
-                / b020)
-            / div;
-        let nu = 3.0 * mu / (16.0 * sigma)
-            + phi024 / (8.0 * sigma)
-            + t004 * t022 / b020;
-        let lamda = 5.0 * nu / sigma
-            + phi222 / (sigma * 2.0)
-            + (-t220 / (sigma * 2.0) + t202
-                - t022 / (sigma * sigma)
-                - 2.0 * t004 / sigma)
-                * t022
-                / b020;
-        let hj = phi600 - lamda;
-        let hjk = phi420 + 6.0 * lamda - 3.0 * mu;
-        let hkj = phi240 - 5.0 * lamda + 10.0 * mu;
-        let hk = phi060 - 7.0 * mu;
-        let h1 = phi402 - nu;
-        let h2 = phi204 + lamda / 2.0;
-        let h3 = phi006 + nu;
 
         // TODO linear molecule case and spherical top case
 

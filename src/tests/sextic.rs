@@ -62,7 +62,7 @@ fn test_sextic() {
         let f3x = load_fc3(test.fort30, s.n3n);
         let mut f3x = s.rot3rd(f3x, s.axes);
         let f3qcm = force3(s.n3n, &mut f3x, &lx, s.nvib, &freq);
-        let got = Sextic::new(&s, &wila, &zmat, &freq, &f3qcm, &s.rotcon);
+        let got = Sextic::new(&s, &wila, &zmat, &freq, &f3qcm);
         // println!("\n{}", test.infile);
         // println!("got\n{}", got);
         // println!("want\n{}", test.want);

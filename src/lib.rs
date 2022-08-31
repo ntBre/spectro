@@ -722,10 +722,6 @@ impl Spectro {
         // form the LX matrix
         let lx = self.make_lx(&sqm, &lxm);
 
-        let (zmat, wila) = self.zeta(&lxm, &w);
-
-        let quartic = Quartic::new(&self, &freq, &wila);
-
         // start of cubic analysis
         let f3x = load_fc3(fort30, self.n3n);
         let mut f3x = self.rot3rd(f3x, self.axes);
@@ -736,6 +732,8 @@ impl Spectro {
         let f4x = self.rot4th(f4x, self.axes);
         let f4qcm = force4(self.n3n, &f4x, &lx, self.nvib, &freq);
 
+        let (zmat, wila) = self.zeta(&lxm, &w);
+
         let Restst {
             coriolis,
             fermi1,
@@ -745,8 +743,8 @@ impl Spectro {
             i1mode,
         } = self.restst(&zmat, &f3qcm, &freq);
 
-        let sextic =
-            Sextic::new(&self, &wila, &zmat, &freq, &f3qcm, &self.rotcon);
+        let quartic = Quartic::new(&self, &freq, &wila);
+        let sextic = Sextic::new(&self, &wila, &zmat, &freq, &f3qcm);
 
         let (xcnst, e0) = xcalc(
             self.nvib,
