@@ -20,3 +20,10 @@ fn bench_force4(b: &mut test::Bencher) {
         force4(s.n3n, &f4x, &lx, s.nvib, &freq);
     });
 }
+
+#[bench]
+fn bench_load_vec(b: &mut test::Bencher) {
+    b.iter(|| {
+        load_vec("testfiles/h2o/fort.40");
+    });
+}

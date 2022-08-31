@@ -234,7 +234,7 @@ where
 
 pub(crate) fn load_vec<P: AsRef<Path>>(infile: P) -> Vec<f64> {
     let data = read_to_string(infile).unwrap();
-    data.split_whitespace()
+    data.split_ascii_whitespace()
         .map(|s| s.parse().unwrap())
         .collect()
 }
