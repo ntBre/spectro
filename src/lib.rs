@@ -983,7 +983,7 @@ fn make_resin(
 }
 
 /// contains all of the output data from running Spectro
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Output {
     /// harmonic frequencies
     pub harms: Dvec,
