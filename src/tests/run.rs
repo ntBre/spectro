@@ -1,6 +1,6 @@
 use std::{fs::read_to_string, path::PathBuf};
 
-use approx::{abs_diff_eq, assert_abs_diff_eq};
+use approx::abs_diff_eq;
 use serde::Deserialize;
 
 use crate::*;
@@ -90,7 +90,7 @@ fn check_rots(got: Vec<Rot>, want: Vec<Rot>, infile: &str) {
     if !abs_diff_eq!(
         DVector::from(got.clone()),
         DVector::from(want.clone()),
-        epsilon = 3e-5
+        epsilon = 2e-5
     ) {
         println!("{}", "got");
         for g in &got {
@@ -142,6 +142,9 @@ fn test_run() {
         Test::new("nnoh+"),
         Test::new("sic2"),
         Test::new("t-hoco"),
+        Test::new("hoof"),
+        Test::new("hosh"),
+        Test::new("hssh"),
         // symmetric tops
         // Test::new("nh3"),
 
@@ -158,7 +161,21 @@ fn test_run() {
         let spectro = Spectro::load(infile);
         let got = spectro.run(test.fort15, test.fort30, test.fort40);
 
-        assert_abs_diff_eq!(got.harms, test.want.harms, epsilon = 0.1);
+        assert_eq!(got.harms.len(), test.want.harms.len(), "{}", infile);
+        if !abs_diff_eq!(got.harms, test.want.harms, epsilon = 0.1) {
+            println!("\n{:>5}{:>8}{:>8}{:>8}", "Mode", "Got", "Want", "Diff");
+            for i in 0..got.harms.len() {
+                println!(
+                    "{:5}{:8.1}{:8.1}{:8.1}",
+                    i + 1,
+                    got.harms[i],
+                    test.want.harms[i],
+                    got.harms[i] - test.want.harms[i],
+                );
+            }
+            assert!(false, "harms differ at {}", infile);
+        }
+
         check(got.funds, test.want.funds, "funds", infile);
         check(got.corrs, test.want.corrs, "corrs", infile);
         check_rots(got.rots, test.want.rots, infile);

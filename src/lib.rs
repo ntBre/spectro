@@ -742,8 +742,10 @@ impl Spectro {
         );
 
         let mut corrs = Vec::new();
+        let mut harms = Vec::new();
         for i in 1..self.nvib + 1 {
             corrs.push(eng[i] - eng[0]);
+            harms.push(freq[i - 1]);
         }
 
         // print_vib_states(&eng, &i1sts);
@@ -753,7 +755,7 @@ impl Spectro {
         let rots = self.rota(&rotnst, &i1sts, &self.rotcon, &quartic);
 
         Output {
-            harms: freq,
+            harms: Dvec::from(harms),
             funds,
             rots,
             corrs,
