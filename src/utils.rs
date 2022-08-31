@@ -329,10 +329,6 @@ pub fn force4(
     nvib: usize,
     harms: &Dvec,
 ) -> Vec<f64> {
-    // start - 401,000 ns/iter
-    // transpose once - 381,221
-    // set submatrix below - 308,253
-    // copy_from_slice in tensor - 296,025
     let lxt = lx.transpose();
     let mut f4q = Tensor4::zeros(n3n, n3n, n3n, n3n);
     for kabc in 0..n3n {
