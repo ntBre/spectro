@@ -724,8 +724,7 @@ impl Spectro {
 
         let (zmat, wila) = self.zeta(&lxm, &w);
 
-        let quartic =
-            Quartic::new(&self, self.nvib, &freq, &wila, &self.rotcon);
+        let quartic = Quartic::new(&self, &freq, &wila);
 
         // start of cubic analysis
         let f3x = load_fc3(fort30, self.n3n);

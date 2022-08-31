@@ -10,7 +10,6 @@ use nalgebra as na;
 
 fn load_want(filename: PathBuf) -> Output {
     #[derive(Clone, Deserialize, Debug)]
-    #[allow(unused)]
     struct Want {
         harms: Vec<f64>,
         funds: Vec<f64>,

@@ -14,7 +14,6 @@ use crate::{
 /// rotational constants in Watson A, while bxs, bys, bzs are the corresponding
 /// values in Watson S. djw, djkw, and dkw are Wilson's centrifugal distortion
 /// constants. djn, djkn, dkn, sdjn, r5, and r6 are Nielsen distortion constants
-#[allow(unused)]
 #[cfg_attr(test, derive(serde::Deserialize))]
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct Quartic {
@@ -155,16 +154,9 @@ impl Display for Quartic {
 
 impl Quartic {
     /// calculate the quartic centrifugal distortion constants
-    #[allow(unused)]
-    pub(crate) fn new(
-        spectro: &Spectro,
-        nvib: usize,
-        freq: &Dvec,
-        wila: &Dmat,
-        rotcon: &[f64],
-    ) -> Self {
-        let maxcor = if spectro.is_linear() { 2 } else { 3 };
-        let tau = make_tau(maxcor, nvib, freq, &spectro.primat, wila);
+    pub(crate) fn new(s: &Spectro, freq: &Dvec, wila: &Dmat) -> Self {
+        let maxcor = if s.is_linear() { 2 } else { 3 };
+        let tau = make_tau(maxcor, s.nvib, freq, &s.primat, wila);
         let taupcm = tau_prime(maxcor, &tau);
         // NOTE: pretty sure this is always the case
         let irep = 0;
@@ -185,20 +177,16 @@ impl Quartic {
         let t022 = (t[(0, 2)] - t[(1, 2)]) / 2.0e0 - t202;
         let t004 = (t[(0, 0)] + t[(1, 1)] - 2.0e0 * t[(0, 1)]) / 16.0e0;
 
-        let b200 = 0.5 * (rotcon[id[0]] + rotcon[id[1]]) - 4.0 * t004;
-        let b020 = rotcon[id[2]] - b200 + 6.0 * t004;
-        let b002 = 0.25 * (rotcon[id[0]] - rotcon[id[1]]);
-
-        let sigma = (2.0 * rotcon[id[2]] - rotcon[id[0]] - rotcon[id[1]])
-            / (rotcon[id[0]] - rotcon[id[1]]);
+        let sigma = (2.0 * s.rotcon[id[2]] - s.rotcon[id[0]] - s.rotcon[id[1]])
+            / (s.rotcon[id[0]] - s.rotcon[id[1]]);
         let djw = -taupcm[(ic[0], ic[0])] / 4.0;
         Quartic {
             // asymmetric top
-            sigma: (2.0 * rotcon[id[2]] - rotcon[id[0]] - rotcon[id[1]])
-                / (rotcon[id[0]] - rotcon[id[1]]),
+            sigma: (2.0 * s.rotcon[id[2]] - s.rotcon[id[0]] - s.rotcon[id[1]])
+                / (s.rotcon[id[0]] - s.rotcon[id[1]]),
             // definitely need not to do this if it's not an asymmetric top
-            rkappa: (2.0 * rotcon[1] - rotcon[0] - rotcon[2])
-                / (rotcon[0] - rotcon[2]),
+            rkappa: (2.0 * s.rotcon[1] - s.rotcon[0] - s.rotcon[2])
+                / (s.rotcon[0] - s.rotcon[2]),
             // coefficients in the Watson A reduction
             delj: -t400 - 2.0 * t004,
             delk: -t040 - 10.0 * t004,
@@ -206,9 +194,9 @@ impl Quartic {
             sdelk: -t022 - 4.0 * sigma * t004,
             sdelj: -t202,
             // effective rotational constants
-            bxa: rotcon[id[0]] - 8.0 * (sigma + 1.0) * t004,
-            bya: rotcon[id[1]] + 8.0 * (sigma - 1.0) * t004,
-            bza: rotcon[id[2]] + 16.0 * t004,
+            bxa: s.rotcon[id[0]] - 8.0 * (sigma + 1.0) * t004,
+            bya: s.rotcon[id[1]] + 8.0 * (sigma - 1.0) * t004,
+            bza: s.rotcon[id[2]] + 16.0 * t004,
             // nielsen centrifugal distortion constants
             djn: -t400,
             djkn: -t220,
@@ -223,9 +211,9 @@ impl Quartic {
             sd1: t202,
             sd2: t004 + 0.25 * t022 / sigma,
             // effective rotational constants again
-            bxs: rotcon[id[0]] - 4.0 * t004 + (2.0 + 1.0 / sigma) * t022,
-            bys: rotcon[id[1]] - 4.0 * t004 - (2.0 - 1.0 / sigma) * t022,
-            bzs: rotcon[id[2]] + 6.0 * t004 - 5.0 * t022 / (2.0 * sigma),
+            bxs: s.rotcon[id[0]] - 4.0 * t004 + (2.0 + 1.0 / sigma) * t022,
+            bys: s.rotcon[id[1]] - 4.0 * t004 - (2.0 - 1.0 / sigma) * t022,
+            bzs: s.rotcon[id[2]] + 6.0 * t004 - 5.0 * t022 / (2.0 * sigma),
             // Wilson's centrifugal distortion constants
             djw: -taupcm[(ic[0], ic[0])] / 4.0,
             djkw: -2.0 * djw - taupcm[(ic[0], ic[2])] / 2.0,

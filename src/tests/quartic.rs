@@ -53,7 +53,7 @@ fn test_quartic() {
         let (harms, lxm) = symm_eigen_decomp(fxm);
         let freq = to_wavenumbers(harms);
         let (_zmat, wila) = s.zeta(&lxm, &w);
-        let got = Quartic::new(&s, s.nvib, &freq, &wila, &s.rotcon);
+        let got = Quartic::new(&s, &freq, &wila);
         // println!("got\n{}", got);
         // println!("want\n{}", want);
         // println!("want\n{}", got.clone() - test.want.clone());
