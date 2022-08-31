@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::*;
+use crate::{sextic::Sextic, *};
 
 use super::*;
 

@@ -17,6 +17,7 @@ use nalgebra::DMatrix;
 use resonance::{Coriolis, Darling, Fermi1, Fermi2};
 use rot::Rot;
 use rotor::{Rotor, ROTOR_EPS};
+use sextic::Sextic;
 use tensor::Tensor4;
 type Tensor3 = tensor::tensor3::Tensor3<f64>;
 use utils::*;
@@ -92,7 +93,6 @@ pub enum Curvil {
 pub mod quartic;
 use quartic::*;
 pub mod sextic;
-use sextic::*;
 
 /// struct containing the fields to describe a Spectro input file:
 /// ```text
@@ -610,60 +610,19 @@ impl Spectro {
     }
 
     /// rotational energy levels of an asymmmetric top
-    #[allow(unused)]
     fn rota(
         &self,
         rotnst: &Dmat,
         i1sts: &Vec<Vec<usize>>,
         rotcon: &[f64],
         quartic: &Quartic,
-        sextic: &Sextic,
     ) -> Vec<Rot> {
-        let Quartic {
-            sigma: _,
-            rkappa: _,
-            delj,
-            delk,
-            deljk,
-            sdelk,
-            sdelj,
-            bxa: b4a,
-            bya: b5a,
-            bza: b6a,
-            djn: _,
-            djkn: _,
-            dkn: _,
-            sdjn: _,
-            r5: _,
-            r6: _,
-            dj: _,
-            djk: _,
-            dk: _,
-            sd1: _,
-            sd2: _,
-            bxs: b1s,
-            bys: b2s,
-            bzs: b3s,
-            djw: _,
-            djkw: _,
-            dkw: _,
-        } = quartic;
-        let Sextic {
-            phij,
-            phijk,
-            phikj,
-            phik,
-            sphij,
-            sphijk,
-            sphik,
-        } = sextic;
+        let (b4a, b5a, b6a) = quartic.arots();
 
         // I think this is always 3, but that doesn't really make sense. set
         // to 0 in mains, then passed to readw which never touches it and
         // then set to 3 if it's still 0. there might also be a better way
         // to set these than maxk. check what they actually loop over
-        let maxj = 3;
-        let maxk = 2 * maxj + 1;
         // NOTE: pretty sure this is always the case
         let irep = 0;
         let (ic, _) = princ_cart(irep);
@@ -694,9 +653,9 @@ impl Spectro {
             let bza = b6a + vibr[2];
             ret.push(Rot::new(i1sts[nst].clone(), bza, bxa, bya));
             // TODO return these S ones too
-            let bxs = b1s + vibr[0];
-            let bys = b2s + vibr[1];
-            let bzs = b3s + vibr[2];
+            // let bxs = b1s + vibr[0];
+            // let bys = b2s + vibr[1];
+            // let bzs = b3s + vibr[2];
         }
         ret
     }
@@ -742,9 +701,6 @@ impl Spectro {
             i1sts,
             i1mode,
         } = self.restst(&zmat, &f3qcm, &freq);
-
-        let quartic = Quartic::new(&self, &freq, &wila);
-        let sextic = Sextic::new(&self, &wila, &zmat, &freq, &f3qcm);
 
         let (xcnst, e0) = xcalc(
             self.nvib,
@@ -792,7 +748,9 @@ impl Spectro {
 
         // print_vib_states(&eng, &i1sts);
 
-        let rots = self.rota(&rotnst, &i1sts, &self.rotcon, &quartic, &sextic);
+        let quartic = Quartic::new(&self, &freq, &wila);
+        let _sextic = Sextic::new(&self, &wila, &zmat, &freq, &f3qcm);
+        let rots = self.rota(&rotnst, &i1sts, &self.rotcon, &quartic);
 
         Output {
             harms: freq,

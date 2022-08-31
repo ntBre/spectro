@@ -153,6 +153,12 @@ impl Display for Quartic {
 }
 
 impl Quartic {
+    /// return the effective rotational constants in the Watson A reduced
+    /// Hamiltonian that are stored in `self`
+    pub(crate) fn arots(&self) -> (f64, f64, f64) {
+        (self.bxa, self.bya, self.bza)
+    }
+
     /// calculate the quartic centrifugal distortion constants
     pub(crate) fn new(s: &Spectro, freq: &Dvec, wila: &Dmat) -> Self {
         let maxcor = if s.is_linear() { 2 } else { 3 };
