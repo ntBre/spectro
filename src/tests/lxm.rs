@@ -202,7 +202,7 @@ fn test_lx() {
     let fxm = s.form_sec(fc2, &sqm);
 
     let (_harms, lxm) = symm_eigen_decomp(fxm);
-    let lx = s.make_lx(s.n3n, &sqm, &lxm);
+    let lx = s.make_lx(&sqm, &lxm);
 
     let got = lx.slice((0, 0), (s.nvib, s.nvib)).abs();
     let want = load_dmat("testfiles/c3hf/lx", 15, 15);

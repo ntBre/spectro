@@ -48,7 +48,7 @@ fn test_alpha() {
         let fxm = s.form_sec(fc2, &sqm);
         let (harms, lxm) = symm_eigen_decomp(fxm);
         let freq = to_wavenumbers(harms);
-        let lx = s.make_lx(s.n3n, &sqm, &lxm);
+        let lx = s.make_lx(&sqm, &lxm);
         let (zmat, wila) = s.zeta(&lxm, &w);
         let f3x = load_fc3(test.fort30, s.n3n);
         let mut f3x = s.rot3rd(f3x, s.axes);
@@ -78,7 +78,7 @@ fn test_alphaa() {
     let fxm = s.form_sec(fc2, &sqm);
     let (harms, lxm) = symm_eigen_decomp(fxm);
     let freq = to_wavenumbers(harms);
-    let lx = s.make_lx(s.n3n, &sqm, &lxm);
+    let lx = s.make_lx(&sqm, &lxm);
     let (zmat, wila) = s.zeta(&lxm, &w);
     let f3x = load_fc3("testfiles/fort.30", s.n3n);
     let mut f3x = s.rot3rd(f3x, s.axes);

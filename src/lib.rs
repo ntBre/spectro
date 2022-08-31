@@ -507,11 +507,11 @@ impl Spectro {
     }
 
     /// make the LX matrix
-    fn make_lx(&self, n3n: usize, sqm: &[f64], lxm: &Dmat) -> Dmat {
-        let mut lx = Dmat::zeros(n3n, n3n);
-        for i in 0..n3n {
+    fn make_lx(&self, sqm: &[f64], lxm: &Dmat) -> Dmat {
+        let mut lx = Dmat::zeros(self.n3n, self.n3n);
+        for i in 0..self.n3n {
             let ii = i / 3;
-            for j in 0..n3n {
+            for j in 0..self.n3n {
                 lx[(i, j)] = sqm[ii] * lxm[(i, j)];
             }
         }
@@ -720,7 +720,7 @@ impl Spectro {
         let freq = to_wavenumbers(harms);
 
         // form the LX matrix
-        let lx = self.make_lx(self.n3n, &sqm, &lxm);
+        let lx = self.make_lx(&sqm, &lxm);
 
         let (zmat, wila) = self.zeta(&lxm, &w);
 
