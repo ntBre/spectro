@@ -328,26 +328,28 @@ pub fn force4(
     lx: &Dmat,
     nvib: usize,
     harms: &Dvec,
-    i4vib: usize,
 ) -> Vec<f64> {
     let mut f4q = Tensor4::zeros(n3n, n3n, n3n, n3n);
     for kabc in 0..n3n {
         for labc in 0..n3n {
-            let mut dd = Dmat::zeros(n3n, n3n);
-            for i in 0..n3n {
-                for j in 0..n3n {
-                    dd[(i, j)] = f4x[(i, j, kabc, labc)];
-                }
-            }
+            let mut dd = Dmat::from_row_slice(
+                n3n,
+                n3n,
+                &f4x.submatrix((0, 0), (n3n, n3n - 1), kabc, labc),
+            );
             dd *= FUNIT4;
             let ee = lx.clone().transpose() * dd * lx.clone();
-            for i in 0..n3n {
-                for j in 0..n3n {
-                    f4q[(i, j, kabc, labc)] = ee[(i, j)];
-                }
-            }
+            f4q.set_submatrix(
+                (0, 0),
+                (n3n, n3n - 1),
+                kabc,
+                labc,
+                ee.data.as_slice(),
+            );
         }
     }
+    // can't use submatrix here because kabc and labc are changing fastest and
+    // these are not contiguous
     for i in 0..n3n {
         for j in 0..n3n {
             let mut dd = Dmat::zeros(n3n, n3n);
@@ -364,14 +366,12 @@ pub fn force4(
             }
         }
     }
-    let mut frq4 = Tensor4::zeros(nvib, nvib, nvib, nvib);
     let n = nvib - 1;
     let mut f4qcm = vec![0.0; find4t(n, n, n, n) + 1];
     for ivib in 0..nvib {
         let wk = harms[ivib];
         for jvib in 0..=ivib {
             let wl = harms[jvib];
-            let mut dd = Dmat::zeros(nvib, nvib);
             for ii in 0..nvib {
                 let wi = harms[ii];
                 for jj in 0..=ii {
@@ -379,39 +379,13 @@ pub fn force4(
                     let wijkl = wi * wj * wk * wl;
                     let sqws = wijkl.sqrt();
                     let fact = FACT4 / sqws;
-                    dd[(ii, jj)] = f4x[(ii, jj, ivib, jvib)] * fact;
-                    dd[(jj, ii)] = f4x[(jj, ii, ivib, jvib)] * fact;
-                    frq4[(ii, jj, ivib, jvib)] = f4x[(ii, jj, ivib, jvib)];
-                    frq4[(jj, ii, ivib, jvib)] = f4x[(jj, ii, ivib, jvib)];
-                    frq4[(jj, ii, jvib, ivib)] = f4x[(jj, ii, jvib, ivib)];
-                    frq4[(ii, jj, jvib, ivib)] = f4x[(ii, jj, jvib, ivib)];
                     let ijkl = find4t(ivib, jvib, ii, jj);
-                    f4qcm[ijkl] = dd[(ii, jj)];
+                    f4qcm[ijkl] = f4x[(ii, jj, ivib, jvib)] * fact;
                 }
             }
         }
     }
-    let _facts4 = quartic_sum_facs(i4vib, nvib);
     f4qcm
-}
-
-fn quartic_sum_facs(i4vib: usize, nvib: usize) -> Vec<f64> {
-    let mut facts4 = vec![1.0; i4vib];
-    for i in 0..nvib {
-        facts4[find4t(i, i, i, i)] = 24.0;
-        // intentionally i-1
-        for j in 0..i {
-            facts4[find4t(i, i, i, j)] = 6.0;
-            facts4[find4t(i, j, j, j)] = 6.0;
-            facts4[find4t(i, i, j, j)] = 4.0;
-            for k in 0..j {
-                facts4[find4t(i, i, j, k)] = 2.0;
-                facts4[find4t(i, j, j, k)] = 2.0;
-                facts4[find4t(i, j, k, k)] = 2.0;
-            }
-        }
-    }
-    facts4
 }
 
 /// calculate the anharmonic constants and E_0
@@ -835,16 +809,6 @@ mod tests {
     fn test_find3r() {
         let got = find3r(2, 2, 2);
         let want = 9;
-        assert_eq!(got, want);
-    }
-
-    #[test]
-    fn test_quartic_sum_facs() {
-        let got = quartic_sum_facs(15, 3);
-        let want: Vec<f64> = vec![
-            24.0, 6.0, 4.0, 6.0, 24.0, 6.0, 2.0, 2.0, 6.0, 4.0, 2.0, 4.0, 6.0,
-            6.0, 24.0,
-        ];
         assert_eq!(got, want);
     }
 

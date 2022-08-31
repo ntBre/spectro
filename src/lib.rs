@@ -1,3 +1,5 @@
+#![feature(test)]
+
 use std::{
     collections::{HashMap, HashSet},
     f64::consts::PI,
@@ -733,8 +735,7 @@ impl Spectro {
         // start of quartic analysis
         let f4x = load_fc4(fort40, self.n3n);
         let mut f4x = self.rot4th(f4x, self.axes);
-        let f4qcm =
-            force4(self.n3n, &mut f4x, &lx, self.nvib, &freq, self.i4vib);
+        let f4qcm = force4(self.n3n, &mut f4x, &lx, self.nvib, &freq);
 
         let Restst {
             coriolis,
