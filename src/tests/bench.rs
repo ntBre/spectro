@@ -15,8 +15,8 @@ fn bench_force4(b: &mut test::Bencher) {
     let freq = to_wavenumbers(harms);
     let lx = s.make_lx(s.n3n, &sqm, &lxm);
     let f4x = load_fc4("testfiles/h2o/fort.40", s.n3n);
-    let mut f4x = s.rot4th(f4x, s.axes);
+    let f4x = s.rot4th(f4x, s.axes);
     b.iter(|| {
-        force4(s.n3n, &mut f4x, &lx, s.nvib, &freq);
+        force4(s.n3n, &f4x, &lx, s.nvib, &freq);
     });
 }

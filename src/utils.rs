@@ -324,7 +324,7 @@ pub fn force3(
 
 pub fn force4(
     n3n: usize,
-    f4x: &mut Tensor4,
+    f4x: &Tensor4,
     lx: &Dmat,
     nvib: usize,
     harms: &Dvec,

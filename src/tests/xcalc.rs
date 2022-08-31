@@ -61,8 +61,8 @@ fn test_xcalc() {
         let mut f3x = s.rot3rd(f3x, s.axes);
         let f3qcm = force3(s.n3n, &mut f3x, &lx, s.nvib, &freq, s.i3vib);
         let f4x = load_fc4(test.fort40, s.n3n);
-        let mut f4x = s.rot4th(f4x, s.axes);
-        let f4qcm = force4(s.n3n, &mut f4x, &lx, s.nvib, &freq);
+        let f4x = s.rot4th(f4x, s.axes);
+        let f4qcm = force4(s.n3n, &f4x, &lx, s.nvib, &freq);
         let Restst {
             coriolis: _,
             fermi1,

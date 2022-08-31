@@ -51,8 +51,8 @@ pub(crate) fn test_force4() {
         let freq = to_wavenumbers(harms);
         let lx = s.make_lx(s.n3n, &sqm, &lxm);
         let f4x = load_fc4(test.fort40, s.n3n);
-        let mut f4x = s.rot4th(f4x, s.axes);
-        let got = force4(s.n3n, &mut f4x, &lx, s.nvib, &freq);
+        let f4x = s.rot4th(f4x, s.axes);
+        let got = force4(s.n3n, &f4x, &lx, s.nvib, &freq);
         let got = Dvec::from(got).abs();
         let want = Dvec::from(test.want).abs();
         // println!("\ndiff = {:.2e}", (got.clone() - want.clone()).max());
