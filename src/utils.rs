@@ -351,38 +351,29 @@ pub fn force4(
             );
         }
     }
-    // can't use submatrix here because kabc and labc are changing fastest and
-    // these are not contiguous, but you can set_submatrix
-    for i in 0..nvib {
-        for j in 0..nvib {
+    // now can I include the loop above in here - the holy grail
+    let n = nvib - 1;
+    let mut f4qcm = vec![0.0; find4t(n, n, n, n) + 1];
+    for ii in 0..nvib {
+        let wi = harms[ii];
+        for jj in 0..=ii {
+            let wj = harms[jj];
             let mut dd = Dmat::zeros(n3n, n3n);
             for kabc in 0..n3n {
                 for labc in 0..n3n {
-                    dd[(kabc, labc)] = f4q[(i, j, kabc, labc)];
+                    dd[(kabc, labc)] = f4q[(ii, jj, kabc, labc)];
                 }
             }
             let ee = lxt.clone() * dd * lx.clone();
-            f4x.set_submatrix((0, 0), (n3n, n3n - 1), i, j, ee.data.as_slice());
-        }
-    }
-    // feels strongly like this could be combined with the loops above, but I'm
-    // not sure. probably if I wrote out all the linear algebra I could combine
-    // all of this into one pass
-    let n = nvib - 1;
-    let mut f4qcm = vec![0.0; find4t(n, n, n, n) + 1];
-    for ivib in 0..nvib {
-        let wk = harms[ivib];
-        for jvib in 0..=ivib {
-            let wl = harms[jvib];
-            for ii in 0..nvib {
-                let wi = harms[ii];
-                for jj in 0..=ii {
-                    let wj = harms[jj];
+            for ivib in 0..nvib {
+                let wk = harms[ivib];
+                for jvib in 0..=ivib {
+                    let wl = harms[jvib];
                     let wijkl = wi * wj * wk * wl;
                     let sqws = wijkl.sqrt();
                     let fact = FACT4 / sqws;
                     let ijkl = find4t(ivib, jvib, ii, jj);
-                    f4qcm[ijkl] = f4x[(ii, jj, ivib, jvib)] * fact;
+                    f4qcm[ijkl] = ee[(ivib, jvib)] * fact;
                 }
             }
         }
