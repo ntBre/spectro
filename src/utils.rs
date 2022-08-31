@@ -329,6 +329,11 @@ pub fn force4(
     nvib: usize,
     harms: &Dvec,
 ) -> Vec<f64> {
+    // start - 401,000 ns/iter
+    // transpose once - 381,221
+    // set submatrix below - 308,253
+    // copy_from_slice in tensor - 296,025
+    let lxt = lx.transpose();
     let mut f4q = Tensor4::zeros(n3n, n3n, n3n, n3n);
     for kabc in 0..n3n {
         for labc in 0..n3n {
@@ -338,7 +343,9 @@ pub fn force4(
                 &f4x.submatrix((0, 0), (n3n, n3n - 1), kabc, labc),
             );
             dd *= FUNIT4;
-            let ee = lx.clone().transpose() * dd * lx.clone();
+            let ee = lxt.clone() * dd * lx.clone();
+            // technically this as_slice call is wrong because it comes out in
+            // column-major order, but the matrix is symmetric
             f4q.set_submatrix(
                 (0, 0),
                 (n3n, n3n - 1),
@@ -349,7 +356,7 @@ pub fn force4(
         }
     }
     // can't use submatrix here because kabc and labc are changing fastest and
-    // these are not contiguous
+    // these are not contiguous, but you can set_submatrix
     for i in 0..n3n {
         for j in 0..n3n {
             let mut dd = Dmat::zeros(n3n, n3n);
@@ -358,14 +365,13 @@ pub fn force4(
                     dd[(kabc, labc)] = f4q[(i, j, kabc, labc)];
                 }
             }
-            let ee = lx.clone().transpose() * dd * lx.clone();
-            for kabc in 0..n3n {
-                for labc in 0..n3n {
-                    f4x[(kabc, labc, i, j)] = ee[(kabc, labc)];
-                }
-            }
+            let ee = lxt.clone() * dd * lx.clone();
+            f4x.set_submatrix((0, 0), (n3n, n3n - 1), i, j, ee.data.as_slice());
         }
     }
+    // feels strongly like this could be combined with the loops above, but I'm
+    // not sure. probably if I wrote out all the linear algebra I could combine
+    // all of this into one pass
     let n = nvib - 1;
     let mut f4qcm = vec![0.0; find4t(n, n, n, n) + 1];
     for ivib in 0..nvib {
