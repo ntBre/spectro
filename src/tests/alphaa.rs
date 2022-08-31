@@ -52,7 +52,7 @@ fn test_alpha() {
         let (zmat, wila) = s.zeta(&lxm, &w);
         let f3x = load_fc3(test.fort30, s.n3n);
         let mut f3x = s.rot3rd(f3x, s.axes);
-        let f3qcm = force3(s.n3n, &mut f3x, &lx, s.nvib, &freq, s.i3vib);
+        let f3qcm = force3(s.n3n, &mut f3x, &lx, s.nvib, &freq);
         let r = s.restst(&zmat, &f3qcm, &freq);
         let got = s.alpha(&freq, &wila, &zmat, &f3qcm, &r.coriolis);
         if abs_diff_ne!(got, test.want, epsilon = 3e-6) {
@@ -82,7 +82,7 @@ fn test_alphaa() {
     let (zmat, wila) = s.zeta(&lxm, &w);
     let f3x = load_fc3("testfiles/fort.30", s.n3n);
     let mut f3x = s.rot3rd(f3x, s.axes);
-    let f3qcm = force3(s.n3n, &mut f3x, &lx, s.nvib, &freq, s.i3vib);
+    let f3qcm = force3(s.n3n, &mut f3x, &lx, s.nvib, &freq);
     let f4x = load_fc4("testfiles/fort.40", s.n3n);
     let f4x = s.rot4th(f4x, s.axes);
     let f4qcm = force4(s.n3n, &f4x, &lx, s.nvib, &freq);

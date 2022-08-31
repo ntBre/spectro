@@ -246,64 +246,15 @@ pub fn force3(
     lx: &Dmat,
     nvib: usize,
     freq: &Dvec,
-    i3vib: usize,
 ) -> Vec<f64> {
-    let mut dd = Dmat::zeros(n3n, n3n);
     for kabc in 0..n3n {
-        for i in 0..n3n {
-            for j in 0..n3n {
-                dd[(i, j)] = f3x[(i, j, kabc)];
-            }
-        }
+        let start = (0, 0);
+        let end = (n3n, n3n - 1);
+        let mut dd =
+            Dmat::from_row_slice(n3n, n3n, &f3x.submatrix(start, end, kabc));
         dd *= FUNIT3;
         let ee = lx.clone().transpose() * dd.clone() * lx.clone();
-        for i in 0..n3n {
-            for j in 0..n3n {
-                f3x[(i, j, kabc)] = ee[(i, j)];
-            }
-        }
-    }
-    let mut f3q = Tensor3::zeros(n3n, n3n, n3n);
-    for i in 0..n3n {
-        for j in 0..n3n {
-            for k in 0..n3n {
-                let mut val = 0.0;
-                for l in 0..n3n {
-                    val += f3x[(i, j, l)] * lx[(l, k)];
-                }
-                f3q[(i, j, k)] = val;
-            }
-        }
-    }
-    let mut frq3 = Tensor3::zeros(nvib, nvib, nvib);
-    for ivib in 0..nvib {
-        let wk = freq[ivib];
-        for ii in 0..nvib {
-            let wi = freq[ii];
-            for jj in 0..nvib {
-                let wj = freq[jj];
-                let wijk = wi * wj * wk;
-                let sqws = wijk.sqrt();
-                let fact = FACT3 / sqws;
-                dd[(ii, jj)] = f3q[(ii, jj, ivib)] * fact;
-                frq3[(ii, jj, ivib)] = f3q[(ii, jj, ivib)];
-            }
-        }
-    }
-    // NOTE skipped a loop above this and after it that looked like unit
-    // manipulation. might be the same case here if facts3 is never used
-    // elsewhere
-    let mut facts3 = vec![1.0; i3vib];
-    for i in 0..nvib {
-        let iii = find3r(i, i, i);
-        facts3[iii] = 6.0;
-        // intentionally i-1
-        for j in 0..i {
-            let iij = find3r(i, i, j);
-            let ijj = find3r(i, j, j);
-            facts3[iij] = 2.0;
-            facts3[ijj] = 2.0;
-        }
+        f3x.set_submatrix(start, end, kabc, ee.data.as_slice());
     }
     let mut f3qcm =
         Vec::with_capacity(find3r(nvib - 1, nvib - 1, nvib - 1) + 1);
@@ -315,7 +266,11 @@ pub fn force3(
                 let wk = freq[(k)];
                 let wijk = wi * wj * wk;
                 let fact = FACT3 / wijk.sqrt();
-                f3qcm.push(f3q[(i, j, k)] * fact);
+                let mut val = 0.0;
+                for l in 0..n3n {
+                    val += f3x[(i, j, l)] * lx[(l, k)];
+                }
+                f3qcm.push(val * fact);
             }
         }
     }

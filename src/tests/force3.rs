@@ -52,7 +52,7 @@ pub(crate) fn test_force3() {
         let lx = s.make_lx(s.n3n, &sqm, &lxm);
         let f3x = load_fc3(&test.fort30, s.n3n);
         let mut f3x = s.rot3rd(f3x, s.axes);
-        let got = force3(s.n3n, &mut f3x, &lx, s.nvib, &freq, s.i3vib);
+        let got = force3(s.n3n, &mut f3x, &lx, s.nvib, &freq);
         let got = Dvec::from(got).abs();
         let want = Dvec::from(test.want).abs();
         // println!("\ndiff = {:.2e}", (got.clone() - want.clone()).max());

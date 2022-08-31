@@ -730,8 +730,7 @@ impl Spectro {
         // start of cubic analysis
         let f3x = load_fc3(fort30, self.n3n);
         let mut f3x = self.rot3rd(f3x, self.axes);
-        let f3qcm =
-            force3(self.n3n, &mut f3x, &lx, self.nvib, &freq, self.i3vib);
+        let f3qcm = force3(self.n3n, &mut f3x, &lx, self.nvib, &freq);
 
         // start of quartic analysis
         let f4x = load_fc4(fort40, self.n3n);
