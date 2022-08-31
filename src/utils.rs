@@ -353,8 +353,8 @@ pub fn force4(
     }
     // can't use submatrix here because kabc and labc are changing fastest and
     // these are not contiguous, but you can set_submatrix
-    for i in 0..n3n {
-        for j in 0..n3n {
+    for i in 0..nvib {
+        for j in 0..nvib {
             let mut dd = Dmat::zeros(n3n, n3n);
             for kabc in 0..n3n {
                 for labc in 0..n3n {
