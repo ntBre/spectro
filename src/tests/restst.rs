@@ -27,6 +27,7 @@ impl Test {
 
 #[test]
 fn restst_asym() {
+    use Mode::*;
     use State::*;
     let tests = [
         Test::new(
@@ -48,7 +49,7 @@ fn restst_asym() {
                     I1st(vec![1, 0, 1]),
                     I1st(vec![0, 1, 1]),
                 ],
-                i1mode: vec![0, 1, 2],
+                modes: vec![I1(0), I1(1), I1(2)],
             },
         ),
         Test::new(
@@ -88,7 +89,7 @@ fn restst_asym() {
                     I1st(vec![0, 0, 0, 1, 0, 1]),
                     I1st(vec![0, 0, 0, 0, 1, 1]),
                 ],
-                i1mode: vec![0, 1, 2, 3, 4, 5],
+                modes: vec![I1(0), I1(1), I1(2), I1(3), I1(4), I1(5)],
             },
         ),
         Test::new(
@@ -176,7 +177,17 @@ fn restst_asym() {
                     I1st(vec![0, 0, 0, 0, 0, 0, 1, 0, 1]),
                     I1st(vec![0, 0, 0, 0, 0, 0, 0, 1, 1]),
                 ],
-                i1mode: vec![0, 1, 2, 3, 4, 5, 6, 7, 8],
+                modes: vec![
+                    I1(0),
+                    I1(1),
+                    I1(2),
+                    I1(3),
+                    I1(4),
+                    I1(5),
+                    I1(6),
+                    I1(7),
+                    I1(8),
+                ],
             },
         ),
         Test::new(
@@ -267,7 +278,17 @@ fn restst_asym() {
                     I1st(vec![0, 0, 0, 0, 0, 0, 1, 0, 1]),
                     I1st(vec![0, 0, 0, 0, 0, 0, 0, 1, 1]),
                 ],
-                i1mode: vec![0, 1, 2, 3, 4, 5, 6, 7, 8],
+                modes: vec![
+                    I1(0),
+                    I1(1),
+                    I1(2),
+                    I1(3),
+                    I1(4),
+                    I1(5),
+                    I1(6),
+                    I1(7),
+                    I1(8),
+                ],
             },
         ),
     ];
@@ -276,7 +297,9 @@ fn restst_asym() {
 
 #[test]
 fn restst_sym() {
-    // use State::*;
+    use Mode::*;
+    use State::*;
+    // NOTE just pasted the states in for now
     let tests = [Test::new(
         "nh3",
         Restst {
@@ -284,8 +307,36 @@ fn restst_sym() {
             fermi1: vec![Fermi1::new(3, 2)],
             fermi2: vec![],
             darling: vec![],
-            states: vec![],
-            i1mode: vec![2, 5],
+            states: vec![
+                I1st(vec![0, 0, 0, 0, 0, 0]),
+                I1st(vec![1, 0, 0, 0, 0, 0]),
+                I1st(vec![0, 1, 0, 0, 0, 0]),
+                I2st(vec![1, 0, 0, 0, 0, 0]),
+                I2st(vec![0, 1, 0, 0, 0, 0]),
+                I1st(vec![2, 0, 0, 0, 0, 0]),
+                I1st(vec![0, 2, 0, 0, 0, 0]),
+                I2st(vec![2, 0, 0, 0, 0, 0]),
+                I2st(vec![0, 2, 0, 0, 0, 0]),
+                I1st(vec![1, 1, 0, 0, 0, 0]),
+                I12st {
+                    i1st: Box::new(I1st(vec![1, 0, 0, 0, 0, 0])),
+                    i2st: Box::new(I2st(vec![1, 0, 0, 0, 0, 0])),
+                },
+                I12st {
+                    i1st: Box::new(I1st(vec![1, 0, 0, 0, 0, 0])),
+                    i2st: Box::new(I2st(vec![0, 1, 0, 0, 0, 0])),
+                },
+                I12st {
+                    i1st: Box::new(I1st(vec![0, 1, 0, 0, 0, 0])),
+                    i2st: Box::new(I2st(vec![1, 0, 0, 0, 0, 0])),
+                },
+                I12st {
+                    i1st: Box::new(I1st(vec![0, 1, 0, 0, 0, 0])),
+                    i2st: Box::new(I2st(vec![0, 1, 0, 0, 0, 0])),
+                },
+                I2st(vec![1, 1, 0, 0, 0, 0]),
+            ],
+            modes: vec![I1(2), I1(5)],
         },
     )];
     inner(&tests);
@@ -313,7 +364,7 @@ fn inner(tests: &[Test]) {
         assert_eq!(got.fermi2, test.want.fermi2);
         assert_eq!(got.darling, test.want.darling);
         assert_eq!(got.states, test.want.states);
-        assert_eq!(got.i1mode, test.want.i1mode);
+        assert_eq!(got.modes, test.want.modes);
         assert_eq!(got, test.want);
     }
 }

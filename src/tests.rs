@@ -144,7 +144,7 @@ fn test_funds_and_e0() {
             fermi1,
             fermi2,
             darling: _,
-            i1mode: _,
+            modes: _,
             states: _,
         } = s.restst(&zmat, &f3qcm, &freq);
         let (xcnst, e0) = xcalc(
@@ -191,7 +191,7 @@ fn test_enrgy() {
         fermi2,
         darling: _,
         states,
-        i1mode,
+        modes: i1mode,
     } = s.restst(&zmat, &f3qcm, &freq);
     let mut got = vec![0.0; states.len()];
     enrgy(

@@ -132,7 +132,48 @@ pub struct Restst {
     pub fermi2: Vec<Fermi2>,
     pub darling: Vec<Darling>,
     pub states: Vec<State>,
-    pub i1mode: Vec<usize>,
+    pub modes: Vec<Mode>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum Mode {
+    I1(usize),
+    I2(usize, usize),
+    I3(usize, usize, usize),
+}
+
+impl Mode {
+    pub fn count(modes: &[Self]) -> (usize, usize, usize) {
+        let mut ret = (0, 0, 0);
+        for m in modes {
+            match m {
+                Mode::I1(_) => ret.0 += 1,
+                Mode::I2(_, _) => ret.1 += 1,
+                Mode::I3(_, _, _) => ret.2 += 1,
+            }
+        }
+        ret
+    }
+
+    pub fn partition(
+        modes: &[Self],
+    ) -> (Vec<usize>, Vec<(usize, usize)>, Vec<usize>) {
+        let mut ret = (vec![], vec![], vec![]);
+        for m in modes {
+            match m {
+                &Mode::I1(i) => ret.0.push(i),
+                &Mode::I2(i, j) => {
+                    ret.1.push((i, j));
+                }
+                &Mode::I3(i, j, k) => {
+                    ret.2.push(i);
+                    ret.2.push(j);
+                    ret.2.push(k);
+                }
+            }
+        }
+        ret
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -602,7 +643,7 @@ impl Spectro {
         zmat: &Tensor3,
         f3qcm: &[f64],
         fund: &[f64],
-        i1mode: &[usize],
+        modes: &[Mode],
         states: &[State],
         coriolis: &[Coriolis],
     ) -> Dmat {
@@ -615,7 +656,11 @@ impl Spectro {
             for ist in 0..nstop {
                 let mut suma = 0.0;
                 for ii in 0..n1dm {
-                    let i = i1mode[ii];
+                    let i = match modes[ii] {
+                        Mode::I1(i) => i,
+                        Mode::I2(_, _) => todo!(),
+                        Mode::I3(_, _, _) => todo!(),
+                    };
                     match &states[ist] {
                         State::I1st(v) => {
                             suma += alpha[(i, axis)] * (v[ii] as f64 + 0.5);
@@ -728,7 +773,7 @@ impl Spectro {
             fermi2,
             darling: _,
             states,
-            i1mode,
+            modes,
         } = self.restst(&zmat, &f3qcm, &freq);
 
         let (xcnst, e0) = xcalc(
@@ -752,7 +797,7 @@ impl Spectro {
             &zmat,
             &f3qcm,
             &funds,
-            &i1mode,
+            &modes,
             &states,
             &coriolis,
         );
@@ -761,12 +806,10 @@ impl Spectro {
         let nstate = states.len();
         let mut eng = vec![0.0; nstate];
 
-        resona(
-            &funds, e0, &i1mode, &freq, &xcnst, &fermi1, &fermi2, &mut eng,
-        );
+        resona(e0, &modes, &freq, &xcnst, &fermi1, &fermi2, &mut eng);
 
         enrgy(
-            &funds, &freq, &xcnst, &f3qcm, e0, &states, &i1mode, &fermi1,
+            &funds, &freq, &xcnst, &f3qcm, e0, &states, &modes, &fermi1,
             &fermi2, &mut eng,
         );
 
@@ -798,12 +841,11 @@ impl Spectro {
         f3qcm: &[f64],
         freq: &Dvec,
     ) -> Restst {
-        let mut i1mode = Vec::new();
-        let mut i2mode = Vec::new();
-        let mut i3mode = Vec::new();
+        let mut modes = Vec::new();
         // probably I could get rid of this if, but I guess it protects against
         // accidental degmodes in asymmetric tops. is an accident still
         // degenerate?
+        use Mode::*;
         if self.rotor.is_sym_top() {
             const DEG_TOL: f64 = 0.1;
             let mut triples = HashSet::new();
@@ -817,7 +859,7 @@ impl Spectro {
                             triples.insert(i);
                             triples.insert(j);
                             triples.insert(k);
-                            i3mode.push((i, j, k));
+                            modes.push(I3(i, j, k));
                         }
                     }
                 }
@@ -835,28 +877,26 @@ impl Spectro {
                     {
                         doubles.insert(i);
                         doubles.insert(j);
-                        i2mode.push((i, j));
+                        modes.push(I2(i, j));
                     }
                 }
             }
             for i in 0..self.nvib {
                 if !triples.contains(&i) && !doubles.contains(&i) {
-                    i1mode.push(i);
+                    modes.push(I1(i));
                 }
             }
         } else {
             for i in 0..self.nvib {
-                i1mode.push(i);
+                modes.push(I1(i));
             }
         };
-        let coriolis = self.rotor.coriolis(&i1mode, &i2mode, freq, zmat);
-        let fermi1 = self.rotor.fermi1(&i1mode, &i2mode, freq, f3qcm);
-        let fermi2 = self.rotor.fermi2(&i1mode, &i2mode, freq, f3qcm);
-        let darling = self.rotor.darling(&i1mode, &i2mode, freq);
+        let coriolis = self.rotor.coriolis(&modes, freq, zmat);
+        let fermi1 = self.rotor.fermi1(&modes, freq, f3qcm);
+        let fermi2 = self.rotor.fermi2(&modes, freq, f3qcm);
+        let darling = self.rotor.darling(&modes, freq);
 
-        let n1dm = i1mode.len();
-        let n2dm = i2mode.len();
-        let n3dm = i3mode.len();
+        let (n1dm, n2dm, n3dm) = Mode::count(&modes);
         if n3dm > 0 {
             todo!("untested");
         }
@@ -941,7 +981,7 @@ impl Spectro {
             fermi2,
             darling,
             states,
-            i1mode,
+            modes,
         }
     }
 }
@@ -974,16 +1014,16 @@ fn make_zmat(nvib: usize, natom: usize, lxm: &Dmat) -> tensor::Tensor3<f64> {
 }
 
 fn resona(
-    fund: &Vec<f64>,
     e0: f64,
-    i1mode: &Vec<usize>,
+    modes: &[Mode],
     freq: &Dvec,
     xcnst: &Dmat,
     fermi1: &Vec<Fermi1>,
     fermi2: &Vec<Fermi2>,
     eng: &mut [f64],
 ) {
-    let n1dm = fund.len();
+    let (n1dm, _, _) = Mode::count(modes);
+    let (i1mode, _, _) = Mode::partition(modes);
     let mut zpe = e0;
     for ii in 0..n1dm {
         let i = i1mode[ii];

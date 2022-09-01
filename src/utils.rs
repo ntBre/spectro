@@ -14,8 +14,8 @@ type Tensor3 = tensor::tensor3::Tensor3<f64>;
 
 use crate::{
     resonance::{Fermi1, Fermi2},
-    Dmat, Dvec, Spectro, State, FACT3, FACT4, FUNIT3, FUNIT4, ICTOP, IPTOC,
-    WAVE,
+    Dmat, Dvec, Mode, Spectro, State, FACT3, FACT4, FUNIT3, FUNIT4, ICTOP,
+    IPTOC, WAVE,
 };
 
 impl Display for Spectro {
@@ -571,7 +571,7 @@ pub(crate) fn enrgy(
     f3qcm: &[f64],
     e0: f64,
     states: &[State],
-    i1mode: &[usize],
+    modes: &[Mode],
     fermi1: &[Fermi1],
     fermi2: &[Fermi2],
     eng: &mut [f64],
@@ -583,7 +583,11 @@ pub(crate) fn enrgy(
         let mut val1 = 0.0;
         // why are these separate loops?
         for ii in 0..n1dm {
-            let i = i1mode[ii];
+            let i = match modes[ii] {
+                Mode::I1(i) => i,
+                Mode::I2(_, _) => todo!(),
+                Mode::I3(_, _, _) => todo!(),
+            };
             match &states[nst] {
                 State::I1st(v) => val1 += freq[i] * ((v[ii] as f64) + 0.5),
                 State::I2st(_) => todo!(),
@@ -594,9 +598,17 @@ pub(crate) fn enrgy(
 
         let mut val2 = 0.0;
         for ii in 0..n1dm {
-            let i = i1mode[ii];
+            let i = match modes[ii] {
+                Mode::I1(i) => i,
+                Mode::I2(_, _) => todo!(),
+                Mode::I3(_, _, _) => todo!(),
+            };
             for jj in 0..=ii {
-                let j = i1mode[jj];
+                let j = match modes[jj] {
+                    Mode::I1(i) => i,
+                    Mode::I2(_, _) => todo!(),
+                    Mode::I3(_, _, _) => todo!(),
+                };
                 match &states[nst] {
                     State::I1st(v) => {
                         val2 += xcnst[(i, j)]
@@ -623,12 +635,20 @@ pub(crate) fn enrgy(
         ifrm2.insert((f.i, f.j), f.k);
     }
     for iii in 0..n1dm {
-        let ivib = i1mode[iii];
+        let ivib = match modes[iii] {
+            Mode::I1(i) => i,
+            Mode::I2(_, _) => todo!(),
+            Mode::I3(_, _, _) => todo!(),
+        };
         if let Some(jvib) = ifrm1.get(&ivib) {
             rsfrm1(ivib, *jvib, f3qcm, n1dm, eng);
         }
         for jjj in iii + 1..n1dm {
-            let jvib = i1mode[jjj];
+            let jvib = match modes[jjj] {
+                Mode::I1(i) => i,
+                Mode::I2(_, _) => todo!(),
+                Mode::I3(_, _, _) => todo!(),
+            };
             if let Some(kvib) = ifrm2.get(&(jvib, ivib)) {
                 rsfrm2(ivib, jvib, *kvib, f3qcm, states, eng);
             }

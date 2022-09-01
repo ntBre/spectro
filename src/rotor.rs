@@ -1,6 +1,6 @@
 use crate::resonance::{Coriolis, Darling, Fermi1, Fermi2};
 use crate::utils::find3r;
-use crate::Dvec;
+use crate::{Dvec, Mode};
 use std::fmt::Display;
 type Tensor3 = tensor::tensor3::Tensor3<f64>;
 
@@ -23,6 +23,12 @@ pub enum Rotor {
     None,
 }
 
+macro_rules! unset_rotor {
+    () => {
+        panic!("rotor type not set")
+    };
+}
+
 /// both Fermi resonance tolerance for f3qcm
 const F3TOL: f64 = 10.0;
 
@@ -37,30 +43,9 @@ const DFTOL: f64 = 200.0;
 const DDTOL: f64 = 300.0;
 
 impl Rotor {
-    /// Report whether or not `self` is either an `OblateSymmTop` or a
-    /// `ProlateSymmTop`. panics if `self` is not set
-    pub fn is_sym_top(&self) -> bool {
-        use Rotor::*;
-        match &self {
-            Diatomic => false,
-            Linear => false,
-            SphericalTop => false,
-            OblateSymmTop | ProlateSymmTop => true,
-            AsymmTop => false,
-            None => panic!("rotor type not set"),
-        }
-    }
-
-    /// panics if `self` is not set
-    pub fn is_prolate(&self) -> bool {
-        assert!(*self != Rotor::None);
-        *self == Rotor::ProlateSymmTop
-    }
-
     pub fn coriolis(
         &self,
-        i1mode: &[usize],
-        i2mode: &[(usize, usize)],
+        modes: &[Mode],
         freq: &Dvec,
         zmat: &Tensor3,
     ) -> Vec<Coriolis> {
@@ -69,8 +54,8 @@ impl Rotor {
         const CTOL: f64 = 200.0;
         const ZTOL: f64 = 0.25;
 
-        let n1dm = i1mode.len();
-        let n2dm = i2mode.len();
+        let (n1dm, n2dm, _) = Mode::count(modes);
+        let (i1mode, i2mode, _) = Mode::partition(modes);
         let mut ret = Vec::new();
         match self {
             Diatomic => todo!(),
@@ -177,66 +162,105 @@ impl Rotor {
                     }
                 }
             }
-            Rotor::None => todo!(),
+            Rotor::None => unset_rotor!(),
+        }
+        ret
+    }
+
+    pub fn darling(&self, modes: &[Mode], freq: &Dvec) -> Vec<Darling> {
+        let (n1dm, n2dm, _) = Mode::count(modes);
+        let (i1mode, i2mode, _) = Mode::partition(modes);
+        let mut ret = Vec::new();
+        match self {
+            Rotor::Diatomic => todo!(),
+            Rotor::Linear => todo!(),
+            Rotor::SphericalTop => todo!(),
+            Rotor::OblateSymmTop | Rotor::ProlateSymmTop => {
+                for ii in 1..n1dm {
+                    let i = i1mode[ii];
+                    for jj in 0..ii {
+                        let j = i1mode[jj];
+                        darling_test(freq, i, j, &mut ret);
+                    }
+
+                    for jj in 0..n2dm {
+                        let j = i2mode[jj].0;
+                        darling_test(freq, i, j, &mut ret);
+                    }
+                }
+
+                for ii in 1..n2dm {
+                    let i = i2mode[ii].0;
+                    for jj in 0..ii {
+                        let j = i2mode[jj].0;
+                        darling_test(freq, i, j, &mut ret);
+                    }
+                }
+            }
+            Rotor::AsymmTop => {
+                for ii in 1..n1dm {
+                    let i = i1mode[ii];
+                    for jj in 0..ii {
+                        let j = i1mode[jj];
+                        darling_test(freq, i, j, &mut ret);
+                    }
+                }
+            }
+            Rotor::None => unset_rotor!(),
         }
         ret
     }
 
     pub fn fermi1(
         &self,
-        i1mode: &[usize],
-        i2mode: &[(usize, usize)],
+        modes: &[Mode],
         freq: &Dvec,
         f3qcm: &[f64],
     ) -> Vec<Fermi1> {
-        let n1dm = i1mode.len();
         let mut ret = Vec::new();
         use Rotor::*;
+        let (i1mode, i2mode, _) = Mode::partition(modes);
         match self {
             Diatomic => todo!(),
             Linear => todo!(),
             SphericalTop => todo!(),
             OblateSymmTop | ProlateSymmTop => {
-                for &i in i1mode {
-                    for &j in i1mode {
-                        ferm1_test(freq, i, j, f3qcm, &mut ret);
+                for i in &i1mode {
+                    for j in &i1mode {
+                        ferm1_test(freq, *i, *j, f3qcm, &mut ret);
                     }
                 }
 
-                for &(i, _) in i2mode {
-                    for &j in i1mode {
-                        ferm1_test(freq, i, j, f3qcm, &mut ret);
+                for (i, _) in &i2mode {
+                    for j in &i1mode {
+                        ferm1_test(freq, *i, *j, f3qcm, &mut ret);
                     }
 
-                    for &(j, _) in i2mode {
-                        ferm1_test(freq, i, j, f3qcm, &mut ret);
+                    for (j, _) in &i2mode {
+                        ferm1_test(freq, *i, *j, f3qcm, &mut ret);
                     }
                 }
             }
             AsymmTop => {
-                for ii in 0..n1dm {
-                    // loop over i1mode?
-                    let i = i1mode[ii];
-                    for jj in 0..n1dm {
-                        let j = i1mode[jj];
-                        ferm1_test(freq, i, j, f3qcm, &mut ret);
+                for i in &i1mode {
+                    for j in &i1mode {
+                        ferm1_test(freq, *i, *j, f3qcm, &mut ret);
                     }
                 }
             }
-            Rotor::None => todo!(),
+            Rotor::None => unset_rotor!(),
         }
         ret
     }
 
     pub fn fermi2(
         &self,
-        i1mode: &[usize],
-        i2mode: &[(usize, usize)],
+        modes: &[Mode],
         freq: &Dvec,
         f3qcm: &[f64],
     ) -> Vec<Fermi2> {
-        let n1dm = i1mode.len();
-        let n2dm = i2mode.len();
+        let (n1dm, n2dm, _) = Mode::count(modes);
+        let (i1mode, i2mode, _) = Mode::partition(modes);
         let mut ret = Vec::new();
         match self {
             Rotor::Diatomic => todo!(),
@@ -380,59 +404,29 @@ impl Rotor {
                     }
                 }
             }
-            Rotor::None => todo!(),
+            Rotor::None => unset_rotor!(),
         }
         ret
     }
 
-    pub fn darling(
-        &self,
-        i1mode: &[usize],
-        i2mode: &[(usize, usize)],
-        freq: &Dvec,
-    ) -> Vec<Darling> {
-        let n1dm = i1mode.len();
-        let n2dm = i2mode.len();
+    /// panics if `self` is not set
+    pub fn is_prolate(&self) -> bool {
+        assert!(*self != Rotor::None);
+        *self == Rotor::ProlateSymmTop
+    }
 
-        let mut ret = Vec::new();
-        match self {
-            Rotor::Diatomic => todo!(),
-            Rotor::Linear => todo!(),
-            Rotor::SphericalTop => todo!(),
-            Rotor::OblateSymmTop | Rotor::ProlateSymmTop => {
-                for ii in 1..n1dm {
-                    let i = i1mode[ii];
-                    for jj in 0..ii {
-                        let j = i1mode[jj];
-                        darling_test(freq, i, j, &mut ret);
-                    }
-
-                    for jj in 0..n2dm {
-                        let j = i2mode[jj].0;
-                        darling_test(freq, i, j, &mut ret);
-                    }
-                }
-
-                for ii in 1..n2dm {
-                    let i = i2mode[ii].0;
-                    for jj in 0..ii {
-                        let j = i2mode[jj].0;
-                        darling_test(freq, i, j, &mut ret);
-                    }
-                }
-            }
-            Rotor::AsymmTop => {
-                for ii in 1..n1dm {
-                    let i = i1mode[ii];
-                    for jj in 0..ii {
-                        let j = i1mode[jj];
-                        darling_test(freq, i, j, &mut ret);
-                    }
-                }
-            }
-            Rotor::None => todo!(),
+    /// Report whether or not `self` is either an `OblateSymmTop` or a
+    /// `ProlateSymmTop`. panics if `self` is not set
+    pub fn is_sym_top(&self) -> bool {
+        use Rotor::*;
+        match &self {
+            Diatomic => false,
+            Linear => false,
+            SphericalTop => false,
+            OblateSymmTop | ProlateSymmTop => true,
+            AsymmTop => false,
+            None => unset_rotor!(),
         }
-        ret
     }
 }
 
@@ -507,7 +501,7 @@ impl Display for Rotor {
                 Rotor::OblateSymmTop => "an oblate symmetric top",
                 Rotor::ProlateSymmTop => "a prolate symmetric top",
                 Rotor::AsymmTop => "an asymmetric top",
-                Rotor::None => panic!("rotor type not set"),
+                Rotor::None => unset_rotor!(),
             }
         )
     }
