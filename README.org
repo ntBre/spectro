@@ -101,7 +101,7 @@
   | res2a.f    |   284 | x      | helper for genrsa                                               | unused?                  |
   | res3a.f    |   183 | x      | helper for genrsa                                               | unused?                  |
   | resona.f   |   167 | x      | polyads                                                         | done if genrsa is unused |
-  | restst.f   |  1535 | x      | resonance testing, finished for asym top and no degmodes        |                          |
+  | restst.f   |  1535 | x      | resonance testing                                               | done                     |
   | rfile.f    |    13 |        |                                                                 |                          |
   | rg.f       |    73 | x      | eigen decomp                                                    | unused                   |
   | rot1st.f   |    29 |        |                                                                 |                          |

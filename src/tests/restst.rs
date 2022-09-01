@@ -336,7 +336,7 @@ fn restst_sym() {
                 },
                 I2st(vec![1, 1, 0, 0, 0, 0]),
             ],
-            modes: vec![I1(2), I1(5)],
+            modes: vec![I2(0, 1), I2(3, 4), I1(2), I1(5)],
         },
     )];
     inner(&tests);
