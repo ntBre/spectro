@@ -144,8 +144,8 @@ fn test_funds_and_e0() {
             fermi1,
             fermi2,
             darling: _,
-            i1sts: _,
             i1mode: _,
+            states: _,
         } = s.restst(&zmat, &f3qcm, &freq);
         let (xcnst, e0) = xcalc(
             s.nvib, &f4qcm, &freq, &f3qcm, &zmat, &s.rotcon, &fermi1, &fermi2,
@@ -190,12 +190,12 @@ fn test_enrgy() {
         fermi1,
         fermi2,
         darling: _,
-        i1sts,
+        states,
         i1mode,
     } = s.restst(&zmat, &f3qcm, &freq);
-    let mut got = vec![0.0; i1sts.len()];
+    let mut got = vec![0.0; states.len()];
     enrgy(
-        &fund, &freq, &xcnst, &f3qcm, e0, &i1sts, &i1mode, &fermi1, &fermi2,
+        &fund, &freq, &xcnst, &f3qcm, e0, &states, &i1mode, &fermi1, &fermi2,
         &mut got,
     );
     // my numbers after comparing visually to fortran

@@ -68,7 +68,7 @@ fn test_xcalc() {
             fermi1,
             fermi2,
             darling: _,
-            i1sts: _,
+            states: _,
             i1mode: _,
         } = s.restst(&zmat, &f3qcm, &freq);
         let (xcnst, e0) = xcalc(

@@ -14,7 +14,8 @@ type Tensor3 = tensor::tensor3::Tensor3<f64>;
 
 use crate::{
     resonance::{Fermi1, Fermi2},
-    Dmat, Dvec, Spectro, FACT3, FACT4, FUNIT3, FUNIT4, ICTOP, IPTOC, WAVE,
+    Dmat, Dvec, Spectro, State, FACT3, FACT4, FUNIT3, FUNIT4, ICTOP, IPTOC,
+    WAVE,
 };
 
 impl Display for Spectro {
@@ -237,6 +238,10 @@ pub(crate) fn load_vec<P: AsRef<Path>>(infile: P) -> Vec<f64> {
     data.split_ascii_whitespace()
         .map(|s| s.parse().unwrap())
         .collect()
+}
+
+pub(crate) fn close(a: f64, b: f64, eps: f64) -> bool {
+    (a - b).abs() < eps
 }
 
 /// freq is the vector of harmonic frequencies
@@ -565,13 +570,13 @@ pub(crate) fn enrgy(
     xcnst: &Dmat,
     f3qcm: &[f64],
     e0: f64,
-    i1sts: &Vec<Vec<usize>>,
+    states: &[State],
     i1mode: &[usize],
     fermi1: &[Fermi1],
     fermi2: &[Fermi2],
     eng: &mut [f64],
 ) {
-    let nstate = i1sts.len();
+    let nstate = states.len();
     // NOTE: singly degenerate modes. this would change with degeneracies
     let n1dm = fund.len();
     for nst in 0..nstate {
@@ -579,7 +584,12 @@ pub(crate) fn enrgy(
         // why are these separate loops?
         for ii in 0..n1dm {
             let i = i1mode[ii];
-            val1 += freq[i] * ((i1sts[nst][ii] as f64) + 0.5);
+            match &states[nst] {
+                State::I1st(v) => val1 += freq[i] * ((v[ii] as f64) + 0.5),
+                State::I2st(_) => todo!(),
+                State::I3st(_) => todo!(),
+                State::I12st { i1st: _, i2st: _ } => todo!(),
+            }
         }
 
         let mut val2 = 0.0;
@@ -587,9 +597,16 @@ pub(crate) fn enrgy(
             let i = i1mode[ii];
             for jj in 0..=ii {
                 let j = i1mode[jj];
-                val2 += xcnst[(i, j)]
-                    * ((i1sts[nst][ii] as f64) + 0.5)
-                    * ((i1sts[nst][jj] as f64) + 0.5);
+                match &states[nst] {
+                    State::I1st(v) => {
+                        val2 += xcnst[(i, j)]
+                            * ((v[ii] as f64) + 0.5)
+                            * ((v[jj] as f64) + 0.5);
+                    }
+                    State::I2st(_) => todo!(),
+                    State::I3st(_) => todo!(),
+                    State::I12st { i1st: _, i2st: _ } => todo!(),
+                }
             }
         }
 
@@ -613,7 +630,7 @@ pub(crate) fn enrgy(
         for jjj in iii + 1..n1dm {
             let jvib = i1mode[jjj];
             if let Some(kvib) = ifrm2.get(&(jvib, ivib)) {
-                rsfrm2(ivib, jvib, *kvib, f3qcm, i1sts, eng);
+                rsfrm2(ivib, jvib, *kvib, f3qcm, states, eng);
             }
         }
     }
@@ -624,14 +641,19 @@ fn rsfrm2(
     jvib: usize,
     kvib: usize,
     f3qcm: &[f64],
-    i1sts: &Vec<Vec<usize>>,
+    i1sts: &[State],
     eng: &mut [f64],
 ) {
     let ijk = find3r(ivib, jvib, kvib);
     // I can't figure out the formula so just search for it
     let ijst = i1sts
         .iter()
-        .position(|x| x[ivib] == 1 && x[jvib] == 1)
+        .position(|x| match &x {
+            State::I1st(v) => v[ivib] == 1 && v[jvib] == 1,
+            State::I2st(_) => todo!(),
+            State::I3st(_) => todo!(),
+            State::I12st { i1st: _, i2st: _ } => todo!(),
+        })
         .unwrap();
     let kst = kvib + 1;
     let val = f3qcm[ijk] / (2.0 * SQRT_2);

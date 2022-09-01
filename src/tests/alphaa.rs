@@ -94,11 +94,11 @@ fn test_alphaa() {
         fermi1: _,
         fermi2: _,
         darling: _,
-        i1sts,
+        states,
         i1mode,
     } = s.restst(&zmat, &f3qcm, &freq);
     let got = s.alphaa(
-        &s.rotcon, &freq, &wila, &zmat, &f3qcm, &fund, &i1mode, &i1sts,
+        &s.rotcon, &freq, &wila, &zmat, &f3qcm, &fund, &i1mode, &states,
         &coriolis,
     );
     let want = dmatrix![

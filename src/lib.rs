@@ -131,8 +131,24 @@ pub struct Restst {
     pub fermi1: Vec<Fermi1>,
     pub fermi2: Vec<Fermi2>,
     pub darling: Vec<Darling>,
-    pub i1sts: Vec<Vec<usize>>,
+    pub states: Vec<State>,
     pub i1mode: Vec<usize>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum State {
+    /// singly-degenerate mode state
+    I1st(Vec<usize>),
+
+    /// doubly-degenerate mode state
+    I2st(Vec<usize>),
+
+    /// triply-degenerate mode state
+    I3st(Vec<usize>),
+
+    /// combination band of a singly-degenerate mode and a doubly-degenerate
+    /// mode
+    I12st { i1st: Box<State>, i2st: Box<State> },
 }
 
 impl Spectro {
@@ -587,7 +603,7 @@ impl Spectro {
         f3qcm: &[f64],
         fund: &[f64],
         i1mode: &[usize],
-        i1sts: &Vec<Vec<usize>>,
+        states: &[State],
         coriolis: &[Coriolis],
     ) -> Dmat {
         let alpha = self.alpha(freq, &wila, &zmat, f3qcm, coriolis);
@@ -600,7 +616,14 @@ impl Spectro {
                 let mut suma = 0.0;
                 for ii in 0..n1dm {
                     let i = i1mode[ii];
-                    suma += alpha[(i, axis)] * (i1sts[ist][ii] as f64 + 0.5);
+                    match &states[ist] {
+                        State::I1st(v) => {
+                            suma += alpha[(i, axis)] * (v[ii] as f64 + 0.5);
+                        }
+                        State::I2st(_) => todo!(),
+                        State::I3st(_) => todo!(),
+                        State::I12st { i1st: _, i2st: _ } => todo!(),
+                    }
                 }
                 let bva = rotcon[axis] + suma;
                 rotnst[(ist, axis)] = bva;
@@ -613,8 +636,7 @@ impl Spectro {
     fn rota(
         &self,
         rotnst: &Dmat,
-        i1sts: &Vec<Vec<usize>>,
-        rotcon: &[f64],
+        states: &[State],
         quartic: &Quartic,
     ) -> Vec<Rot> {
         let (b4a, b5a, b6a) = quartic.arots();
@@ -641,9 +663,9 @@ impl Spectro {
             // this is inside a conditional in the fortran code, but it
             // would be really annoying to return these from inside it here
             assert!(nderiv > 2);
-            let vib1 = rotnst[(nst, 0)] - rotcon[(0)];
-            let vib2 = rotnst[(nst, 1)] - rotcon[(1)];
-            let vib3 = rotnst[(nst, 2)] - rotcon[(2)];
+            let vib1 = rotnst[(nst, 0)] - self.rotcon[(0)];
+            let vib2 = rotnst[(nst, 1)] - self.rotcon[(1)];
+            let vib3 = rotnst[(nst, 2)] - self.rotcon[(2)];
             let mut vibr = [0.0; 3];
             vibr[ic[0]] = vib1;
             vibr[ic[1]] = vib2;
@@ -651,7 +673,14 @@ impl Spectro {
             let bxa = b4a + vibr[0];
             let bya = b5a + vibr[1];
             let bza = b6a + vibr[2];
-            ret.push(Rot::new(i1sts[nst].clone(), bza, bxa, bya));
+            match &states[nst] {
+                State::I1st(v) => {
+                    ret.push(Rot::new(v.clone(), bza, bxa, bya));
+                }
+                State::I2st(_) => todo!(),
+                State::I3st(_) => todo!(),
+                State::I12st { i1st: _, i2st: _ } => todo!(),
+            }
             // TODO return these S ones too
             // let bxs = b1s + vibr[0];
             // let bys = b2s + vibr[1];
@@ -698,7 +727,7 @@ impl Spectro {
             fermi1,
             fermi2,
             darling: _,
-            i1sts,
+            states,
             i1mode,
         } = self.restst(&zmat, &f3qcm, &freq);
 
@@ -724,12 +753,12 @@ impl Spectro {
             &f3qcm,
             &funds,
             &i1mode,
-            &i1sts,
+            &states,
             &coriolis,
         );
 
         // this is worked on by resona and then enrgy so keep it out here
-        let nstate = i1sts.len();
+        let nstate = states.len();
         let mut eng = vec![0.0; nstate];
 
         resona(
@@ -737,7 +766,7 @@ impl Spectro {
         );
 
         enrgy(
-            &funds, &freq, &xcnst, &f3qcm, e0, &i1sts, &i1mode, &fermi1,
+            &funds, &freq, &xcnst, &f3qcm, e0, &states, &i1mode, &fermi1,
             &fermi2, &mut eng,
         );
 
@@ -748,11 +777,11 @@ impl Spectro {
             harms.push(freq[i - 1]);
         }
 
-        // print_vib_states(&eng, &i1sts);
+        // print_vib_states(&eng, &states);
 
         let quartic = Quartic::new(&self, &freq, &wila);
         let _sextic = Sextic::new(&self, &wila, &zmat, &freq, &f3qcm);
-        let rots = self.rota(&rotnst, &i1sts, &self.rotcon, &quartic);
+        let rots = self.rota(&rotnst, &states, &quartic);
 
         Output {
             harms: Dvec::from(harms),
@@ -769,71 +798,149 @@ impl Spectro {
         f3qcm: &[f64],
         freq: &Dvec,
     ) -> Restst {
-        // NOTE I'm skipping the parts where the resonances are read in for now
-
-        let isymtp = self.rotor.is_sym_top();
-        let (n1dm, i1mode) = if isymtp {
-            // TODO degen
-
-            // they require degmode input here and then a bunch of code at
-            // restst.f:322
-            todo!()
-        } else {
-            let n1dm = self.nvib;
-            let _n2dm = 0;
-            let _n3dm = 0;
-            let mut v = vec![0; self.nvib];
+        let mut i1mode = Vec::new();
+        let mut i2mode = Vec::new();
+        let mut i3mode = Vec::new();
+        // probably I could get rid of this if, but I guess it protects against
+        // accidental degmodes in asymmetric tops. is an accident still
+        // degenerate?
+        if self.rotor.is_sym_top() {
+            const DEG_TOL: f64 = 0.1;
+            let mut triples = HashSet::new();
             for i in 0..self.nvib {
-                v[i] = i;
+                let fi = freq[i];
+                for j in i + 1..self.nvib {
+                    let fj = freq[j];
+                    for k in j + 1..self.nvib {
+                        let fk = freq[k];
+                        if close(fi, fj, DEG_TOL) && close(fi, fk, DEG_TOL) {
+                            triples.insert(i);
+                            triples.insert(j);
+                            triples.insert(k);
+                            i3mode.push((i, j, k));
+                        }
+                    }
+                }
             }
-            (n1dm, v)
+            // run these in two passes to avoid counting something as
+            // triply-degenerate AND doubly-degenerate
+            let mut doubles = HashSet::new();
+            for i in 0..self.nvib {
+                let fi = freq[i];
+                for j in i + 1..self.nvib {
+                    let fj = freq[j];
+                    if close(fi, fj, DEG_TOL)
+                        && !triples.contains(&i)
+                        && !triples.contains(&j)
+                    {
+                        doubles.insert(i);
+                        doubles.insert(j);
+                        i2mode.push((i, j));
+                    }
+                }
+            }
+            for i in 0..self.nvib {
+                if !triples.contains(&i) && !doubles.contains(&i) {
+                    i1mode.push(i);
+                }
+            }
+        } else {
+            for i in 0..self.nvib {
+                i1mode.push(i);
+            }
         };
-        // TODO do I really need n1dm and i1mode? could probably just get n1dm
-        // as needed as i1mode.len()
-        let coriolis = self.rotor.coriolis(n1dm, &i1mode, freq, zmat);
-        let fermi1 = self.rotor.fermi1(n1dm, &i1mode, freq, f3qcm);
-        let fermi2 = self.rotor.fermi2(n1dm, &i1mode, freq, f3qcm);
-        let darling = self.rotor.darling(n1dm, &i1mode, freq);
+        let coriolis = self.rotor.coriolis(&i1mode, &i2mode, freq, zmat);
+        let fermi1 = self.rotor.fermi1(&i1mode, &i2mode, freq, f3qcm);
+        let fermi2 = self.rotor.fermi2(&i1mode, &i2mode, freq, f3qcm);
+        let darling = self.rotor.darling(&i1mode, &i2mode, freq);
 
-        // TODO degen complicates this, restst.f:1210
+        let n1dm = i1mode.len();
+        let n2dm = i2mode.len();
+        let n3dm = i3mode.len();
+        if n3dm > 0 {
+            todo!("untested");
+        }
 
-        // TODO figure out how to separate these into ground state, funds,
-        // overtones, and combination bands. one vec of enum variants? struct
-        // with fields of each?
+        let mut states = Vec::new();
+        use State::*;
 
-        let mut i1sts = Vec::new();
         // ground state, all zeros
-        i1sts.push(vec![0; n1dm]);
+        states.push(I1st(vec![0; self.nvib]));
+
         // fundamentals, single excitations
         for ii in 0..n1dm {
-            let mut tmp = vec![0; n1dm];
+            let mut tmp = vec![0; self.nvib];
             tmp[ii] = 1;
-            i1sts.push(tmp);
+            states.push(I1st(tmp));
         }
+        for ii in 0..n2dm {
+            let mut tmp = vec![0; self.nvib];
+            tmp[ii] = 1;
+            states.push(I2st(tmp));
+        }
+        for ii in 0..n3dm {
+            let mut tmp = vec![0; self.nvib];
+            tmp[ii] = 1;
+            states.push(I3st(tmp));
+        }
+        // NOTE: triply-degenerate modes are only handled for fundamentals. also
+        // their resonances are not handled at all
 
         // overtones, double excitations in one mode
         for ii in 0..n1dm {
-            let mut tmp = vec![0; n1dm];
+            let mut tmp = vec![0; self.nvib];
             tmp[ii] = 2;
-            i1sts.push(tmp);
+            states.push(I1st(tmp));
+        }
+        for ii in 0..n2dm {
+            let mut tmp = vec![0; self.nvib];
+            tmp[ii] = 2;
+            states.push(I2st(tmp));
         }
 
-        // combination bands, double excitations in different modes.
-        // TODO this could probably be combined with the overtones
+        // combination bands
         for ii in 0..n1dm {
+            // nondeg - nondeg combination
             for jj in ii + 1..n1dm {
-                let mut tmp = vec![0; n1dm];
+                let mut tmp = vec![0; self.nvib];
                 tmp[ii] = 1;
                 tmp[jj] = 1;
-                i1sts.push(tmp);
+                states.push(I1st(tmp));
+            }
+
+            // nondeg - deg combination
+            for jj in 0..n2dm {
+                // I guess you push this to states as well. might have to change
+                // how I index these because they set states(ii, ist) to this,
+                // which I guess syncs it with ist in i2sts. we'll see how it's
+                // accessed. I'm not that interested in combination bands anyway
+                let mut i1st = vec![0; self.nvib];
+                i1st[ii] = 1;
+                let mut i2st = vec![0; self.nvib];
+                i2st[jj] = 1;
+                states.push(I12st {
+                    i1st: Box::new(I1st(i1st)),
+                    i2st: Box::new(I2st(i2st)),
+                })
             }
         }
+
+        // deg-deg combination
+        for ii in 0..n2dm {
+            for jj in ii + 1..n2dm {
+                let mut tmp = vec![0; self.nvib];
+                tmp[ii] = 1;
+                tmp[jj] = 1;
+                states.push(I2st(tmp));
+            }
+        }
+
         Restst {
             coriolis,
             fermi1,
             fermi2,
             darling,
-            i1sts,
+            states,
             i1mode,
         }
     }
