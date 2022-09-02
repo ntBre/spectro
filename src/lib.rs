@@ -1001,7 +1001,9 @@ impl Spectro {
         } = self.restst(&zmat, &f3qcm, &freq);
 
         let (xcnst, e0) = if self.rotor.is_sym_top() {
-            todo!()
+            self.xcals(
+                &f4qcm, &freq, &f3qcm, &zmat, &fermi1, &fermi2, &modes, &wila,
+            )
         } else {
             self.xcalc(&f4qcm, &freq, &f3qcm, &zmat, &fermi1, &fermi2)
         };
@@ -1082,26 +1084,11 @@ impl Spectro {
         fermi1: &[Fermi1],
         fermi2: &[Fermi2],
     ) -> (Dmat, f64) {
-        let mut ifrmchk = tensor::tensor3::Tensor3::<usize>::zeros(
-            self.nvib, self.nvib, self.nvib,
-        );
-        // using a hash here instead of an array because I need some way to
-        // signal that the value is not there. in fortran they use an array of
-        // zeros because zero will never be a valid index. I could use -1, but
-        // then the vec has to be of isize and I have to do a lot of casting.
-        let mut ifrm1: HashMap<usize, usize> = HashMap::new();
-        for f in fermi1 {
-            ifrmchk[(f.i, f.i, f.j)] = 1;
-            ifrm1.insert(f.i, f.j);
-        }
-        for f in fermi2 {
-            ifrmchk[(f.i, f.j, f.k)] = 1;
-            ifrmchk[(f.j, f.i, f.k)] = 1;
-        }
+        let (ifrmchk, ifrm1) = self.make_fermi_checks(fermi1, fermi2);
         let mut xcnst = Dmat::zeros(self.nvib, self.nvib);
         // diagonal contributions to the anharmonic constants
         for k in 0..self.nvib {
-            let kkkk = find4t(k, k, k, k);
+            let kkkk = find4(k, k, k, k);
             let val1 = f4qcm[kkkk] / 16.0;
             let wk = freq[k].powi(2);
             let mut valu = 0.0;
@@ -1125,7 +1112,7 @@ impl Spectro {
         // off-diagonal contributions to the anharmonic constants
         for k in 1..self.nvib {
             for l in 0..k {
-                let kkll = find4t(k, k, l, l);
+                let kkll = find4(k, k, l, l);
                 let val1 = f4qcm[kkll] / 4.0;
                 let mut val2 = 0.0;
                 for m in 0..self.nvib {
@@ -1187,6 +1174,30 @@ impl Spectro {
         (xcnst, e0)
     }
 
+    fn make_fermi_checks(
+        &self,
+        fermi1: &[Fermi1],
+        fermi2: &[Fermi2],
+    ) -> (tensor::Tensor3<usize>, HashMap<usize, usize>) {
+        let mut ifrmchk = tensor::tensor3::Tensor3::<usize>::zeros(
+            self.nvib, self.nvib, self.nvib,
+        );
+        // using a hash here instead of an array because I need some way to
+        // signal that the value is not there. in fortran they use an array of
+        // zeros because zero will never be a valid index. I could use -1, but
+        // then the vec has to be of isize and I have to do a lot of casting.
+        let mut ifrm1: HashMap<usize, usize> = HashMap::new();
+        for f in fermi1 {
+            ifrmchk[(f.i, f.i, f.j)] = 1;
+            ifrm1.insert(f.i, f.j);
+        }
+        for f in fermi2 {
+            ifrmchk[(f.i, f.j, f.k)] = 1;
+            ifrmchk[(f.j, f.i, f.k)] = 1;
+        }
+        (ifrmchk, ifrm1)
+    }
+
     /// calculate the anharmonic constants and E_0 for a symmetric top
     #[allow(unused)]
     pub fn xcals(
@@ -1197,8 +1208,90 @@ impl Spectro {
         zmat: &Tensor3,
         fermi1: &[Fermi1],
         fermi2: &[Fermi2],
+        modes: &[Mode],
+        wila: &Dmat,
     ) -> (Dmat, f64) {
+        // TODO also return gcnst
+        use Rotor::*;
+        let (ia, ib) = match self.rotor {
+            Diatomic => todo!("try this as linear"),
+            Linear | OblateSymmTop => (2, 1),
+            ProlateSymmTop => (0, 1),
+            SphericalTop => panic!("you should be in wcals"),
+            AsymmTop => panic!("you should be xcalc"),
+            None => unset_rotor!(),
+        };
+        // let (n1dm, n2dm, _) = Mode::count(modes);
+        let (i1mode, i2mode, _) = Mode::partition(modes);
+        // find out which of a(xz)tb or a(yz)tb are zero
+        let (ixyz, ia1, ia2, ix, iy) = if !self.rotor.is_linear() {
+            const TOL: f64 = 0.000001;
+            let mut ixz = 0;
+            let mut iyz = 0;
+            for (_, i2) in i2mode {
+                if wila[(i2, 3)].abs() <= TOL {
+                    ixz += 1;
+                }
+                if wila[(i2, 4)].abs() <= TOL {
+                    iyz += 1;
+                }
+            }
+            if ixz > 0 && iyz > 0 {
+                panic!("big problems in xcals");
+            } else if ixz > 0 {
+                (1, 2, 3, 0, 1)
+            } else if iyz > 0 {
+                (0, 0, 4, 1, 0)
+            } else {
+                panic!("I think this is also a big problem");
+            }
+        // NOTE skipping zeta checks, but they only print stuff
+        } else {
+            todo!()
+        };
+
+        let (ifrmchk, ifrm1) = self.make_fermi_checks(fermi1, fermi2);
+
+        // start calculating anharmonic constants
         let mut xcnst = Dmat::zeros(self.nvib, self.nvib);
+
+        // nondeg-nondeg interactions
+        for &k in &i1mode {
+            let kkkk = find4(k, k, k, k);
+            let val1 = f4qcm[kkkk] / 16.0;
+            let wk = freq[k].powi(2);
+
+            let mut valu = 0.0;
+            for &l in &i1mode {
+                let kkl = find3r(k, k, l);
+
+                let mut val2 = f3qcm[kkl].powi(2);
+                let tmp = ifrm1.get(&k);
+                if tmp.is_some() && *tmp.unwrap() == l {
+                    let val3 = 1.0 / (8.0 * freq[l]);
+                    let val4 = 1.0 / (32.0 * (2.0 * freq[k] + freq[l]));
+                    valu -= val2 * (val3 + val4);
+                } else {
+                    let wl = freq[l].powi(2);
+                    let val3 = 8.0 * wk - 3.0 * wl;
+                    let val4 = 16.0 * freq[l] * (4.0 * wk - wl);
+                    valu -= val2 * val3 / val4;
+                }
+            }
+            xcnst[(k, k)] = val1 + valu;
+        }
+
+        if self.rotor.is_diatomic() {
+            todo!("goto funds section. return?")
+        }
+
+        for (kk, &k) in i1mode.iter().enumerate() {
+            // might be kk-1 not sure
+            for &l in i1mode.iter().take(kk) {
+                let kkll = find4(k, k, l, l);
+                let val1 = f4qcm[kkll] / 4.0;
+            }
+        }
         (xcnst, 0.0)
     }
 

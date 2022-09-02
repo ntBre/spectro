@@ -102,7 +102,7 @@ pub(crate) fn find3r(i: usize, j: usize, k: usize) -> usize {
 
 /// quartic force constant indexing formula. it relies on the fortran numbering,
 /// so I need to add one initially and then subtract one at the end
-pub(crate) fn find4t(i: usize, j: usize, k: usize, l: usize) -> usize {
+pub(crate) fn find4(i: usize, j: usize, k: usize, l: usize) -> usize {
     let [i, j, k, l] = sort_indices([i + 1, j + 1, k + 1, l + 1]);
     i + (j - 1) * j / 2
         + (k - 1) * k * (k + 1) / 6
@@ -314,7 +314,7 @@ pub fn force4(
     }
     // now can I include the loop above in here - the holy grail
     let n = nvib - 1;
-    let mut f4qcm = vec![0.0; find4t(n, n, n, n) + 1];
+    let mut f4qcm = vec![0.0; find4(n, n, n, n) + 1];
     for ii in 0..nvib {
         let wi = harms[ii];
         for jj in 0..=ii {
@@ -333,7 +333,7 @@ pub fn force4(
                     let wijkl = wi * wj * wk * wl;
                     let sqws = wijkl.sqrt();
                     let fact = FACT4 / sqws;
-                    let ijkl = find4t(ivib, jvib, ii, jj);
+                    let ijkl = find4(ivib, jvib, ii, jj);
                     f4qcm[ijkl] = ee[(ivib, jvib)] * fact;
                 }
             }
@@ -358,7 +358,7 @@ pub(crate) fn make_e0(
     for k in 0..nvib {
         // kkkk and kkk terms
         let kkk = find3r(k, k, k);
-        let kkkk = find4t(k, k, k, k);
+        let kkkk = find4(k, k, k, k);
         let fiqcm = f4qcm[kkkk];
         f4k += fiqcm / 64.0;
         f3k -= 7.0 * f3qcm[kkk].powi(2) / (576.0 * freq[k]);

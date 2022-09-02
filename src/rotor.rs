@@ -23,6 +23,7 @@ pub enum Rotor {
     None,
 }
 
+#[macro_export]
 macro_rules! unset_rotor {
     () => {
         panic!("rotor type not set")
@@ -435,6 +436,30 @@ impl Rotor {
     #[must_use]
     pub fn is_linear(&self) -> bool {
         matches!(self, Self::Linear)
+    }
+
+    /// Returns `true` if the rotor is [`OblateSymmTop`].
+    ///
+    /// [`OblateSymmTop`]: Rotor::OblateSymmTop
+    #[must_use]
+    pub fn is_oblate_symm_top(&self) -> bool {
+        matches!(self, Self::OblateSymmTop)
+    }
+
+    /// Returns `true` if the rotor is [`ProlateSymmTop`].
+    ///
+    /// [`ProlateSymmTop`]: Rotor::ProlateSymmTop
+    #[must_use]
+    pub fn is_prolate_symm_top(&self) -> bool {
+        matches!(self, Self::ProlateSymmTop)
+    }
+
+    /// Returns `true` if the rotor is [`Diatomic`].
+    ///
+    /// [`Diatomic`]: Rotor::Diatomic
+    #[must_use]
+    pub fn is_diatomic(&self) -> bool {
+        matches!(self, Self::Diatomic)
     }
 }
 
