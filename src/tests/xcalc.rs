@@ -71,9 +71,8 @@ fn test_xcalc() {
             states: _,
             modes: _,
         } = s.restst(&zmat, &f3qcm, &freq);
-        let (xcnst, e0) = xcalc(
-            s.nvib, &f4qcm, &freq, &f3qcm, &zmat, &s.rotcon, &fermi1, &fermi2,
-        );
+        let (xcnst, e0) =
+            s.xcalc(&f4qcm, &freq, &f3qcm, &zmat, &fermi1, &fermi2);
         // println!("\n{}", test.infile);
         // println!("got\n{:.12}", xcnst);
         // println!("want\n{:.12}", test.xcnst);

@@ -147,9 +147,8 @@ fn test_funds_and_e0() {
             modes: _,
             states: _,
         } = s.restst(&zmat, &f3qcm, &freq);
-        let (xcnst, e0) = xcalc(
-            s.nvib, &f4qcm, &freq, &f3qcm, &zmat, &s.rotcon, &fermi1, &fermi2,
-        );
+        let (xcnst, e0) =
+            s.xcalc(&f4qcm, &freq, &f3qcm, &zmat, &fermi1, &fermi2);
         assert_abs_diff_eq!(e0, test.want_e0, epsilon = test.e_eps);
 
         let got = make_funds(&freq, s.nvib, &xcnst);
@@ -180,8 +179,7 @@ fn test_enrgy() {
     let f4x = load_fc4("testfiles/fort.40", s.n3n);
     let f4x = s.rot4th(f4x, s.axes);
     let f4qcm = force4(s.n3n, &f4x, &lx, s.nvib, &freq);
-    let (xcnst, e0) =
-        xcalc(s.nvib, &f4qcm, &freq, &f3qcm, &zmat, &s.rotcon, &[], &[]);
+    let (xcnst, e0) = s.xcalc(&f4qcm, &freq, &f3qcm, &zmat, &[], &[]);
     let wante0 = 20.057563725859055;
     assert_abs_diff_eq!(e0, wante0, epsilon = 6e-8);
     let Restst {

@@ -342,121 +342,7 @@ pub fn force4(
     f4qcm
 }
 
-/// calculate the anharmonic constants and E_0
-pub fn xcalc(
-    nvib: usize,
-    f4qcm: &[f64],
-    freq: &Dvec,
-    f3qcm: &[f64],
-    zmat: &Tensor3,
-    rotcon: &[f64],
-    fermi1: &[Fermi1],
-    fermi2: &[Fermi2],
-) -> (Dmat, f64) {
-    let mut ifrmchk =
-        tensor::tensor3::Tensor3::<usize>::zeros(nvib, nvib, nvib);
-    // using a hash here instead of an array because I need some way to signal
-    // that the value is not there. in fortran they use an array of zeros
-    // because zero will never be a valid index. I could use -1, but then the
-    // vec has to be of isize and I have to do a lot of casting.
-    let mut ifrm1: HashMap<usize, usize> = HashMap::new();
-    for f in fermi1 {
-        ifrmchk[(f.i, f.i, f.j)] = 1;
-        ifrm1.insert(f.i, f.j);
-    }
-    for f in fermi2 {
-        ifrmchk[(f.i, f.j, f.k)] = 1;
-        ifrmchk[(f.j, f.i, f.k)] = 1;
-    }
-    let mut xcnst = Dmat::zeros(nvib, nvib);
-    // diagonal contributions to the anharmonic constants
-    for k in 0..nvib {
-        let kkkk = find4t(k, k, k, k);
-        let val1 = f4qcm[kkkk] / 16.0;
-        let wk = freq[k].powi(2);
-        let mut valu = 0.0;
-        for l in 0..nvib {
-            let kkl = find3r(k, k, l);
-            let val2 = f3qcm[kkl].powi(2);
-            if ifrmchk[(k, k, l)] != 0 {
-                let val3 = 1.0 / (8.0 * freq[l]);
-                let val4 = 1.0 / (32.0 * (2.0 * freq[k] + freq[l]));
-                valu -= val2 * (val3 + val4);
-            } else {
-                let wl = freq[l].powi(2);
-                let val3 = 8.0 * wk - 3.0 * wl;
-                let val4 = 16.0 * freq[l] * (4.0 * wk - wl);
-                valu -= val2 * val3 / val4;
-            }
-        }
-        let value = val1 + valu;
-        xcnst[(k, k)] = value;
-    }
-    // off-diagonal contributions to the anharmonic constants
-    for k in 1..nvib {
-        for l in 0..k {
-            let kkll = find4t(k, k, l, l);
-            let val1 = f4qcm[kkll] / 4.0;
-            let mut val2 = 0.0;
-            for m in 0..nvib {
-                let kkm = find3r(k, k, m);
-                let llm = find3r(l, l, m);
-                val2 -= f3qcm[kkm] * f3qcm[llm] / (4.0 * freq[m]);
-            }
-
-            let mut valu = 0.0;
-            for m in 0..nvib {
-                let _lm = ioff(l.max(m)) + l.min(m);
-                let _km = ioff(k.max(m)) + k.min(m);
-                let d1 = freq[k] + freq[l] + freq[m];
-                let d2 = freq[k] - freq[l] + freq[m];
-                let d3 = freq[k] + freq[l] - freq[m];
-                let d4 = -freq[k] + freq[l] + freq[m];
-                let klm = find3r(k, l, m);
-                if ifrmchk[(l, m, k)] != 0 && m == l {
-                    // case 1
-                    let delta = 8.0 * (2.0 * freq[l] + freq[k]);
-                    valu -= f3qcm[klm].powi(2) / delta;
-                } else if ifrmchk[(k, m, l)] != 0 && k == m {
-                    // case 2
-                    let delta = 8.0 * (2.0 * freq[k] + freq[l]);
-                    valu -= f3qcm[klm].powi(2) / delta;
-                } else if ifrmchk[(k, l, m)] != 0 {
-                    // case 3
-                    let delta = 1.0 / d1 + 1.0 / d2 + 1.0 / d4;
-                    valu -= f3qcm[klm].powi(2) * delta / 8.0;
-                } else if ifrmchk[(l, m, k)] != 0 {
-                    // case 4
-                    let delta = 1.0 / d1 + 1.0 / d2 - 1.0 / d3;
-                    valu -= f3qcm[klm].powi(2) * delta / 8.0;
-                } else if ifrmchk[(k, m, l)] != 0 {
-                    // case 5
-                    let delta = 1.0 / d1 - 1.0 / d3 + 1.0 / d4;
-                    valu -= f3qcm[klm].powi(2) * delta / 8.0;
-                } else {
-                    // default
-                    let delta = -d1 * d2 * d3 * d4;
-                    let val3 =
-                        freq[m].powi(2) - freq[k].powi(2) - freq[l].powi(2);
-                    valu -= 0.5 * f3qcm[klm].powi(2) * freq[m] * val3 / delta;
-                }
-            }
-            let val5 = freq[k] / freq[l];
-            let val6 = freq[l] / freq[k];
-            let val7 = rotcon[0] * zmat[(k, l, 0)].powi(2)
-                + rotcon[1] * zmat[(k, l, 1)].powi(2)
-                + rotcon[2] * zmat[(k, l, 2)].powi(2);
-            let val8 = (val5 + val6) * val7;
-            let value = val1 + val2 + valu + val8;
-            xcnst[(k, l)] = value;
-            xcnst[(l, k)] = value;
-        }
-    }
-    let e0 = make_e0(nvib, f4qcm, f3qcm, freq, ifrm1, ifrmchk);
-    (xcnst, e0)
-}
-
-fn make_e0(
+pub(crate) fn make_e0(
     nvib: usize,
     f4qcm: &[f64],
     f3qcm: &[f64],
@@ -622,7 +508,7 @@ pub(crate) fn enrgy(
         let mut val6 = 0.0;
         for (i, &(ii, _)) in i2mode.iter().enumerate() {
             for (j, &(jj, _)) in i2mode.iter().take(ii + 1).enumerate() {
-                todo!("this is gcnst");
+                // TODO this is gcnst
                 val6 += xcnst[(i, j)]
                     * (i2sts[nst][ii].1 as f64)
                     * (i2sts[nst][jj].1 as f64);
