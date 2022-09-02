@@ -1043,11 +1043,18 @@ impl Spectro {
         let nstate = states.len();
         let mut eng = vec![0.0; nstate];
 
-        resona(e0, &modes, &freq, &xcnst, &fermi1, &fermi2, &mut eng);
+        if !self.rotor.is_sym_top() {
+            resona(e0, &modes, &freq, &xcnst, &fermi1, &fermi2, &mut eng);
+        } else {
+            // straight from jan martin himself
+            // println!(
+            //     "resonance polyads for symmetric tops not yet implemented"
+            // );
+        }
 
         enrgy(
-            &funds, &freq, &xcnst, &f3qcm, e0, &states, &modes, &fermi1,
-            &fermi2, &mut eng,
+            &freq, &xcnst, &f3qcm, e0, &states, &modes, &fermi1, &fermi2,
+            &mut eng,
         );
 
         let mut corrs = Vec::new();

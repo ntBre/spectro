@@ -566,7 +566,6 @@ pub(crate) fn print_vib_states(reng: &[f64], i1sts: &Vec<Vec<usize>>) {
 /// vibrational energy levels and properties in resonance. returns the energies
 /// in the same order as the states in `i1sts`
 pub(crate) fn enrgy(
-    fund: &[f64],
     freq: &Dvec,
     xcnst: &Dmat,
     f3qcm: &[f64],
@@ -579,47 +578,25 @@ pub(crate) fn enrgy(
 ) {
     let nstate = states.len();
     // NOTE: singly degenerate modes. this would change with degeneracies
-    let n1dm = fund.len();
+    let (n1dm, _, _) = Mode::count(modes);
+    let (i1modes, _, _) = Mode::partition(modes);
+    let (i1sts, _, _) = State::partition(states);
     for nst in 0..nstate {
         let mut val1 = 0.0;
         // why are these separate loops?
         for ii in 0..n1dm {
-            let i = match modes[ii] {
-                Mode::I1(i) => i,
-                Mode::I2(_, _) => todo!(),
-                Mode::I3(_, _, _) => todo!(),
-            };
-            match &states[nst] {
-                State::I1st(v) => val1 += freq[i] * ((v[ii] as f64) + 0.5),
-                State::I2st(_) => todo!(),
-                State::I3st(_) => todo!(),
-                State::I12st { i1st: _, i2st: _ } => todo!(),
-            }
+            let i = i1modes[ii];
+            val1 += freq[i] * ((i1sts[nst][ii] as f64) + 0.5);
         }
 
         let mut val2 = 0.0;
         for ii in 0..n1dm {
-            let i = match modes[ii] {
-                Mode::I1(i) => i,
-                Mode::I2(_, _) => todo!(),
-                Mode::I3(_, _, _) => todo!(),
-            };
+            let i = i1modes[ii];
             for jj in 0..=ii {
-                let j = match modes[jj] {
-                    Mode::I1(i) => i,
-                    Mode::I2(_, _) => todo!(),
-                    Mode::I3(_, _, _) => todo!(),
-                };
-                match &states[nst] {
-                    State::I1st(v) => {
-                        val2 += xcnst[(i, j)]
-                            * ((v[ii] as f64) + 0.5)
-                            * ((v[jj] as f64) + 0.5);
-                    }
-                    State::I2st(_) => todo!(),
-                    State::I3st(_) => todo!(),
-                    State::I12st { i1st: _, i2st: _ } => todo!(),
-                }
+                let j = i1modes[jj];
+                val2 += xcnst[(i, j)]
+                    * ((i1sts[nst][ii] as f64) + 0.5)
+                    * ((i1sts[nst][jj] as f64) + 0.5);
             }
         }
 
@@ -636,20 +613,12 @@ pub(crate) fn enrgy(
         ifrm2.insert((f.i, f.j), f.k);
     }
     for iii in 0..n1dm {
-        let ivib = match modes[iii] {
-            Mode::I1(i) => i,
-            Mode::I2(_, _) => todo!(),
-            Mode::I3(_, _, _) => todo!(),
-        };
+        let ivib = i1modes[iii];
         if let Some(jvib) = ifrm1.get(&ivib) {
             rsfrm1(ivib, *jvib, f3qcm, n1dm, eng);
         }
         for jjj in iii + 1..n1dm {
-            let jvib = match modes[jjj] {
-                Mode::I1(i) => i,
-                Mode::I2(_, _) => todo!(),
-                Mode::I3(_, _, _) => todo!(),
-            };
+            let jvib = i1modes[jjj];
             if let Some(kvib) = ifrm2.get(&(jvib, ivib)) {
                 rsfrm2(ivib, jvib, *kvib, f3qcm, states, eng);
             }

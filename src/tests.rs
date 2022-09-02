@@ -184,7 +184,6 @@ fn test_enrgy() {
         xcalc(s.nvib, &f4qcm, &freq, &f3qcm, &zmat, &s.rotcon, &[], &[]);
     let wante0 = 20.057563725859055;
     assert_abs_diff_eq!(e0, wante0, epsilon = 6e-8);
-    let fund = make_funds(&freq, s.nvib, &xcnst);
     let Restst {
         coriolis: _,
         fermi1,
@@ -195,8 +194,7 @@ fn test_enrgy() {
     } = s.restst(&zmat, &f3qcm, &freq);
     let mut got = vec![0.0; states.len()];
     enrgy(
-        &fund, &freq, &xcnst, &f3qcm, e0, &states, &i1mode, &fermi1, &fermi2,
-        &mut got,
+        &freq, &xcnst, &f3qcm, e0, &states, &i1mode, &fermi1, &fermi2, &mut got,
     );
     // my numbers after comparing visually to fortran
     let want = vec![
