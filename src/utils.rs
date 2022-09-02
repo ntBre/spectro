@@ -588,7 +588,7 @@ pub(crate) fn enrgy(
 
         let mut val2 = 0.0;
         for (i, &(ii, _)) in i2mode.iter().enumerate() {
-            val2 += freq[i] * (i2sts[nst][ii] as f64 + 1.0);
+            val2 += freq[i] * (i2sts[nst][ii].0 as f64 + 1.0);
         }
 
         // this is val2 in the asym top code
@@ -601,9 +601,33 @@ pub(crate) fn enrgy(
             }
         }
 
-        let val4 = 0.0;
-        let val5 = 0.0;
-        let val6 = 0.0;
+        let mut val4 = 0.0;
+        for (i, &ii) in i1mode.iter().enumerate() {
+            for (j, &(jj, _)) in i2mode.iter().enumerate() {
+                val4 += xcnst[(i, j)]
+                    * ((i1sts[nst][ii] as f64 + 0.5)
+                        * (i2sts[nst][jj].0 as f64 + 1.0));
+            }
+        }
+
+        let mut val5 = 0.0;
+        for (i, &(ii, _)) in i2mode.iter().enumerate() {
+            for (j, &(jj, _)) in i2mode.iter().take(ii + 1).enumerate() {
+                val5 += xcnst[(i, j)]
+                    * ((i2sts[nst][ii].0 as f64 + 1.0)
+                        * (i2sts[nst][jj].0 as f64 + 1.0));
+            }
+        }
+
+        let mut val6 = 0.0;
+        for (i, &(ii, _)) in i2mode.iter().enumerate() {
+            for (j, &(jj, _)) in i2mode.iter().take(ii + 1).enumerate() {
+                todo!("this is gcnst");
+                val6 += xcnst[(i, j)]
+                    * (i2sts[nst][ii].1 as f64)
+                    * (i2sts[nst][jj].1 as f64);
+            }
+        }
 
         eng[nst] = val1 + val2 + val3 + val4 + val5 + val6 + e0;
     }

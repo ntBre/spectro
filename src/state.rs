@@ -5,15 +5,20 @@ pub enum State {
     /// singly-degenerate mode state
     I1st(Vec<usize>),
 
-    /// doubly-degenerate mode state
-    I2st(Vec<usize>),
+    /// doubly-degenerate mode state. the first element of each tuple
+    /// corresponds to the entry in `i2sts` and the second to `ilsts` in the
+    /// fortran code
+    I2st(Vec<(usize, usize)>),
 
     /// triply-degenerate mode state
     I3st(Vec<usize>),
 
     /// combination band of a singly-degenerate mode and a doubly-degenerate
     /// mode
-    I12st { i1st: Vec<usize>, i2st: Vec<usize> },
+    I12st {
+        i1st: Vec<usize>,
+        i2st: Vec<(usize, usize)>,
+    },
 }
 
 impl State {
@@ -22,14 +27,14 @@ impl State {
     /// as `i1sts`, `i2sts`, and `i3sts`.
     pub fn partition(
         states: &[Self],
-    ) -> (Vec<Vec<usize>>, Vec<Vec<usize>>, Vec<Vec<usize>>) {
+    ) -> (Vec<Vec<usize>>, Vec<Vec<(usize, usize)>>, Vec<Vec<usize>>) {
         let mut ret = (vec![], vec![], vec![]);
         for s in states {
             match &s {
                 State::I1st(v) => {
                     ret.0.push(v.clone());
 
-                    ret.1.push(vec![0; v.len()]);
+                    ret.1.push(vec![(0, 0); v.len()]);
                     ret.2.push(vec![0; v.len()]);
                 }
                 State::I2st(v) => {
@@ -42,7 +47,7 @@ impl State {
                     ret.2.push(v.clone());
 
                     ret.0.push(vec![0; v.len()]);
-                    ret.1.push(vec![0; v.len()]);
+                    ret.1.push(vec![(0, 0); v.len()]);
                 }
                 State::I12st { i1st, i2st } => {
                     ret.0.push(i1st.clone());
@@ -71,8 +76,13 @@ impl Display for State {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f)?;
         match self {
-            State::I1st(v) | State::I2st(v) => {
+            State::I1st(v) => {
                 for i in v {
+                    write!(f, "{:5}", i)?;
+                }
+            }
+            State::I2st(v) => {
+                for (i, _) in v {
                     write!(f, "{:5}", i)?;
                 }
             }

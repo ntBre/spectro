@@ -1,4 +1,4 @@
-use crate::*;
+use crate::{state::States, *};
 
 struct Test {
     infile: String,
@@ -309,33 +309,41 @@ fn restst_sym() {
             fermi2: vec![],
             darling: vec![],
             states: vec![
+                // ground state
                 I1st(vec![0, 0, 0, 0, 0, 0]),
+                // non-deg funds
                 I1st(vec![1, 0, 0, 0, 0, 0]),
                 I1st(vec![0, 1, 0, 0, 0, 0]),
-                I2st(vec![1, 0, 0, 0, 0, 0]),
-                I2st(vec![0, 1, 0, 0, 0, 0]),
+                // deg funds
+                I2st(vec![(1, 1), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0)]),
+                I2st(vec![(0, 0), (1, 1), (0, 0), (0, 0), (0, 0), (0, 0)]),
+                // non-deg overtones
                 I1st(vec![2, 0, 0, 0, 0, 0]),
                 I1st(vec![0, 2, 0, 0, 0, 0]),
-                I2st(vec![2, 0, 0, 0, 0, 0]),
-                I2st(vec![0, 2, 0, 0, 0, 0]),
+                // deg overtones
+                I2st(vec![(2, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0)]),
+                I2st(vec![(0, 0), (2, 0), (0, 0), (0, 0), (0, 0), (0, 0)]),
+                // nondeg-nondeg combination
                 I1st(vec![1, 1, 0, 0, 0, 0]),
+                // nondeg-deg combinations
                 I12st {
                     i1st: vec![1, 0, 0, 0, 0, 0],
-                    i2st: vec![1, 0, 0, 0, 0, 0],
+                    i2st: vec![(1, 1), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0)],
                 },
                 I12st {
                     i1st: vec![1, 0, 0, 0, 0, 0],
-                    i2st: vec![0, 1, 0, 0, 0, 0],
+                    i2st: vec![(0, 0), (1, 1), (0, 0), (0, 0), (0, 0), (0, 0)],
                 },
                 I12st {
                     i1st: vec![0, 1, 0, 0, 0, 0],
-                    i2st: vec![1, 0, 0, 0, 0, 0],
+                    i2st: vec![(1, 1), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0)],
                 },
                 I12st {
                     i1st: vec![0, 1, 0, 0, 0, 0],
-                    i2st: vec![0, 1, 0, 0, 0, 0],
+                    i2st: vec![(0, 0), (1, 1), (0, 0), (0, 0), (0, 0), (0, 0)],
                 },
-                I2st(vec![1, 1, 0, 0, 0, 0]),
+                // deg-deg combination
+                I2st(vec![(1, 1), (1, 1), (0, 0), (0, 0), (0, 0), (0, 0)]),
             ],
             modes: vec![I2(0, 1), I2(3, 4), I1(2), I1(5)],
         },
@@ -364,6 +372,19 @@ fn inner(tests: &[Test]) {
         assert_eq!(got.fermi1, test.want.fermi1);
         assert_eq!(got.fermi2, test.want.fermi2);
         assert_eq!(got.darling, test.want.darling);
+        assert_eq!(got.states.len(), test.want.states.len());
+        let (i1sts, i2sts, i3sts) = State::partition(&got.states);
+        let (want_i1, want_i2, want_i3) = State::partition(&test.want.states);
+        assert_eq!(i1sts.len(), want_i1.len());
+        assert_eq!(
+            i1sts,
+            want_i1,
+            "got\n{}\n\nwant{}",
+            States(i1sts.clone()),
+            States(want_i1.clone())
+        );
+        assert_eq!(i2sts, want_i2);
+        assert_eq!(i3sts, want_i3);
         assert_eq!(got.states, test.want.states);
         assert_eq!(got.modes, test.want.modes);
         assert_eq!(got, test.want);

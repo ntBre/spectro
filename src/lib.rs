@@ -850,12 +850,11 @@ impl Spectro {
 
                 for ii in 0..n2dm {
                     let i = i2mode[ii].0;
-                    suma += alpha[(i, ax)] * (i2sts[ist][ii] as f64 + 1.0);
+                    suma += alpha[(i, ax)] * (i2sts[ist][ii].0 as f64 + 1.0);
                 }
                 rotnst[(ist, ax)] = rotcon[ax] + suma;
             }
         }
-        println!("{:.8}", rotnst);
         rotnst
     }
 
@@ -1158,8 +1157,8 @@ impl Spectro {
             states.push(I1st(tmp));
         }
         for ii in 0..n2dm {
-            let mut tmp = vec![0; self.nvib];
-            tmp[ii] = 1;
+            let mut tmp = vec![(0, 0); self.nvib];
+            tmp[ii] = (1, 1);
             states.push(I2st(tmp));
         }
         for ii in 0..n3dm {
@@ -1177,8 +1176,8 @@ impl Spectro {
             states.push(I1st(tmp));
         }
         for ii in 0..n2dm {
-            let mut tmp = vec![0; self.nvib];
-            tmp[ii] = 2;
+            let mut tmp = vec![(0, 0); self.nvib];
+            tmp[ii] = (2, 0);
             states.push(I2st(tmp));
         }
 
@@ -1200,8 +1199,8 @@ impl Spectro {
                 // accessed. I'm not that interested in combination bands anyway
                 let mut i1st = vec![0; self.nvib];
                 i1st[ii] = 1;
-                let mut i2st = vec![0; self.nvib];
-                i2st[jj] = 1;
+                let mut i2st = vec![(0, 0); self.nvib];
+                i2st[jj] = (1, 1);
                 states.push(I12st { i1st, i2st })
             }
         }
@@ -1209,9 +1208,9 @@ impl Spectro {
         // deg-deg combination
         for ii in 0..n2dm {
             for jj in ii + 1..n2dm {
-                let mut tmp = vec![0; self.nvib];
-                tmp[ii] = 1;
-                tmp[jj] = 1;
+                let mut tmp = vec![(0, 0); self.nvib];
+                tmp[ii] = (1, 1);
+                tmp[jj] = (1, 1);
                 states.push(I2st(tmp));
             }
         }
