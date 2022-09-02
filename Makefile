@@ -1,9 +1,14 @@
+TESTFLAGS = -- --nocapture --test-threads=1
 ARGS =
 
-TESTFLAGS = -- --nocapture --test-threads=1
+ifeq ($(ARGS),sym)
+TESTFLAGS += --include-ignored _sym
+else
+TESTARGS = $(ARGS)
+endif
 
 test:
-	RUST_BACKTRACE=1 cargo test ${TESTFLAGS} ${ARGS}
+	RUST_BACKTRACE=1 cargo test ${TESTFLAGS} ${TESTARGS}
 
 #############
 # PROFILING #
