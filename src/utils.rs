@@ -577,30 +577,35 @@ pub(crate) fn enrgy(
     eng: &mut [f64],
 ) {
     let nstate = states.len();
-    // NOTE: singly degenerate modes. this would change with degeneracies
     let (n1dm, _, _) = Mode::count(modes);
-    let (i1modes, _, _) = Mode::partition(modes);
-    let (i1sts, _, _) = State::partition(states);
+    let (i1mode, i2mode, _) = Mode::partition(modes);
+    let (i1sts, i2sts, _) = State::partition(states);
     for nst in 0..nstate {
         let mut val1 = 0.0;
-        // why are these separate loops?
-        for ii in 0..n1dm {
-            let i = i1modes[ii];
+        for (i, &ii) in i1mode.iter().enumerate() {
             val1 += freq[i] * ((i1sts[nst][ii] as f64) + 0.5);
         }
 
         let mut val2 = 0.0;
-        for ii in 0..n1dm {
-            let i = i1modes[ii];
-            for jj in 0..=ii {
-                let j = i1modes[jj];
-                val2 += xcnst[(i, j)]
+        for (i, &(ii, _)) in i2mode.iter().enumerate() {
+            val2 += freq[i] * (i2sts[nst][ii] as f64 + 1.0);
+        }
+
+        // this is val2 in the asym top code
+        let mut val3 = 0.0;
+        for (i, &ii) in i1mode.iter().enumerate() {
+            for (j, &jj) in i1mode.iter().take(ii + 1).enumerate() {
+                val3 += xcnst[(i, j)]
                     * ((i1sts[nst][ii] as f64) + 0.5)
                     * ((i1sts[nst][jj] as f64) + 0.5);
             }
         }
 
-        eng[nst] = val1 + val2 + e0;
+        let val4 = 0.0;
+        let val5 = 0.0;
+        let val6 = 0.0;
+
+        eng[nst] = val1 + val2 + val3 + val4 + val5 + val6 + e0;
     }
     // these do need to be in the same loop because they feed back on each
     // other, so make these hashes and access them that way
@@ -613,12 +618,12 @@ pub(crate) fn enrgy(
         ifrm2.insert((f.i, f.j), f.k);
     }
     for iii in 0..n1dm {
-        let ivib = i1modes[iii];
+        let ivib = i1mode[iii];
         if let Some(jvib) = ifrm1.get(&ivib) {
             rsfrm1(ivib, *jvib, f3qcm, n1dm, eng);
         }
         for jjj in iii + 1..n1dm {
-            let jvib = i1modes[jjj];
+            let jvib = i1mode[jjj];
             if let Some(kvib) = ifrm2.get(&(jvib, ivib)) {
                 rsfrm2(ivib, jvib, *kvib, f3qcm, states, eng);
             }
