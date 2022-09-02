@@ -428,6 +428,14 @@ impl Rotor {
             None => unset_rotor!(),
         }
     }
+
+    /// Returns `true` if the rotor is [`Linear`].
+    ///
+    /// [`Linear`]: Rotor::Linear
+    #[must_use]
+    pub fn is_linear(&self) -> bool {
+        matches!(self, Self::Linear)
+    }
 }
 
 fn ferm1_test(

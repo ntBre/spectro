@@ -83,12 +83,6 @@ fn test_alphaa() {
     let f3x = load_fc3("testfiles/fort.30", s.n3n);
     let mut f3x = s.rot3rd(f3x, s.axes);
     let f3qcm = force3(s.n3n, &mut f3x, &lx, s.nvib, &freq);
-    let f4x = load_fc4("testfiles/fort.40", s.n3n);
-    let f4x = s.rot4th(f4x, s.axes);
-    let f4qcm = force4(s.n3n, &f4x, &lx, s.nvib, &freq);
-    let (xcnst, _e0) =
-        xcalc(s.nvib, &f4qcm, &freq, &f3qcm, &zmat, &s.rotcon, &[], &[]);
-    let fund = make_funds(&freq, s.nvib, &xcnst);
     let Restst {
         coriolis,
         fermi1: _,
@@ -98,8 +92,7 @@ fn test_alphaa() {
         modes,
     } = s.restst(&zmat, &f3qcm, &freq);
     let got = s.alphaa(
-        &s.rotcon, &freq, &wila, &zmat, &f3qcm, &fund, &modes, &states,
-        &coriolis,
+        &s.rotcon, &freq, &wila, &zmat, &f3qcm, &modes, &states, &coriolis,
     );
     let want = dmatrix![
     27.657417987118755, 14.498766626639174, 9.2673038449583238;

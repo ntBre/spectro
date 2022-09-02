@@ -27,8 +27,8 @@ impl Test {
 
 #[test]
 fn restst_asym() {
+    use state::State::*;
     use Mode::*;
-    use State::*;
     let tests = [
         Test::new(
             "h2o",
@@ -296,9 +296,10 @@ fn restst_asym() {
 }
 
 #[test]
+#[ignore]
 fn restst_sym() {
+    use state::State::*;
     use Mode::*;
-    use State::*;
     // NOTE just pasted the states in for now
     let tests = [Test::new(
         "nh3",
@@ -319,20 +320,20 @@ fn restst_sym() {
                 I2st(vec![0, 2, 0, 0, 0, 0]),
                 I1st(vec![1, 1, 0, 0, 0, 0]),
                 I12st {
-                    i1st: Box::new(I1st(vec![1, 0, 0, 0, 0, 0])),
-                    i2st: Box::new(I2st(vec![1, 0, 0, 0, 0, 0])),
+                    i1st: vec![1, 0, 0, 0, 0, 0],
+                    i2st: vec![1, 0, 0, 0, 0, 0],
                 },
                 I12st {
-                    i1st: Box::new(I1st(vec![1, 0, 0, 0, 0, 0])),
-                    i2st: Box::new(I2st(vec![0, 1, 0, 0, 0, 0])),
+                    i1st: vec![1, 0, 0, 0, 0, 0],
+                    i2st: vec![0, 1, 0, 0, 0, 0],
                 },
                 I12st {
-                    i1st: Box::new(I1st(vec![0, 1, 0, 0, 0, 0])),
-                    i2st: Box::new(I2st(vec![1, 0, 0, 0, 0, 0])),
+                    i1st: vec![0, 1, 0, 0, 0, 0],
+                    i2st: vec![1, 0, 0, 0, 0, 0],
                 },
                 I12st {
-                    i1st: Box::new(I1st(vec![0, 1, 0, 0, 0, 0])),
-                    i2st: Box::new(I2st(vec![0, 1, 0, 0, 0, 0])),
+                    i1st: vec![0, 1, 0, 0, 0, 0],
+                    i2st: vec![0, 1, 0, 0, 0, 0],
                 },
                 I2st(vec![1, 1, 0, 0, 0, 0]),
             ],

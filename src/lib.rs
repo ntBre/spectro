@@ -11,20 +11,20 @@ use std::{
 
 mod dummy;
 use dummy::{Dummy, DummyVal};
-
 mod utils;
 use nalgebra::DMatrix;
 use resonance::{Coriolis, Darling, Fermi1, Fermi2};
 use rot::Rot;
 use rotor::{Rotor, ROTOR_EPS};
 use sextic::Sextic;
+use state::State;
 use tensor::Tensor4;
 type Tensor3 = tensor::tensor3::Tensor3<f64>;
 use utils::*;
-mod rot;
-
 mod resonance;
+mod rot;
 mod rotor;
+mod state;
 
 use symm::{Atom, Molecule};
 
@@ -59,6 +59,9 @@ const SQLAM: f64 = 0.17222125037910759882;
 const FACT3: f64 = 1.0e6 / (SQLAM * SQLAM * SQLAM * PH * CL);
 const FACT4: f64 = 1.0e6 / (ALAM * ALAM * PH * CL);
 
+/// ALPHA_CONST IS THE PI*SQRT(C/H) FACTOR
+const ALPHA_CONST: f64 = 0.086112;
+
 /// PRINCIPAL ---> CARTESIAN
 static IPTOC: nalgebra::Matrix3x6<usize> = nalgebra::matrix![
 2,0,1,1,2,0;
@@ -92,6 +95,7 @@ pub enum Curvil {
 
 pub mod quartic;
 use quartic::*;
+
 pub mod sextic;
 
 /// struct containing the fields to describe a Spectro input file:
@@ -143,6 +147,8 @@ pub enum Mode {
 }
 
 impl Mode {
+    /// return the count of each type of mode in `modes`. these are referred to
+    /// in the Fortran code as `n1dm`, `n2dm`, and `n3dm`
     pub fn count(modes: &[Self]) -> (usize, usize, usize) {
         let mut ret = (0, 0, 0);
         for m in modes {
@@ -155,6 +161,9 @@ impl Mode {
         ret
     }
 
+    /// return vectors of the separated singly-degenerate, doubly-degenerate,
+    /// and triply-degenerate modes. these are referrred to in the Fortran code
+    /// as `i1mode`, `i2mode`, and `i3mode`.
     pub fn partition(
         modes: &[Self],
     ) -> (Vec<usize>, Vec<(usize, usize)>, Vec<usize>) {
@@ -174,22 +183,6 @@ impl Mode {
         }
         ret
     }
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum State {
-    /// singly-degenerate mode state
-    I1st(Vec<usize>),
-
-    /// doubly-degenerate mode state
-    I2st(Vec<usize>),
-
-    /// triply-degenerate mode state
-    I3st(Vec<usize>),
-
-    /// combination band of a singly-degenerate mode and a doubly-degenerate
-    /// mode
-    I12st { i1st: Box<State>, i2st: Box<State> },
 }
 
 impl Spectro {
@@ -584,16 +577,8 @@ impl Spectro {
         f3qcm: &[f64],
         coriolis: &[Coriolis],
     ) -> Dmat {
-        /// CONST IS THE PI*SQRT(C/H) FACTOR
-        const CONST: f64 = 0.086112;
         let mut alpha = Dmat::zeros(self.nvib, 3);
-        // NOTE like the fermi resonances, this overwrites earlier resonances.
-        // should it use them all?
-        let mut icorol: HashMap<(usize, usize), usize> = HashMap::new();
-        for &Coriolis { i, j, axis } in coriolis {
-            icorol.insert((i, j), axis as usize);
-            icorol.insert((j, i), axis as usize);
-        }
+        let icorol = make_icorol(coriolis);
         for ixyz in 0..3 {
             for i in 0..self.nvib {
                 let ii = ioff(ixyz + 2) - 1;
@@ -627,10 +612,251 @@ impl Spectro {
                     let iij = find3r(j, i, i);
                     valu3 += wila[(j, ii)] * f3qcm[iij] * freq[i] / wj32;
                 }
-                alpha[(i, ixyz)] = valu0 * (valu1 + valu2 + valu3 * CONST);
+                alpha[(i, ixyz)] =
+                    valu0 * (valu1 + valu2 + valu3 * ALPHA_CONST);
             }
         }
         alpha
+    }
+
+    /// compute the vibrationally-averaged rotational constants for symmetric
+    /// tops
+    fn alphas(
+        &self,
+        rotcon: &[f64],
+        freq: &Dvec,
+        wila: &Dmat,
+        zmat: &Tensor3,
+        f3qcm: &[f64],
+        modes: &[Mode],
+        states: &[State],
+        coriolis: &[Coriolis],
+    ) -> Dmat {
+        if let Rotor::SphericalTop = self.rotor {
+            todo!();
+        }
+        let (ia, ib, ic, iaia, iaib, ibib, ibic) =
+            if let Rotor::ProlateSymmTop = self.rotor {
+                (2, 1, 0, 5, 3, 0, 1)
+            } else {
+                (2, 1, 0, 5, 4, 2, 1)
+            };
+        let icorol = make_icorol(coriolis);
+        let (n1dm, n2dm, _) = Mode::count(modes);
+        let (i1mode, i2mode, _) = Mode::partition(modes);
+        let mut alpha = Dmat::zeros(self.nvib, 3);
+        // alpha A
+        for kk in 0..n1dm {
+            let k = i1mode[kk];
+            let valu0 = 2.0 * self.rotcon[ia].powi(2) / freq[k];
+            let valu1 = 0.75 * wila[(k, iaia)].powi(2) / self.primat[ia];
+
+            let mut valu2 = 0.0;
+            let mut valu3 = 0.0;
+            for jj in 0..n1dm {
+                let j = i1mode[jj];
+                let jkk = find3r(j, k, k);
+                if j != k {
+                    let wksq = freq[k].powi(2);
+                    let wjsq = freq[j].powi(2);
+                    let tmp = icorol.get(&(j, k));
+                    if tmp.is_some() && *tmp.unwrap() == ia {
+                        valu2 -= 0.5
+                            * zmat[(j, k, ia)].powi(2)
+                            * (freq[k] - freq[j]).powi(2)
+                            / (freq[j] * (freq[k] + freq[j]));
+                    } else {
+                        valu2 += zmat[(j, k, ia)].powi(2) * (3.0 * wksq + wjsq)
+                            / (wksq - wjsq);
+                    }
+                }
+                let wj32 = freq[j].powf(1.5);
+                valu3 += wila[(j, iaia)] * f3qcm[jkk] * freq[k] / wj32;
+            }
+            alpha[(k, ia)] = valu0 * (valu1 + valu2 + ALPHA_CONST * valu3);
+        }
+        for kk in 0..n2dm {
+            let k = i2mode[kk].0;
+            let valu0 = 2.0 * self.rotcon[ia].powi(2) / freq[k];
+            let valu1 = 0.75 * wila[(k, iaib)].powi(2) / self.primat[ib];
+
+            let mut valu2 = 0.0;
+            let mut valu3 = 0.0;
+            for jj in 0..n2dm {
+                let (j1, j2) = i2mode[jj];
+                if jj == kk {
+                    continue;
+                }
+                let wksq = freq[k].powi(2);
+                let wjsq = freq[j1].powi(2);
+                let tmp = icorol.get(&(j1, k));
+                if tmp.is_some() && *tmp.unwrap() == ia {
+                    valu2 -= 0.5
+                        * zmat[(k, j2, ia)].powi(2)
+                        * (freq[k] - freq[j1]).powi(2)
+                        / (freq[j1] * (freq[k] + freq[j1]));
+                } else {
+                    valu2 += zmat[(k, j2, ia)].powi(2) * (3.0 * wksq + wjsq)
+                        / (wksq - wjsq);
+                }
+            }
+            for jj in 0..n1dm {
+                let j = i1mode[jj];
+                let wj32 = freq[j].powf(1.5);
+                let jkk = find3r(j, k, k);
+                valu3 += wila[(j, iaia)] * f3qcm[jkk] * freq[k] / wj32;
+            }
+            alpha[(k, ia)] = valu0 * (valu1 + valu2 + ALPHA_CONST * valu3);
+        }
+        // alpha B - sadly different enough that I can't loop
+        for kk in 0..n1dm {
+            let k = i1mode[kk];
+            let valu0 = 2.0 * self.rotcon[ib].powi(2) / freq[k];
+            let valu1 = 0.75
+                * (wila[(k, ibib)].powi(2) + wila[(k, ibic)].powi(2))
+                / self.primat[ib];
+
+            let mut valu2 = 0.0;
+            for jj in 0..n2dm {
+                let j = i2mode[jj].0;
+                let wjsq = freq[j].powi(2);
+                let wksq = freq[k].powi(2);
+                let valu3 = (3.0 * wksq + wjsq) / (wksq - wjsq);
+                let tmp = icorol.get(&(j, k));
+                if tmp.is_some() && *tmp.unwrap() == ic {
+                    valu2 -= 0.5
+                        * zmat[(k, j, ic)].powi(2)
+                        * (freq[k] - freq[j]).powi(2)
+                        / (freq[j] * (freq[k] + freq[j]));
+                } else {
+                    valu2 += zmat[(k, j, ic)].powi(2) * valu3;
+                }
+                if tmp.is_some() && *tmp.unwrap() == ib {
+                    valu2 -= 0.5
+                        * zmat[(k, j, ib)].powi(2)
+                        * (freq[k] - freq[j]).powi(2)
+                        / (freq[j] * (freq[k] + freq[j]));
+                } else {
+                    valu2 += zmat[(k, j, ib)].powi(2) * valu3;
+                }
+            }
+
+            let mut valu4 = 0.0;
+            for jj in 0..n1dm {
+                let j = i1mode[jj];
+                let wj32 = freq[j].powf(1.5);
+                let jkk = find3r(j, k, k);
+                valu4 += f3qcm[jkk] * wila[(j, ibib)] * freq[k] / wj32;
+            }
+            alpha[(k, ib)] = valu0 * (valu1 + valu2 + ALPHA_CONST * valu4);
+        }
+        for kk in 0..n2dm {
+            let (k, _) = i2mode[kk];
+            let valu0 = 2.0 * self.rotcon[ib].powi(2) / freq[k];
+            // TODO do diatomics count as linear?
+            let (valu1, valu2) = if let Rotor::Linear = self.rotor {
+                (0.0, 0.0)
+            } else {
+                let valu1 = 0.375
+                    * (2.0 * wila[(k, ibib)].powi(2) / self.primat[ib]
+                        + (wila[(k, iaib)].powi(2)) / self.primat[ia]);
+                let mut valu2 = 0.0;
+                for jj in 0..n2dm {
+                    let j = i2mode[jj].0;
+                    if jj == kk {
+                        continue;
+                    }
+                    let wjsq = freq[j].powi(2);
+                    let wksq = freq[k].powi(2);
+                    let valu3 = (3.0 * wksq + wjsq) / (wksq - wjsq);
+                    let tmp = icorol.get(&(j, k));
+                    if tmp.is_some() && *tmp.unwrap() == ic {
+                        valu2 -= 0.5
+                            * zmat[(k, j, ic)].powi(2)
+                            * (freq[k] - freq[j]).powi(2)
+                            / (freq[j] * (freq[k] + freq[j]));
+                    } else {
+                        valu2 += zmat[(k, j, ic)].powi(2) * valu3;
+                    }
+                    if tmp.is_some() && *tmp.unwrap() == ib {
+                        valu2 -= 0.5
+                            * zmat[(k, j, ib)].powi(2)
+                            * (freq[k] - freq[j]).powi(2)
+                            / (freq[j] * (freq[k] + freq[j]));
+                    } else {
+                        valu2 += zmat[(k, j, ib)].powi(2) * valu3;
+                    }
+                }
+                (valu1, valu2)
+            };
+
+            let mut valu4 = 0.0;
+            for jj in 0..n1dm {
+                let j = i1mode[jj];
+                let wjsq = freq[j].powi(2);
+                let wksq = freq[k].powi(2);
+                let valu3 = (3.0 * wksq + wjsq) / (wksq - wjsq);
+                let tmp = icorol.get(&(j, k));
+                if tmp.is_some() && *tmp.unwrap() == ic {
+                    valu4 -= 0.5
+                        * zmat[(k, j, ic)].powi(2)
+                        * (freq[k] - freq[j]).powi(2)
+                        / (freq[j] * (freq[k] + freq[j]));
+                } else {
+                    valu4 += zmat[(k, j, ic)].powi(2) * valu3;
+                }
+                if tmp.is_some() && *tmp.unwrap() == ib {
+                    valu4 -= 0.5
+                        * zmat[(k, j, ib)].powi(2)
+                        * (freq[k] - freq[j]).powi(2)
+                        / (freq[j] * (freq[k] + freq[j]));
+                } else {
+                    valu4 += zmat[(k, j, ib)].powi(2) * valu3;
+                }
+            }
+            valu4 *= 0.5;
+
+            let mut valu5 = 0.0;
+            for jj in 0..n1dm {
+                let j = i1mode[jj];
+                let jkk = find3r(j, k, k);
+                let wj32 = freq[j].powf(1.5);
+                valu5 += f3qcm[jkk] * wila[(j, ibib)] * freq[k] / wj32;
+            }
+            alpha[(k, ib)] =
+                valu0 * (valu1 + valu2 + valu4 + ALPHA_CONST * valu5);
+        }
+        // end alpha b
+
+        // vibrationally averaged rotational constants
+
+        // use nstop again to compute only the fundamentals, not every state
+        let nstop = self.nvib + 1;
+        let mut rotnst = Dmat::zeros(nstop, 3);
+        // only one axis for linear molecules
+        let axes = if self.rotor.is_linear() {
+            vec![ib]
+        } else {
+            vec![ia, ib]
+        };
+        let (i1sts, i2sts, _) = State::partition(states);
+        for ax in axes {
+            for ist in 0..nstop {
+                let mut suma = 0.0;
+                for ii in 0..n1dm {
+                    let i = i1mode[ii];
+                    suma += alpha[(i, ax)] * (i1sts[ist][ii] as f64 + 0.5);
+                }
+
+                for ii in 0..n2dm {
+                    let i = i2mode[ii].0;
+                    suma += alpha[(i, ax)] * (i2sts[ist][ii] as f64 + 1.0);
+                }
+                rotnst[(ist, ax)] = rotcon[ax] + suma;
+            }
+        }
+        println!("{:.8}", rotnst);
+        rotnst
     }
 
     /// compute the vibrationally-averaged rotational constants for asymmetric
@@ -642,15 +868,14 @@ impl Spectro {
         wila: &Dmat,
         zmat: &Tensor3,
         f3qcm: &[f64],
-        fund: &[f64],
         modes: &[Mode],
         states: &[State],
         coriolis: &[Coriolis],
     ) -> Dmat {
         let alpha = self.alpha(freq, &wila, &zmat, f3qcm, coriolis);
         // do the fundamentals + the ground state
-        let nstop = fund.len() + 1;
-        let n1dm = fund.len();
+        let nstop = self.nvib + 1;
+        let (n1dm, _, _) = Mode::count(modes);
         let mut rotnst = Dmat::zeros(nstop, 3);
         for axis in 0..3 {
             for ist in 0..nstop {
@@ -790,17 +1015,29 @@ impl Spectro {
         let funds = make_funds(&freq, self.nvib, &xcnst);
 
         // TODO good to here
-        let rotnst = self.alphaa(
-            &self.rotcon,
-            &freq,
-            &wila,
-            &zmat,
-            &f3qcm,
-            &funds,
-            &modes,
-            &states,
-            &coriolis,
-        );
+        let rotnst = if self.rotor.is_sym_top() {
+            self.alphas(
+                &self.rotcon,
+                &freq,
+                &wila,
+                &zmat,
+                &f3qcm,
+                &modes,
+                &states,
+                &coriolis,
+            )
+        } else {
+            self.alphaa(
+                &self.rotcon,
+                &freq,
+                &wila,
+                &zmat,
+                &f3qcm,
+                &modes,
+                &states,
+                &coriolis,
+            )
+        };
 
         // this is worked on by resona and then enrgy so keep it out here
         let nstate = states.len();
@@ -902,7 +1139,7 @@ impl Spectro {
         }
 
         let mut states = Vec::new();
-        use State::*;
+        use state::State::*;
 
         // ground state, all zeros
         states.push(I1st(vec![0; self.nvib]));
@@ -958,10 +1195,7 @@ impl Spectro {
                 i1st[ii] = 1;
                 let mut i2st = vec![0; self.nvib];
                 i2st[jj] = 1;
-                states.push(I12st {
-                    i1st: Box::new(I1st(i1st)),
-                    i2st: Box::new(I2st(i2st)),
-                })
+                states.push(I12st { i1st, i2st })
             }
         }
 
@@ -984,6 +1218,18 @@ impl Spectro {
             modes,
         }
     }
+}
+
+/// Builds a HashMap of Coriolis resonances to their corresponding axes. NOTE
+/// like the fermi resonances, this overwrites earlier resonances. should it use
+/// them all?
+fn make_icorol(coriolis: &[Coriolis]) -> HashMap<(usize, usize), usize> {
+    let mut icorol = HashMap::new();
+    for &Coriolis { i, j, axis } in coriolis {
+        icorol.insert((i, j), axis as usize);
+        icorol.insert((j, i), axis as usize);
+    }
+    icorol
 }
 
 /// build the zeta matrix

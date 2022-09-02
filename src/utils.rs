@@ -14,8 +14,9 @@ type Tensor3 = tensor::tensor3::Tensor3<f64>;
 
 use crate::{
     resonance::{Fermi1, Fermi2},
-    Dmat, Dvec, Mode, Spectro, State, FACT3, FACT4, FUNIT3, FUNIT4, ICTOP,
-    IPTOC, WAVE,
+    state::State,
+    Dmat, Dvec, Mode, Spectro, FACT3, FACT4, FUNIT3, FUNIT4, ICTOP, IPTOC,
+    WAVE,
 };
 
 impl Display for Spectro {
