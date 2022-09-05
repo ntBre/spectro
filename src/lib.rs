@@ -1033,29 +1033,43 @@ impl Spectro {
             eng[nst] = val1 + val2 + val3 + val4 + val5 + val6 + e0;
         }
 
-        if self.rotor.is_sym_top() {
-            todo!("need to handle this for symmetric tops");
-        }
-
-        // these do need to be in the same loop because they feed back on each
-        // other, so make these hashes and access them that way
-        let mut ifrm1: HashMap<usize, usize> = HashMap::new();
-        for f in fermi1 {
-            ifrm1.insert(f.i, f.j);
-        }
+        let (_, ifrm1) = self.make_fermi_checks(fermi1, fermi2);
         let mut ifrm2: HashMap<(usize, usize), usize> = HashMap::new();
         for f in fermi2 {
             ifrm2.insert((f.i, f.j), f.k);
         }
-        for iii in 0..n1dm {
-            let ivib = i1mode[iii];
-            if let Some(jvib) = ifrm1.get(&ivib) {
-                rsfrm1(ivib, *jvib, f3qcm, n1dm, eng);
+        if self.rotor.is_sym_top() {
+            // so far this is the same as the other case
+
+            // NOTE I think this is not going to work at all :( I think my
+            // ist/jst stuff inside rsfrm1 is going to break spectacularly here
+            // but we'll see
+            for ii in 0..n1dm {
+                let ivib = i1mode[ii];
+                // type 1 fermi resonance
+                if let Some(&jvib) = ifrm1.get(&ivib) {
+                    rsfrm1(ivib, jvib, f3qcm, n1dm, eng);
+                }
+
+                // type 2 fermi resonance
+                for jj in ii + 1..n1dm {
+                    let jvib = i1mode[jj];
+                    if let Some(&kvib) = ifrm2.get(&(jvib, ivib)) {
+                        rsfrm2(ivib, jvib, kvib, f3qcm, states, eng);
+                    }
+                }
             }
-            for jjj in iii + 1..n1dm {
-                let jvib = i1mode[jjj];
-                if let Some(kvib) = ifrm2.get(&(jvib, ivib)) {
-                    rsfrm2(ivib, jvib, *kvib, f3qcm, states, eng);
+        } else {
+            for iii in 0..n1dm {
+                let ivib = i1mode[iii];
+                if let Some(jvib) = ifrm1.get(&ivib) {
+                    rsfrm1(ivib, *jvib, f3qcm, n1dm, eng);
+                }
+                for jjj in iii + 1..n1dm {
+                    let jvib = i1mode[jjj];
+                    if let Some(kvib) = ifrm2.get(&(jvib, ivib)) {
+                        rsfrm2(ivib, jvib, *kvib, f3qcm, states, eng);
+                    }
                 }
             }
         }
@@ -1167,7 +1181,8 @@ impl Spectro {
         );
 
         let mut corrs = Vec::new();
-        for i in 1..self.nvib + 1 {
+        let (n1dm, n2dm, n3dm) = Mode::count(&modes);
+        for i in 1..n1dm + n2dm + n3dm + 1 {
             corrs.push(eng[i] - eng[0]);
         }
 
