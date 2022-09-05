@@ -958,6 +958,110 @@ impl Spectro {
         ret
     }
 
+    /// vibrational energy levels and properties in resonance. returns the
+    /// energies in the same order as the states in `i1sts`
+    fn enrgy(
+        &self,
+        freq: &Dvec,
+        xcnst: &Dmat,
+        gcnst: &Option<Dmat>,
+        f3qcm: &F3qcm,
+        e0: f64,
+        states: &[State],
+        modes: &[Mode],
+        fermi1: &[Fermi1],
+        fermi2: &[Fermi2],
+        eng: &mut [f64],
+    ) {
+        let nstate = states.len();
+        let (n1dm, n2dm, _) = Mode::count(modes);
+        let (i1mode, i2mode, _) = Mode::partition(modes);
+        let (i1sts, i2sts, _) = State::partition(states);
+        println!();
+        for nst in 0..nstate {
+            let mut val1 = 0.0;
+            for (ii, &i) in i1mode.iter().enumerate() {
+                val1 += freq[i] * ((i1sts[nst][ii] as f64) + 0.5);
+            }
+
+            let mut val2 = 0.0;
+            for (ii, &(i, _)) in i2mode.iter().enumerate() {
+                val2 += freq[i] * (i2sts[nst][ii].0 as f64 + 1.0);
+            }
+
+            // this is val2 in the asym top code
+            let mut val3 = 0.0;
+            for (ii, &i) in i1mode.iter().enumerate() {
+                for (jj, &j) in i1mode.iter().take(ii + 1).enumerate() {
+                    val3 += xcnst[(i, j)]
+                        * ((i1sts[nst][ii] as f64) + 0.5)
+                        * ((i1sts[nst][jj] as f64) + 0.5);
+                }
+            }
+
+            let mut val4 = 0.0;
+            for (ii, &i) in i1mode.iter().enumerate() {
+                for (jj, &(j, _)) in i2mode.iter().enumerate() {
+                    val4 += xcnst[(i, j)]
+                        * ((i1sts[nst][ii] as f64 + 0.5)
+                            * (i2sts[nst][jj].0 as f64 + 1.0));
+                }
+            }
+
+            let mut val5 = 0.0;
+            for ii in 0..n2dm {
+                let i = i2mode[ii].0;
+                for jj in 0..=ii {
+                    let j = i2mode[jj].0;
+                    val5 += xcnst[(i, j)]
+                        * ((i2sts[nst][ii].0 as f64 + 1.0)
+                            * (i2sts[nst][jj].0 as f64 + 1.0));
+                }
+            }
+
+            let mut val6 = 0.0;
+            for (ii, &(i, _)) in i2mode.iter().enumerate() {
+                for (jj, &(j, _)) in i2mode.iter().take(ii + 1).enumerate() {
+                    val6 += gcnst
+                        .as_ref()
+                        .expect("g constants required for symmetric tops")
+                        [(i, j)]
+                        * (i2sts[nst][ii].1 as f64)
+                        * (i2sts[nst][jj].1 as f64);
+                }
+            }
+
+            eng[nst] = val1 + val2 + val3 + val4 + val5 + val6 + e0;
+        }
+
+        if self.rotor.is_sym_top() {
+            todo!("need to handle this for symmetric tops");
+        }
+
+        // these do need to be in the same loop because they feed back on each
+        // other, so make these hashes and access them that way
+        let mut ifrm1: HashMap<usize, usize> = HashMap::new();
+        for f in fermi1 {
+            ifrm1.insert(f.i, f.j);
+        }
+        let mut ifrm2: HashMap<(usize, usize), usize> = HashMap::new();
+        for f in fermi2 {
+            ifrm2.insert((f.i, f.j), f.k);
+        }
+        for iii in 0..n1dm {
+            let ivib = i1mode[iii];
+            if let Some(jvib) = ifrm1.get(&ivib) {
+                rsfrm1(ivib, *jvib, f3qcm, n1dm, eng);
+            }
+            for jjj in iii + 1..n1dm {
+                let jvib = i1mode[jjj];
+                if let Some(kvib) = ifrm2.get(&(jvib, ivib)) {
+                    rsfrm2(ivib, jvib, *kvib, f3qcm, states, eng);
+                }
+            }
+        }
+    }
+
     pub fn run<P>(self, fort15: P, fort30: P, fort40: P) -> Output
     where
         P: AsRef<Path>,
@@ -1012,49 +1116,10 @@ impl Spectro {
         };
 
         let (harms, funds) = if self.rotor.is_sym_top() {
-            let (n1dm, n2dm, _) = Mode::count(&modes);
-            let (i1mode, i2mode, _) = Mode::partition(&modes);
-            let mut harms = Vec::new();
-            let mut funds = Vec::new();
-            for ii in 0..n1dm {
-                let i = i1mode[ii];
-                let mut val = freq[i] + xcnst[(i, i)] * 2.0;
-                for jj in 0..n1dm {
-                    let j = i1mode[jj];
-                    if j != i {
-                        val += 0.5 * xcnst[(i, j)];
-                    }
-                }
-                for jj in 0..n2dm {
-                    let j = i2mode[jj].0;
-                    val += xcnst[(i, j)];
-                }
-                harms.push(freq[i]);
-                funds.push(val);
-            }
-
-            for ii in 0..n2dm {
-                let i = i2mode[ii].0;
-                let mut val = freq[i]
-                    + 3.0 * xcnst[(i, i)]
-                    + gcnst.as_ref().unwrap()[(i, i)];
-                for jj in 0..n1dm {
-                    let j = i1mode[jj];
-                    val += 0.5 * xcnst[(i, j)];
-                }
-                for jj in 0..n2dm {
-                    let j = i2mode[jj].0;
-                    if j != i {
-                        val += xcnst[(i, j)]
-                    }
-                }
-                harms.push(freq[i]);
-                funds.push(val);
-            }
-            (harms, funds)
+            make_sym_funds(&modes, &freq, &xcnst, &gcnst)
         } else {
             (
-                harms.as_slice().to_vec(),
+                harms.as_slice()[..self.nvib].to_vec(),
                 make_funds(&freq, self.nvib, &xcnst),
             )
         };
@@ -1097,7 +1162,7 @@ impl Spectro {
             // );
         }
 
-        enrgy(
+        self.enrgy(
             &freq, &xcnst, &gcnst, &f3qcm, e0, &states, &modes, &fermi1,
             &fermi2, &mut eng,
         );
@@ -1853,6 +1918,52 @@ impl Spectro {
             modes,
         }
     }
+}
+
+fn make_sym_funds(
+    modes: &Vec<Mode>,
+    freq: &Dvec,
+    xcnst: &Dmat,
+    gcnst: &Option<Dmat>,
+) -> (Vec<f64>, Vec<f64>) {
+    let (n1dm, n2dm, _) = Mode::count(modes);
+    let (i1mode, i2mode, _) = Mode::partition(modes);
+    let mut harms = Vec::new();
+    let mut funds = Vec::new();
+    for ii in 0..n1dm {
+        let i = i1mode[ii];
+        let mut val = freq[i] + xcnst[(i, i)] * 2.0;
+        for jj in 0..n1dm {
+            let j = i1mode[jj];
+            if j != i {
+                val += 0.5 * xcnst[(i, j)];
+            }
+        }
+        for jj in 0..n2dm {
+            let j = i2mode[jj].0;
+            val += xcnst[(i, j)];
+        }
+        harms.push(freq[i]);
+        funds.push(val);
+    }
+    for ii in 0..n2dm {
+        let i = i2mode[ii].0;
+        let mut val =
+            freq[i] + 3.0 * xcnst[(i, i)] + gcnst.as_ref().unwrap()[(i, i)];
+        for jj in 0..n1dm {
+            let j = i1mode[jj];
+            val += 0.5 * xcnst[(i, j)];
+        }
+        for jj in 0..n2dm {
+            let j = i2mode[jj].0;
+            if j != i {
+                val += xcnst[(i, j)]
+            }
+        }
+        harms.push(freq[i]);
+        funds.push(val);
+    }
+    (harms, funds)
 }
 
 /// Builds a HashMap of Coriolis resonances to their corresponding axes. NOTE

@@ -1,5 +1,4 @@
 use std::{
-    collections::HashMap,
     f64::consts::SQRT_2,
     fmt::{Debug, Display},
     fs::read_to_string,
@@ -13,13 +12,8 @@ use tensor::Tensor4;
 type Tensor3 = tensor::tensor3::Tensor3<f64>;
 
 use crate::{
-    f3qcm::F3qcm,
-    f4qcm::F4qcm,
-    ifrm1::Ifrm1,
-    resonance::{Fermi1, Fermi2},
-    state::State,
-    Dmat, Dvec, Mode, Spectro, FACT3, FACT4, FUNIT3, FUNIT4, ICTOP, IPTOC,
-    WAVE,
+    f3qcm::F3qcm, f4qcm::F4qcm, ifrm1::Ifrm1, state::State, Dmat, Dvec,
+    Spectro, FACT3, FACT4, FUNIT3, FUNIT4, ICTOP, IPTOC, WAVE,
 };
 
 // separate for macro
@@ -451,101 +445,7 @@ pub(crate) fn print_vib_states(reng: &[f64], i1sts: &Vec<Vec<usize>>) {
     }
 }
 
-/// vibrational energy levels and properties in resonance. returns the energies
-/// in the same order as the states in `i1sts`
-pub(crate) fn enrgy(
-    freq: &Dvec,
-    xcnst: &Dmat,
-    gcnst: &Option<Dmat>,
-    f3qcm: &F3qcm,
-    e0: f64,
-    states: &[State],
-    modes: &[Mode],
-    fermi1: &[Fermi1],
-    fermi2: &[Fermi2],
-    eng: &mut [f64],
-) {
-    let nstate = states.len();
-    let (n1dm, _, _) = Mode::count(modes);
-    let (i1mode, i2mode, _) = Mode::partition(modes);
-    let (i1sts, i2sts, _) = State::partition(states);
-    for nst in 0..nstate {
-        let mut val1 = 0.0;
-        for (i, &ii) in i1mode.iter().enumerate() {
-            val1 += freq[i] * ((i1sts[nst][ii] as f64) + 0.5);
-        }
-
-        let mut val2 = 0.0;
-        for (i, &(ii, _)) in i2mode.iter().enumerate() {
-            val2 += freq[i] * (i2sts[nst][ii].0 as f64 + 1.0);
-        }
-
-        // this is val2 in the asym top code
-        let mut val3 = 0.0;
-        for (i, &ii) in i1mode.iter().enumerate() {
-            for (j, &jj) in i1mode.iter().take(ii + 1).enumerate() {
-                val3 += xcnst[(i, j)]
-                    * ((i1sts[nst][ii] as f64) + 0.5)
-                    * ((i1sts[nst][jj] as f64) + 0.5);
-            }
-        }
-
-        let mut val4 = 0.0;
-        for (i, &ii) in i1mode.iter().enumerate() {
-            for (j, &(jj, _)) in i2mode.iter().enumerate() {
-                val4 += xcnst[(i, j)]
-                    * ((i1sts[nst][ii] as f64 + 0.5)
-                        * (i2sts[nst][jj].0 as f64 + 1.0));
-            }
-        }
-
-        let mut val5 = 0.0;
-        for (i, &(ii, _)) in i2mode.iter().enumerate() {
-            for (j, &(jj, _)) in i2mode.iter().take(ii + 1).enumerate() {
-                val5 += xcnst[(i, j)]
-                    * ((i2sts[nst][ii].0 as f64 + 1.0)
-                        * (i2sts[nst][jj].0 as f64 + 1.0));
-            }
-        }
-
-        let mut val6 = 0.0;
-        for (i, &(ii, _)) in i2mode.iter().enumerate() {
-            for (j, &(jj, _)) in i2mode.iter().take(ii + 1).enumerate() {
-                val6 += gcnst
-                    .as_ref()
-                    .expect("g constants required for symmetric tops")[(i, j)]
-                    * (i2sts[nst][ii].1 as f64)
-                    * (i2sts[nst][jj].1 as f64);
-            }
-        }
-
-        eng[nst] = val1 + val2 + val3 + val4 + val5 + val6 + e0;
-    }
-    // these do need to be in the same loop because they feed back on each
-    // other, so make these hashes and access them that way
-    let mut ifrm1: HashMap<usize, usize> = HashMap::new();
-    for f in fermi1 {
-        ifrm1.insert(f.i, f.j);
-    }
-    let mut ifrm2: HashMap<(usize, usize), usize> = HashMap::new();
-    for f in fermi2 {
-        ifrm2.insert((f.i, f.j), f.k);
-    }
-    for iii in 0..n1dm {
-        let ivib = i1mode[iii];
-        if let Some(jvib) = ifrm1.get(&ivib) {
-            rsfrm1(ivib, *jvib, f3qcm, n1dm, eng);
-        }
-        for jjj in iii + 1..n1dm {
-            let jvib = i1mode[jjj];
-            if let Some(kvib) = ifrm2.get(&(jvib, ivib)) {
-                rsfrm2(ivib, jvib, *kvib, f3qcm, states, eng);
-            }
-        }
-    }
-}
-
-fn rsfrm2(
+pub(crate) fn rsfrm2(
     ivib: usize,
     jvib: usize,
     kvib: usize,
@@ -583,7 +483,7 @@ fn rsfrm2(
     // TODO left out properties
 }
 
-fn rsfrm1(
+pub(crate) fn rsfrm1(
     ivib: usize,
     jvib: usize,
     f3qcm: &F3qcm,

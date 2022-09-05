@@ -191,7 +191,7 @@ fn test_enrgy() {
         modes: i1mode,
     } = s.restst(&zmat, &f3qcm, &freq);
     let mut got = vec![0.0; states.len()];
-    enrgy(
+    s.enrgy(
         &freq, &xcnst, &None, &f3qcm, e0, &states, &i1mode, &fermi1, &fermi2,
         &mut got,
     );
