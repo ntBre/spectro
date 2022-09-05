@@ -54,9 +54,9 @@ fn test_quartic() {
         let freq = to_wavenumbers(&harms);
         let (_zmat, wila) = s.zeta(&lxm, &w);
         let got = Quartic::new(&s, &freq, &wila);
-        println!("got\n{}", got);
-        println!("want\n{}", test.want);
-        println!("want\n{}", got.clone() - test.want.clone());
+        // println!("got\n{}", got);
+        // println!("want\n{}", test.want);
+        // println!("want\n{}", got.clone() - test.want.clone());
 
         // accept this size of epsilon because this is about how good the
         // rotational constant agreement is and b[xyz][as] are the largest

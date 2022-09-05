@@ -977,7 +977,6 @@ impl Spectro {
         let (n1dm, n2dm, _) = Mode::count(modes);
         let (i1mode, i2mode, _) = Mode::partition(modes);
         let (i1sts, i2sts, _) = State::partition(states);
-        println!();
         for nst in 0..nstate {
             let mut val1 = 0.0;
             for (ii, &i) in i1mode.iter().enumerate() {
@@ -1119,7 +1118,7 @@ impl Spectro {
             make_sym_funds(&modes, &freq, &xcnst, &gcnst)
         } else {
             (
-                harms.as_slice()[..self.nvib].to_vec(),
+                freq.as_slice()[..self.nvib].to_vec(),
                 make_funds(&freq, self.nvib, &xcnst),
             )
         };
