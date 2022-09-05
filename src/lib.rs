@@ -9,32 +9,37 @@ use std::{
     path::Path,
 };
 
-mod dummy;
 use dummy::{Dummy, DummyVal};
-mod utils;
 use f3qcm::F3qcm;
 use f4qcm::F4qcm;
+use ifrm1::Ifrm1;
 use nalgebra::DMatrix;
+use quartic::Quartic;
 use resonance::{Coriolis, Darling, Fermi1, Fermi2};
 use rot::Rot;
 use rotor::{Rotor, ROTOR_EPS};
 use sextic::Sextic;
 use state::State;
+use symm::{Atom, Molecule};
 use tensor::Tensor4;
-type Tensor3 = tensor::tensor3::Tensor3<f64>;
 use utils::*;
+
+mod dummy;
 mod f3qcm;
 mod f4qcm;
+mod ifrm1;
+mod quartic;
 mod resonance;
 mod rot;
 mod rotor;
+mod sextic;
 mod state;
-
-use symm::{Atom, Molecule};
+mod utils;
 
 #[cfg(test)]
 mod tests;
 
+type Tensor3 = tensor::tensor3::Tensor3<f64>;
 type Mat3 = nalgebra::Matrix3<f64>;
 type Dvec = nalgebra::DVector<f64>;
 type Dmat = nalgebra::DMatrix<f64>;
@@ -96,11 +101,6 @@ pub enum Curvil {
 
     Tors(usize, usize, usize, usize),
 }
-
-pub mod quartic;
-use quartic::*;
-
-pub mod sextic;
 
 /// struct containing the fields to describe a Spectro input file:
 /// ```text
@@ -1172,7 +1172,7 @@ impl Spectro {
         &self,
         fermi1: &[Fermi1],
         fermi2: &[Fermi2],
-    ) -> (tensor::Tensor3<usize>, HashMap<usize, usize>) {
+    ) -> (tensor::Tensor3<usize>, Ifrm1) {
         let mut ifrmchk = tensor::tensor3::Tensor3::<usize>::zeros(
             self.nvib, self.nvib, self.nvib,
         );
@@ -1180,7 +1180,7 @@ impl Spectro {
         // signal that the value is not there. in fortran they use an array of
         // zeros because zero will never be a valid index. I could use -1, but
         // then the vec has to be of isize and I have to do a lot of casting.
-        let mut ifrm1: HashMap<usize, usize> = HashMap::new();
+        let mut ifrm1 = Ifrm1::new();
         for f in fermi1 {
             ifrmchk[(f.i, f.i, f.j)] = 1;
             ifrm1.insert(f.i, f.j);
@@ -1258,8 +1258,7 @@ impl Spectro {
             let mut valu = 0.0;
             for &l in &i1mode {
                 let val2 = f3qcm[(k, k, l)].powi(2);
-                let tmp = ifrm1.get(&k);
-                if tmp.is_some() && *tmp.unwrap() == l {
+                if ifrm1.check(k, l) {
                     let val3 = 1.0 / (8.0 * freq[l]);
                     let val4 = 1.0 / (32.0 * (2.0 * freq[k] + freq[l]));
                     valu -= val2 * (val3 + val4);
@@ -1395,17 +1394,18 @@ impl Spectro {
         }
 
         // deg-deg modes
-        // for &(k, _) in &i2mode {
-        // let kkkk = find4(k, k, k, k);
-        // let val1 = f4qcm[kkkk] / 16.0;
-        // let wk = freq[k].powi(2);
+        for &(k, _) in &i2mode {
+            let val1 = f4qcm[(k, k, k, k)] / 16.0;
+            let wk = freq[k].powi(2);
 
-        // let mut valu = 0.0;
-        // for &l in &i1mode {
-        //     let kkl = (k, k, l);
-        //     let val2 = f3qcm[kkl].powi(2);
-        // }
-        // }
+            let mut valu = 0.0;
+            for &l in &i1mode {
+                let val2 = f3qcm[(k, k, l)].powi(2);
+                // let tmp = ifrm1.get(&k);
+                // if tmp.is_some() && *tmp.unwrap() == l {
+                if ifrm1.check(k, l) {}
+            }
+        }
         println!("{:.8}", xcnst);
         (xcnst, 0.0)
     }

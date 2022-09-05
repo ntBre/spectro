@@ -15,6 +15,7 @@ type Tensor3 = tensor::tensor3::Tensor3<f64>;
 use crate::{
     f3qcm::F3qcm,
     f4qcm::F4qcm,
+    ifrm1::Ifrm1,
     resonance::{Fermi1, Fermi2},
     state::State,
     Dmat, Dvec, Mode, Spectro, FACT3, FACT4, FUNIT3, FUNIT4, ICTOP, IPTOC,
@@ -352,7 +353,7 @@ pub(crate) fn make_e0(
     f4qcm: &F4qcm,
     f3qcm: &F3qcm,
     freq: &Dvec,
-    ifrm1: HashMap<usize, usize>,
+    ifrm1: Ifrm1,
     ifrmchk: tensor::Tensor3<usize>,
 ) -> f64 {
     // NOTE: took out some weird IA stuff here and reproduced their results.
