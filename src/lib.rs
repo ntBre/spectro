@@ -13,6 +13,7 @@ mod dummy;
 use dummy::{Dummy, DummyVal};
 mod utils;
 use f3qcm::F3qcm;
+use f4qcm::F4qcm;
 use nalgebra::DMatrix;
 use resonance::{Coriolis, Darling, Fermi1, Fermi2};
 use rot::Rot;
@@ -23,6 +24,7 @@ use tensor::Tensor4;
 type Tensor3 = tensor::tensor3::Tensor3<f64>;
 use utils::*;
 mod f3qcm;
+mod f4qcm;
 mod resonance;
 mod rot;
 mod rotor;
@@ -1074,7 +1076,7 @@ impl Spectro {
     /// calculate the anharmonic constants and E_0 for an asymmetric top
     pub fn xcalc(
         &self,
-        f4qcm: &[f64],
+        f4qcm: &F4qcm,
         freq: &Dvec,
         f3qcm: &F3qcm,
         zmat: &Tensor3,
@@ -1085,7 +1087,7 @@ impl Spectro {
         let mut xcnst = Dmat::zeros(self.nvib, self.nvib);
         // diagonal contributions to the anharmonic constants
         for k in 0..self.nvib {
-            let kkkk = find4(k, k, k, k);
+            let kkkk = (k, k, k, k);
             let val1 = f4qcm[kkkk] / 16.0;
             let wk = freq[k].powi(2);
             let mut valu = 0.0;
@@ -1108,7 +1110,7 @@ impl Spectro {
         // off-diagonal contributions to the anharmonic constants
         for k in 1..self.nvib {
             for l in 0..k {
-                let kkll = find4(k, k, l, l);
+                let kkll = (k, k, l, l);
                 let val1 = f4qcm[kkll] / 4.0;
                 let mut val2 = 0.0;
                 for m in 0..self.nvib {
@@ -1193,7 +1195,7 @@ impl Spectro {
     /// calculate the anharmonic constants and E_0 for a symmetric top
     pub fn xcals(
         &self,
-        f4qcm: &[f64],
+        f4qcm: &F4qcm,
         freq: &Dvec,
         f3qcm: &F3qcm,
         zmat: &Tensor3,
@@ -1249,7 +1251,7 @@ impl Spectro {
 
         // nondeg-nondeg interactions
         for &k in &i1mode {
-            let kkkk = find4(k, k, k, k);
+            let kkkk = (k, k, k, k);
             let val1 = f4qcm[kkkk] / 16.0;
             let wk = freq[k].powi(2);
 
@@ -1278,7 +1280,7 @@ impl Spectro {
         for (kk, &k) in i1mode.iter().enumerate() {
             // might be kk-1 not sure
             for &l in i1mode.iter().take(kk) {
-                let kkll = find4(k, k, l, l);
+                let kkll = (k, k, l, l);
                 let val1 = f4qcm[kkll] / 4.0;
 
                 let mut val2 = 0.0;
@@ -1332,7 +1334,7 @@ impl Spectro {
         // nondeg-deg interactions
         for &k in &i1mode {
             for (ll, &(l, _)) in i2mode.iter().enumerate() {
-                let kkll = find4(k, k, l, l);
+                let kkll = (k, k, l, l);
                 let val1 = f4qcm[kkll] / 4.0;
 
                 let mut val2 = 0.0;

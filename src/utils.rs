@@ -14,11 +14,15 @@ type Tensor3 = tensor::tensor3::Tensor3<f64>;
 
 use crate::{
     f3qcm::F3qcm,
+    f4qcm::F4qcm,
     resonance::{Fermi1, Fermi2},
     state::State,
     Dmat, Dvec, Mode, Spectro, FACT3, FACT4, FUNIT3, FUNIT4, ICTOP, IPTOC,
     WAVE,
 };
+
+// separate for macro
+use crate::f4qcm;
 
 impl Display for Spectro {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -290,7 +294,7 @@ pub fn force4(
     lx: &Dmat,
     nvib: usize,
     harms: &Dvec,
-) -> Vec<f64> {
+) -> F4qcm {
     let lxt = lx.transpose();
     let mut f4q = Tensor4::zeros(n3n, n3n, n3n, n3n);
     for kabc in 0..n3n {
@@ -315,7 +319,7 @@ pub fn force4(
     }
     // now can I include the loop above in here - the holy grail
     let n = nvib - 1;
-    let mut f4qcm = vec![0.0; find4(n, n, n, n) + 1];
+    let mut f4qcm = f4qcm![0.0; find4(n, n, n, n) + 1];
     for ii in 0..nvib {
         let wi = harms[ii];
         for jj in 0..=ii {
@@ -334,7 +338,7 @@ pub fn force4(
                     let wijkl = wi * wj * wk * wl;
                     let sqws = wijkl.sqrt();
                     let fact = FACT4 / sqws;
-                    let ijkl = find4(ivib, jvib, ii, jj);
+                    let ijkl = (ivib, jvib, ii, jj);
                     f4qcm[ijkl] = ee[(ivib, jvib)] * fact;
                 }
             }
@@ -345,7 +349,7 @@ pub fn force4(
 
 pub(crate) fn make_e0(
     nvib: usize,
-    f4qcm: &[f64],
+    f4qcm: &F4qcm,
     f3qcm: &F3qcm,
     freq: &Dvec,
     ifrm1: HashMap<usize, usize>,
@@ -358,8 +362,7 @@ pub(crate) fn make_e0(
     let mut f3kkl = 0.0;
     for k in 0..nvib {
         // kkkk and kkk terms
-        let kkkk = find4(k, k, k, k);
-        let fiqcm = f4qcm[kkkk];
+        let fiqcm = f4qcm[(k, k, k, k)];
         f4k += fiqcm / 64.0;
         f3k -= 7.0 * f3qcm[(k, k, k)].powi(2) / (576.0 * freq[k]);
         let wk = freq[k].powi(2);
