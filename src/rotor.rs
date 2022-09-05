@@ -1,5 +1,5 @@
+use crate::f3qcm::F3qcm;
 use crate::resonance::{Coriolis, Darling, Fermi1, Fermi2};
-use crate::utils::find3r;
 use crate::{Dvec, Mode};
 use std::fmt::Display;
 type Tensor3 = tensor::tensor3::Tensor3<f64>;
@@ -216,7 +216,7 @@ impl Rotor {
         &self,
         modes: &[Mode],
         freq: &Dvec,
-        f3qcm: &[f64],
+        f3qcm: &F3qcm,
     ) -> Vec<Fermi1> {
         let mut ret = Vec::new();
         use Rotor::*;
@@ -258,7 +258,7 @@ impl Rotor {
         &self,
         modes: &[Mode],
         freq: &Dvec,
-        f3qcm: &[f64],
+        f3qcm: &F3qcm,
     ) -> Vec<Fermi2> {
         let (n1dm, n2dm, _) = Mode::count(modes);
         let (i1mode, i2mode, _) = Mode::partition(modes);
@@ -327,7 +327,7 @@ impl Rotor {
                             let diff3 = -freq[i] - freq[j] + freq[k];
                             let diff4 = freq[i] + freq[j] + freq[k];
                             let delta = diff1 * diff2 * diff3 * diff4;
-                            let ijk = find3r(i, j, k);
+                            let ijk = (i, j, k);
                             // if we just reverse the order of the condition
                             // checks, we can only check f3qcm once...
                             if delta.abs() <= DLTOL {
@@ -361,7 +361,7 @@ impl Rotor {
                             let diff3 = -freq[i] - freq[j] + freq[k];
                             let diff4 = freq[i] + freq[j] + freq[k];
                             let delta = diff1 * diff2 * diff3 * diff4;
-                            let ijk = find3r(i, j, k);
+                            let ijk = (i, j, k);
                             // if we just reverse the order of the condition
                             // checks, we can only check f3qcm once...
                             if delta.abs() <= DLTOL {
@@ -467,13 +467,12 @@ fn ferm1_test(
     freq: &Dvec,
     i: usize,
     j: usize,
-    f3qcm: &[f64],
+    f3qcm: &F3qcm,
     ret: &mut Vec<Fermi1>,
 ) {
     let diff = 2.0 * freq[i] - freq[j];
     if diff.abs() <= FTOL1 {
-        let iij = find3r(i, i, j);
-        if f3qcm[iij].abs() >= F3TOL {
+        if f3qcm[(i, i, j)].abs() >= F3TOL {
             ret.push(Fermi1::new(i, j));
         }
     }
@@ -491,7 +490,7 @@ fn ferm2_test(
     i: usize,
     j: usize,
     k: usize,
-    f3qcm: &[f64],
+    f3qcm: &F3qcm,
     ret: &mut Vec<Fermi2>,
 ) -> bool {
     let diff1 = freq[i] - freq[j] - freq[k];
@@ -499,15 +498,14 @@ fn ferm2_test(
     let diff3 = -freq[i] - freq[j] + freq[k];
     let diff4 = freq[i] + freq[j] + freq[k];
     let delta = diff1 * diff2 * diff3 * diff4;
-    let ijk = find3r(i, j, k);
     let dalet = aminjm(diff1, diff2, diff3);
     if delta.abs() <= DLTOL {
-        if f3qcm[ijk].abs() >= F3TOL {
+        if f3qcm[(i, j, k)].abs() >= F3TOL {
             ret.push(Fermi2::new(i, j, k));
             return true;
         }
     } else if dalet.abs() <= DFTOL {
-        if f3qcm[ijk].abs() >= F3TOL {
+        if f3qcm[(i, j, k)].abs() >= F3TOL {
             ret.push(Fermi2::new(i, j, k));
             return true;
         }

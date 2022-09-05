@@ -13,6 +13,7 @@ use tensor::Tensor4;
 type Tensor3 = tensor::tensor3::Tensor3<f64>;
 
 use crate::{
+    f3qcm::F3qcm,
     resonance::{Fermi1, Fermi2},
     state::State,
     Dmat, Dvec, Mode, Spectro, FACT3, FACT4, FUNIT3, FUNIT4, ICTOP, IPTOC,
@@ -95,7 +96,7 @@ fn sort_indices<const N: usize>(mut indices: [usize; N]) -> [usize; N] {
 /// lengths. For example, `find3r(3, 3, 3) = 19` and `find3r(2, 2, 2) = 9`, so
 /// to get the length of the cubic force constant vector for water you have to
 /// do `find3r(2, 2, 2) + 1`, where 2 is `nvib-1`
-pub(crate) fn find3r(i: usize, j: usize, k: usize) -> usize {
+pub(crate) fn find3(i: usize, j: usize, k: usize) -> usize {
     let [i, j, k] = sort_indices([i + 1, j + 1, k + 1]);
     i + (j - 1) * j / 2 + (k - 1) * k * (k + 1) / 6 - 1
 }
@@ -252,7 +253,7 @@ pub fn force3(
     lx: &Dmat,
     nvib: usize,
     freq: &Dvec,
-) -> Vec<f64> {
+) -> F3qcm {
     for kabc in 0..n3n {
         let start = (0, 0);
         let end = (n3n, n3n - 1);
@@ -263,7 +264,7 @@ pub fn force3(
         f3x.set_submatrix(start, end, kabc, ee.data.as_slice());
     }
     let mut f3qcm =
-        Vec::with_capacity(find3r(nvib - 1, nvib - 1, nvib - 1) + 1);
+        F3qcm::with_capacity(find3(nvib - 1, nvib - 1, nvib - 1) + 1);
     for i in 0..nvib {
         let wi = freq[(i)];
         for j in 0..=i {
@@ -345,7 +346,7 @@ pub fn force4(
 pub(crate) fn make_e0(
     nvib: usize,
     f4qcm: &[f64],
-    f3qcm: &[f64],
+    f3qcm: &F3qcm,
     freq: &Dvec,
     ifrm1: HashMap<usize, usize>,
     ifrmchk: tensor::Tensor3<usize>,
@@ -357,21 +358,19 @@ pub(crate) fn make_e0(
     let mut f3kkl = 0.0;
     for k in 0..nvib {
         // kkkk and kkk terms
-        let kkk = find3r(k, k, k);
         let kkkk = find4(k, k, k, k);
         let fiqcm = f4qcm[kkkk];
         f4k += fiqcm / 64.0;
-        f3k -= 7.0 * f3qcm[kkk].powi(2) / (576.0 * freq[k]);
+        f3k -= 7.0 * f3qcm[(k, k, k)].powi(2) / (576.0 * freq[k]);
         let wk = freq[k].powi(2);
 
         // kkl terms
         for l in 0..nvib {
-            let kkl = find3r(k, k, l);
             if k == l {
                 continue;
             }
             let wl = freq[l].powi(2);
-            let zval1 = f3qcm[kkl].powi(2);
+            let zval1 = f3qcm[(k, k, l)].powi(2);
             let res = ifrm1.get(&k);
             if res.is_some() && *res.unwrap() == l {
                 let delta = 2.0 * (2.0 * freq[k] + freq[l]);
@@ -388,8 +387,7 @@ pub(crate) fn make_e0(
     for k in 0..nvib {
         for l in 0..k {
             for m in 0..l {
-                let klm = find3r(k, l, m);
-                let zval3 = f3qcm[klm].powi(2);
+                let zval3 = f3qcm[(k, l, m)].powi(2);
                 let xklm = freq[k] * freq[l] * freq[m];
                 let d1 = freq[k] + freq[l] + freq[m];
                 let d2 = freq[k] - freq[l] + freq[m];
@@ -454,7 +452,7 @@ pub(crate) fn print_vib_states(reng: &[f64], i1sts: &Vec<Vec<usize>>) {
 pub(crate) fn enrgy(
     freq: &Dvec,
     xcnst: &Dmat,
-    f3qcm: &[f64],
+    f3qcm: &F3qcm,
     e0: f64,
     states: &[State],
     modes: &[Mode],
@@ -545,11 +543,10 @@ fn rsfrm2(
     ivib: usize,
     jvib: usize,
     kvib: usize,
-    f3qcm: &[f64],
+    f3qcm: &F3qcm,
     i1sts: &[State],
     eng: &mut [f64],
 ) {
-    let ijk = find3r(ivib, jvib, kvib);
     // I can't figure out the formula so just search for it
     let ijst = i1sts
         .iter()
@@ -561,7 +558,7 @@ fn rsfrm2(
         })
         .unwrap();
     let kst = kvib + 1;
-    let val = f3qcm[ijk] / (2.0 * SQRT_2);
+    let val = f3qcm[(ivib, jvib, kvib)] / (2.0 * SQRT_2);
     let eres = dmatrix![
     eng[ijst] - eng[0], val;
     val, eng[kst] - eng[0];
@@ -583,13 +580,12 @@ fn rsfrm2(
 fn rsfrm1(
     ivib: usize,
     jvib: usize,
-    f3qcm: &[f64],
+    f3qcm: &F3qcm,
     n1dm: usize,
     eng: &mut [f64],
 ) {
-    let iij = find3r(ivib, ivib, jvib);
     // NOTE skipping degmode check here
-    let val = 0.25 * f3qcm[iij];
+    let val = 0.25 * f3qcm[(ivib, ivib, jvib)];
     // ist is the overtone corresponding to i, jst is the fundamental
     // corresponding to j, basically 2vi = vj or the definition of a fermi 1
     // resonance. + 1 to skip the ground state
@@ -682,7 +678,7 @@ mod tests {
 
     #[test]
     fn test_find3r() {
-        let got = find3r(2, 2, 2);
+        let got = find3(2, 2, 2);
         let want = 9;
         assert_eq!(got, want);
     }

@@ -12,6 +12,7 @@ use std::{
 mod dummy;
 use dummy::{Dummy, DummyVal};
 mod utils;
+use f3qcm::F3qcm;
 use nalgebra::DMatrix;
 use resonance::{Coriolis, Darling, Fermi1, Fermi2};
 use rot::Rot;
@@ -21,6 +22,7 @@ use state::State;
 use tensor::Tensor4;
 type Tensor3 = tensor::tensor3::Tensor3<f64>;
 use utils::*;
+mod f3qcm;
 mod resonance;
 mod rot;
 mod rotor;
@@ -574,7 +576,7 @@ impl Spectro {
         freq: &Dvec,
         wila: &Dmat,
         zmat: &Tensor3,
-        f3qcm: &[f64],
+        f3qcm: &F3qcm,
         coriolis: &[Coriolis],
     ) -> Dmat {
         let mut alpha = Dmat::zeros(self.nvib, 3);
@@ -609,8 +611,7 @@ impl Spectro {
                         }
                     }
                     let wj32 = freq[j].powf(1.5);
-                    let iij = find3r(j, i, i);
-                    valu3 += wila[(j, ii)] * f3qcm[iij] * freq[i] / wj32;
+                    valu3 += wila[(j, ii)] * f3qcm[(i, i, j)] * freq[i] / wj32;
                 }
                 alpha[(i, ixyz)] =
                     valu0 * (valu1 + valu2 + valu3 * ALPHA_CONST);
@@ -627,7 +628,7 @@ impl Spectro {
         freq: &Dvec,
         wila: &Dmat,
         zmat: &Tensor3,
-        f3qcm: &[f64],
+        f3qcm: &F3qcm,
         modes: &[Mode],
         states: &[State],
         coriolis: &[Coriolis],
@@ -655,7 +656,6 @@ impl Spectro {
             let mut valu3 = 0.0;
             for jj in 0..n1dm {
                 let j = i1mode[jj];
-                let jkk = find3r(j, k, k);
                 if j != k {
                     let wksq = freq[k].powi(2);
                     let wjsq = freq[j].powi(2);
@@ -671,7 +671,7 @@ impl Spectro {
                     }
                 }
                 let wj32 = freq[j].powf(1.5);
-                valu3 += wila[(j, iaia)] * f3qcm[jkk] * freq[k] / wj32;
+                valu3 += wila[(j, iaia)] * f3qcm[(j, k, k)] * freq[k] / wj32;
             }
             alpha[(k, ia)] = valu0 * (valu1 + valu2 + ALPHA_CONST * valu3);
         }
@@ -703,8 +703,7 @@ impl Spectro {
             for jj in 0..n1dm {
                 let j = i1mode[jj];
                 let wj32 = freq[j].powf(1.5);
-                let jkk = find3r(j, k, k);
-                valu3 += wila[(j, iaia)] * f3qcm[jkk] * freq[k] / wj32;
+                valu3 += wila[(j, iaia)] * f3qcm[(j, k, k)] * freq[k] / wj32;
             }
             alpha[(k, ia)] = valu0 * (valu1 + valu2 + ALPHA_CONST * valu3);
         }
@@ -745,8 +744,7 @@ impl Spectro {
             for jj in 0..n1dm {
                 let j = i1mode[jj];
                 let wj32 = freq[j].powf(1.5);
-                let jkk = find3r(j, k, k);
-                valu4 += f3qcm[jkk] * wila[(j, ibib)] * freq[k] / wj32;
+                valu4 += f3qcm[(j, k, k)] * wila[(j, ibib)] * freq[k] / wj32;
             }
             alpha[(k, ib)] = valu0 * (valu1 + valu2 + ALPHA_CONST * valu4);
         }
@@ -819,9 +817,8 @@ impl Spectro {
             let mut valu5 = 0.0;
             for jj in 0..n1dm {
                 let j = i1mode[jj];
-                let jkk = find3r(j, k, k);
                 let wj32 = freq[j].powf(1.5);
-                valu5 += f3qcm[jkk] * wila[(j, ibib)] * freq[k] / wj32;
+                valu5 += f3qcm[(j, k, k)] * wila[(j, ibib)] * freq[k] / wj32;
             }
             alpha[(k, ib)] =
                 valu0 * (valu1 + valu2 + valu4 + ALPHA_CONST * valu5);
@@ -866,7 +863,7 @@ impl Spectro {
         freq: &Dvec,
         wila: &Dmat,
         zmat: &Tensor3,
-        f3qcm: &[f64],
+        f3qcm: &F3qcm,
         modes: &[Mode],
         states: &[State],
         coriolis: &[Coriolis],
@@ -1079,7 +1076,7 @@ impl Spectro {
         &self,
         f4qcm: &[f64],
         freq: &Dvec,
-        f3qcm: &[f64],
+        f3qcm: &F3qcm,
         zmat: &Tensor3,
         fermi1: &[Fermi1],
         fermi2: &[Fermi2],
@@ -1093,8 +1090,7 @@ impl Spectro {
             let wk = freq[k].powi(2);
             let mut valu = 0.0;
             for l in 0..self.nvib {
-                let kkl = find3r(k, k, l);
-                let val2 = f3qcm[kkl].powi(2);
+                let val2 = f3qcm[(k, k, l)].powi(2);
                 if ifrmchk[(k, k, l)] != 0 {
                     let val3 = 1.0 / (8.0 * freq[l]);
                     let val4 = 1.0 / (32.0 * (2.0 * freq[k] + freq[l]));
@@ -1116,47 +1112,43 @@ impl Spectro {
                 let val1 = f4qcm[kkll] / 4.0;
                 let mut val2 = 0.0;
                 for m in 0..self.nvib {
-                    let kkm = find3r(k, k, m);
-                    let llm = find3r(l, l, m);
-                    val2 -= f3qcm[kkm] * f3qcm[llm] / (4.0 * freq[m]);
+                    val2 -=
+                        f3qcm[(k, k, m)] * f3qcm[(l, l, m)] / (4.0 * freq[m]);
                 }
 
                 let mut valu = 0.0;
                 for m in 0..self.nvib {
-                    let _lm = ioff(l.max(m)) + l.min(m);
-                    let _km = ioff(k.max(m)) + k.min(m);
                     let d1 = freq[k] + freq[l] + freq[m];
                     let d2 = freq[k] - freq[l] + freq[m];
                     let d3 = freq[k] + freq[l] - freq[m];
                     let d4 = -freq[k] + freq[l] + freq[m];
-                    let klm = find3r(k, l, m);
                     if ifrmchk[(l, m, k)] != 0 && m == l {
                         // case 1
                         let delta = 8.0 * (2.0 * freq[l] + freq[k]);
-                        valu -= f3qcm[klm].powi(2) / delta;
+                        valu -= f3qcm[(k, l, m)].powi(2) / delta;
                     } else if ifrmchk[(k, m, l)] != 0 && k == m {
                         // case 2
                         let delta = 8.0 * (2.0 * freq[k] + freq[l]);
-                        valu -= f3qcm[klm].powi(2) / delta;
+                        valu -= f3qcm[(k, l, m)].powi(2) / delta;
                     } else if ifrmchk[(k, l, m)] != 0 {
                         // case 3
                         let delta = 1.0 / d1 + 1.0 / d2 + 1.0 / d4;
-                        valu -= f3qcm[klm].powi(2) * delta / 8.0;
+                        valu -= f3qcm[(k, l, m)].powi(2) * delta / 8.0;
                     } else if ifrmchk[(l, m, k)] != 0 {
                         // case 4
                         let delta = 1.0 / d1 + 1.0 / d2 - 1.0 / d3;
-                        valu -= f3qcm[klm].powi(2) * delta / 8.0;
+                        valu -= f3qcm[(k, l, m)].powi(2) * delta / 8.0;
                     } else if ifrmchk[(k, m, l)] != 0 {
                         // case 5
                         let delta = 1.0 / d1 - 1.0 / d3 + 1.0 / d4;
-                        valu -= f3qcm[klm].powi(2) * delta / 8.0;
+                        valu -= f3qcm[(k, l, m)].powi(2) * delta / 8.0;
                     } else {
                         // default
                         let delta = -d1 * d2 * d3 * d4;
                         let val3 =
                             freq[m].powi(2) - freq[k].powi(2) - freq[l].powi(2);
-                        valu -=
-                            0.5 * f3qcm[klm].powi(2) * freq[m] * val3 / delta;
+                        valu -= 0.5 * f3qcm[(k, l, m)].powi(2) * freq[m] * val3
+                            / delta;
                     }
                 }
                 let val5 = freq[k] / freq[l];
@@ -1199,12 +1191,11 @@ impl Spectro {
     }
 
     /// calculate the anharmonic constants and E_0 for a symmetric top
-    #[allow(unused)]
     pub fn xcals(
         &self,
         f4qcm: &[f64],
         freq: &Dvec,
-        f3qcm: &[f64],
+        f3qcm: &F3qcm,
         zmat: &Tensor3,
         fermi1: &[Fermi1],
         fermi2: &[Fermi2],
@@ -1224,11 +1215,12 @@ impl Spectro {
         // let (n1dm, n2dm, _) = Mode::count(modes);
         let (i1mode, i2mode, _) = Mode::partition(modes);
         // find out which of a(xz)tb or a(yz)tb are zero
-        let (ixyz, ia1, ia2, ix, iy) = if !self.rotor.is_linear() {
+        // let (ixyz, ia1, ia2, ix, iy) = if !self.rotor.is_linear() {
+        let _ = if !self.rotor.is_linear() {
             const TOL: f64 = 0.000001;
             let mut ixz = 0;
             let mut iyz = 0;
-            for (_, i2) in i2mode {
+            for &(_, i2) in &i2mode {
                 if wila[(i2, 3)].abs() <= TOL {
                     ixz += 1;
                 }
@@ -1263,9 +1255,7 @@ impl Spectro {
 
             let mut valu = 0.0;
             for &l in &i1mode {
-                let kkl = find3r(k, k, l);
-
-                let mut val2 = f3qcm[kkl].powi(2);
+                let val2 = f3qcm[(k, k, l)].powi(2);
                 let tmp = ifrm1.get(&k);
                 if tmp.is_some() && *tmp.unwrap() == l {
                     let val3 = 1.0 / (8.0 * freq[l]);
@@ -1290,8 +1280,131 @@ impl Spectro {
             for &l in i1mode.iter().take(kk) {
                 let kkll = find4(k, k, l, l);
                 let val1 = f4qcm[kkll] / 4.0;
+
+                let mut val2 = 0.0;
+                for &m in &i1mode {
+                    val2 -=
+                        f3qcm[(k, k, m)] * f3qcm[(l, l, m)] / (4.0 * freq[m]);
+                }
+
+                let mut valu = 0.0;
+                for &m in &i1mode {
+                    let klm = (k, m, l);
+                    let d1 = freq[(k)] + freq[(l)] + freq[(m)];
+                    let d2 = freq[(k)] - freq[(l)] + freq[(m)];
+                    let d3 = freq[(k)] + freq[(l)] - freq[(m)];
+                    let d4 = -freq[(k)] + freq[(l)] + freq[(m)];
+
+                    if ifrmchk[(l, m, k)] != 0 {
+                        let delta = 8.0 * (2.0 * freq[l] + freq[k]);
+                        valu -= (f3qcm[klm].powi(2)) / delta;
+                    } else if ifrmchk[(k, m, l)] != 0 {
+                        let delta = 8.0 * (2.0 * freq[k] + freq[l]);
+                        valu -= f3qcm[klm].powi(2) / delta;
+                    } else if ifrmchk[(k, l, m)] != 0 {
+                        let delta = 1.0 / d1 + 1.0 / d2 + 1.0 / d4;
+                        valu -= f3qcm[klm].powi(2) * delta / 8.0;
+                    } else if ifrmchk[(l, m, k)] != 0 {
+                        let delta = 1.0 / d1 + 1.0 / d2 + 1.0 / d3;
+                        valu -= f3qcm[klm].powi(2) * delta / 8.0;
+                    } else if ifrmchk[(k, m, l)] != 0 {
+                        let delta = 1.0 / d1 + 1.0 / d3 + 1.0 / d4;
+                        valu -= f3qcm[klm].powi(2) * delta / 8.0;
+                    } else {
+                        let delta = -d1 * d2 * d3 * d4;
+                        let val3 =
+                            freq[m].powi(2) - freq[k].powi(2) - freq[l].powi(2);
+                        valu -=
+                            0.5 * (f3qcm[klm].powi(2)) * freq[m] * val3 / delta;
+                    }
+                }
+
+                let val5 = freq[k] / freq[l];
+                let val6 = freq[l] / freq[k];
+                let val7 = self.rotcon[ia] * zmat[(k, l, 2)].powi(2);
+                let val8 = (val5 + val6) * val7;
+                let value = val1 + val2 + valu + val8;
+                xcnst[(k, l)] = value;
+                xcnst[(l, k)] = value;
             }
         }
+
+        // nondeg-deg interactions
+        for &k in &i1mode {
+            for (ll, &(l, _)) in i2mode.iter().enumerate() {
+                let kkll = find4(k, k, l, l);
+                let val1 = f4qcm[kkll] / 4.0;
+
+                let mut val2 = 0.0;
+                for &m in &i1mode {
+                    val2 -=
+                        f3qcm[(k, k, m)] * f3qcm[(l, l, m)] / (4. * freq[m]);
+                }
+
+                let mut valu = 0.0;
+                for &(m, _) in &i2mode {
+                    // NOTE there's a ridiculous line in the fortran code that
+                    // says
+                    //
+                    // if k == 7 || k == 12 { m = i2mode(mm, 2) }
+                    //
+                    // that can't be right in general and must have been a
+                    // special case right?
+                    let klm = (k, l, m);
+                    let d1 = freq[(k)] + freq[(l)] + freq[(m)];
+                    let d2 = freq[(k)] - freq[(l)] + freq[(m)];
+                    let d3 = freq[(k)] + freq[(l)] - freq[(m)];
+                    let d4 = -freq[(k)] + freq[(l)] + freq[(m)];
+
+                    if ifrmchk[(l, m, k)] != 0 {
+                        let delta = 8.0 * (2.0 * freq[(l)] + freq[(k)]);
+                        valu -= (f3qcm[(klm)].powi(2)) / delta;
+                    } else if ifrmchk[(k, l, m)] != 0 {
+                        let delta = 1.0 / d1 + 1.0 / d2 + 1.0 / d4;
+                        valu = valu - (f3qcm[(klm)].powi(2)) * delta / 8.0;
+                    } else if ifrmchk[(l, m, k)] != 0 {
+                        let delta = 1.0 / d1 + 1.0 / d2 + 1.0 / d3;
+                        valu = valu - (f3qcm[(klm)].powi(2)) * delta / 8.0;
+                    } else if ifrmchk[(k, m, l)] != 0 {
+                        let delta = 1.0 / d1 + 1.0 / d3 + 1.0 / d4;
+                        valu = valu - (f3qcm[(klm)].powi(2)) * delta / 8.0;
+                    } else {
+                        let delta = -d1 * d2 * d3 * d4;
+                        let val3 = freq[(m)].powi(2)
+                            - freq[(k)].powi(2)
+                            - freq[(l)].powi(2);
+                        valu -= 0.5 * (f3qcm[(klm)].powi(2)) * freq[(m)] * val3
+                            / delta;
+                    }
+                }
+                let val5 = freq[(k)] / freq[(l)];
+                let val6 = freq[(l)] / freq[(k)];
+                let val7 = self.rotcon[(ib)]
+                    * (zmat[(k, l, 0)].powi(2) + zmat[(k, l, 1)].powi(2));
+                let val8 = (val5 + val6) * val7;
+                let value = val1 + val2 + valu + val8;
+                let l2 = i2mode[ll].1;
+                // 3,2 and 4,2 are wrong, as are 2,3 and 2,4
+                xcnst[(k, l)] = value;
+                xcnst[(l, k)] = value;
+                xcnst[(k, l2)] = value;
+                xcnst[(l2, k)] = value;
+            }
+        }
+
+        // deg-deg modes
+        // for &(k, _) in &i2mode {
+        // let kkkk = find4(k, k, k, k);
+        // let val1 = f4qcm[kkkk] / 16.0;
+        // let wk = freq[k].powi(2);
+
+        // let mut valu = 0.0;
+        // for &l in &i1mode {
+        //     let kkl = (k, k, l);
+        //     let val2 = f3qcm[kkl].powi(2);
+        // }
+        // }
+        println!("{:.8}", xcnst);
         (xcnst, 0.0)
     }
 
@@ -1299,7 +1412,7 @@ impl Spectro {
     pub(crate) fn restst(
         &self,
         zmat: &Tensor3,
-        f3qcm: &[f64],
+        f3qcm: &F3qcm,
         freq: &Dvec,
     ) -> Restst {
         let mut modes = Vec::new();

@@ -36,5 +36,8 @@ while (<>) {
   # ident followed by matrix subscripts
   s/([a-z0-9]+)(\([^)]+\))/$1\[$2\]/g;
 
+  # square
+  s/\*\*2/.powi(2)/g;
+
   print;
 }

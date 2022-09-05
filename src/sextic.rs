@@ -5,7 +5,8 @@ use tensor::Tensor4;
 type Tensor3 = tensor::tensor3::Tensor3<f64>;
 
 use crate::{
-    utils::{find3r, ioff, make_tau, princ_cart, tau_prime},
+    f3qcm::F3qcm,
+    utils::{ioff, make_tau, princ_cart, tau_prime},
     Dmat, Dvec, Spectro, SQLAM,
 };
 
@@ -47,7 +48,7 @@ fn scc(
     nvib: usize,
     freq: &Dvec,
     cc: Tensor4,
-    f3qcm: &[f64],
+    f3qcm: &F3qcm,
     c: &Dmat,
     spectro: &Spectro,
 ) -> Tensor3 {
@@ -74,8 +75,7 @@ fn scc(
         for i in 0..nvib {
             for j in 0..nvib {
                 for k in 0..nvib {
-                    let ijk = find3r(i, j, k);
-                    val3 += f3qcm[ijk]
+                    val3 += f3qcm[(i, j, k)]
                         * c[(i, iixyz - 1)]
                         * c[(j, iixyz - 1)]
                         * c[(k, iixyz - 1)];
@@ -147,8 +147,7 @@ fn scc(
                         let val1 = c[(j, iixyz - 1)] * c[(i, jjxyz - 1)]
                             + 4.0 * c[(j, ijxyz - 1)] * c[(i, ijxyz - 1)];
                         for k in 0..nvib {
-                            let ijk = find3r(i, j, k);
-                            valc += f3qcm[ijk] * c[(k, iixyz - 1)] * val1;
+                            valc += f3qcm[(i, j, k)] * c[(k, iixyz - 1)] * val1;
                         }
                     }
                 }
@@ -291,13 +290,12 @@ fn scc(
     for i in 0..nvib {
         for j in 0..nvib {
             for k in 0..nvib {
-                let ijk = find3r(i, j, k);
                 let val1 = c[(i, 0)] * c[(j, 2)] * c[(k, 5)]
                     + 2.0 * c[(i, 0)] * c[(j, 4)] * c[(k, 4)]
                     + 2.0 * c[(i, 2)] * c[(j, 3)] * c[(k, 3)]
                     + 2.0 * c[(i, 5)] * c[(j, 1)] * c[(k, 1)]
                     + 8.0 * c[(i, 4)] * c[(j, 3)] * c[(k, 1)];
-                valc = valc + f3qcm[(ijk)] * val1;
+                valc = valc + f3qcm[(i, j, k)] * val1;
             }
         }
     }
@@ -446,7 +444,7 @@ impl Sextic {
         wila: &Dmat,
         zmat: &Tensor3,
         freq: &Dvec,
-        f3qcm: &[f64],
+        f3qcm: &F3qcm,
     ) -> Self {
         let mut ret = Self::default();
         let nvib = s.nvib;
