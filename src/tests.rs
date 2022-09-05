@@ -130,7 +130,7 @@ fn test_funds_and_e0() {
         let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
         let fxm = s.form_sec(fc2, &sqm);
         let (harms, lxm) = symm_eigen_decomp(fxm);
-        let freq = to_wavenumbers(harms);
+        let freq = to_wavenumbers(&harms);
         let lx = s.make_lx(&sqm, &lxm);
         let (zmat, _wila) = s.zeta(&lxm, &w);
         let f3x = load_fc3(test.fort30, s.n3n);
@@ -170,7 +170,7 @@ fn test_enrgy() {
     let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
     let fxm = s.form_sec(fc2, &sqm);
     let (harms, lxm) = symm_eigen_decomp(fxm);
-    let freq = to_wavenumbers(harms);
+    let freq = to_wavenumbers(&harms);
     let lx = s.make_lx(&sqm, &lxm);
     let (zmat, _wila) = s.zeta(&lxm, &w);
     let f3x = load_fc3("testfiles/fort.30", s.n3n);
@@ -192,7 +192,8 @@ fn test_enrgy() {
     } = s.restst(&zmat, &f3qcm, &freq);
     let mut got = vec![0.0; states.len()];
     enrgy(
-        &freq, &xcnst, &f3qcm, e0, &states, &i1mode, &fermi1, &fermi2, &mut got,
+        &freq, &xcnst, &None, &f3qcm, e0, &states, &i1mode, &fermi1, &fermi2,
+        &mut got,
     );
     // my numbers after comparing visually to fortran
     let want = vec![

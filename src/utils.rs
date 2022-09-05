@@ -126,7 +126,7 @@ pub fn ioff(n: usize) -> usize {
 
 /// convert harmonic frequencies to wavenumbers. not sure if this works on
 /// anything else
-pub fn to_wavenumbers(freqs: Dvec) -> Dvec {
+pub fn to_wavenumbers(freqs: &Dvec) -> Dvec {
     Dvec::from_iterator(
         freqs.len(),
         freqs.iter().map(|f| {
@@ -456,6 +456,7 @@ pub(crate) fn print_vib_states(reng: &[f64], i1sts: &Vec<Vec<usize>>) {
 pub(crate) fn enrgy(
     freq: &Dvec,
     xcnst: &Dmat,
+    gcnst: &Option<Dmat>,
     f3qcm: &F3qcm,
     e0: f64,
     states: &[State],
@@ -510,8 +511,9 @@ pub(crate) fn enrgy(
         let mut val6 = 0.0;
         for (i, &(ii, _)) in i2mode.iter().enumerate() {
             for (j, &(jj, _)) in i2mode.iter().take(ii + 1).enumerate() {
-                // TODO this is gcnst
-                val6 += xcnst[(i, j)]
+                val6 += gcnst
+                    .as_ref()
+                    .expect("g constants required for symmetric tops")[(i, j)]
                     * (i2sts[nst][ii].1 as f64)
                     * (i2sts[nst][jj].1 as f64);
             }
@@ -666,8 +668,8 @@ pub(crate) fn make_tau(
 /// set up vectors for principal -> cartesian and cartesian -> principal
 /// transformations
 pub(crate) fn princ_cart(irep: usize) -> ([usize; 3], [usize; 3]) {
-    let ic = [IPTOC[(irep, 0)], IPTOC[(irep, 1)], IPTOC[(irep, 2)]];
-    let id = [ICTOP[(irep, 0)], ICTOP[(irep, 1)], ICTOP[(irep, 2)]];
+    let ic = [IPTOC[(0, irep)], IPTOC[(1, irep)], IPTOC[(2, irep)]];
+    let id = [ICTOP[(0, irep)], ICTOP[(1, irep)], ICTOP[(2, irep)]];
     (ic, id)
 }
 
@@ -697,7 +699,7 @@ mod tests {
         let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
         let fxm = s.form_sec(fc2, &sqm);
         let (harms, lxm) = symm_eigen_decomp(fxm);
-        let freq = to_wavenumbers(harms);
+        let freq = to_wavenumbers(&harms);
         let (_zmat, wila) = s.zeta(&lxm, &w);
         let tau = make_tau(3, 3, &freq, &s.primat, &wila);
         let got = tau_prime(3, &tau);

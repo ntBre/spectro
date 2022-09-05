@@ -35,7 +35,7 @@ fn load_want(filename: PathBuf) -> Output {
         ));
     }
     Output {
-        harms: Dvec::from(want.harms),
+        harms: want.harms,
         funds: want.funds,
         corrs: want.corrs,
         rots,
@@ -65,7 +65,15 @@ impl Test {
 }
 
 fn check(got: Vec<f64>, want: Vec<f64>, msg: &str, label: &str) {
-    assert!(got.len() == want.len());
+    assert_eq!(
+        got.len(),
+        want.len(),
+        "got len={}, want len={} in {} at {}",
+        got.len(),
+        want.len(),
+        msg,
+        label
+    );
     if !abs_diff_eq!(
         Dvec::from(got.clone()),
         Dvec::from(want.clone()),
@@ -175,21 +183,7 @@ fn inner(tests: &[Test]) {
         let spectro = Spectro::load(infile);
         let got = spectro.run(test.fort15, test.fort30, test.fort40);
 
-        assert_eq!(got.harms.len(), test.want.harms.len(), "{}", infile);
-        if !abs_diff_eq!(got.harms, test.want.harms, epsilon = 0.1) {
-            println!("\n{:>5}{:>8}{:>8}{:>8}", "Mode", "Got", "Want", "Diff");
-            for i in 0..got.harms.len() {
-                println!(
-                    "{:5}{:8.1}{:8.1}{:8.1}",
-                    i + 1,
-                    got.harms[i],
-                    test.want.harms[i],
-                    got.harms[i] - test.want.harms[i],
-                );
-            }
-            assert!(false, "harms differ at {}", infile);
-        }
-
+        check(got.harms, test.want.harms, "harms", infile);
         check(got.funds, test.want.funds, "funds", infile);
         check(got.corrs, test.want.corrs, "corrs", infile);
         check_rots(got.rots, test.want.rots, infile);

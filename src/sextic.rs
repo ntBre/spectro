@@ -10,7 +10,9 @@ use crate::{
     Dmat, Dvec, Spectro, SQLAM,
 };
 
-/// struct holding the sextic distortion constants
+/// struct holding the sextic distortion constants. For an asymmetric top, the
+/// field names are correct. For a symmetric top, phi->H and sphij->h1,
+/// sphijk->h2, and sphik->h3. TODO make this an enum to get rid of this comment
 #[cfg_attr(test, derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, Default, PartialEq)]
 pub(crate) struct Sextic {
@@ -542,7 +544,47 @@ impl Sextic {
                     * t004
                     / b002;
         } else {
-            todo!()
+            let irep = if s.rotor.is_prolate() { 0 } else { 5 };
+            let (_, id) = princ_cart(irep);
+            let rkappa =
+                (2.0 * s.rotcon[id[0]] - s.rotcon[id[1]] - s.rotcon[id[2]])
+                    / (s.rotcon[id[1]] - s.rotcon[id[2]]);
+            // they call bp bo for oblate, but I'll use bp for both
+            let sigma = if rkappa < 0.0 {
+                -999999999999.0
+            } else {
+                let bo = (rkappa - 1.0) / (rkappa + 3.0);
+                1.0 / bo
+            };
+
+            let b200 = 0.3 * (s.rotcon[id[0]] + s.rotcon[id[1]]) - 4.0 * t004;
+            let b020 = s.rotcon[id[2]] - b200 + 6.0 * t004;
+
+            let div = 2.0 * sigma * sigma + 27.0 / 16.0;
+            let mu = (sigma * phi042 - 9.0 * phi024 / 8.0
+                + (-2.0 * sigma * t040 + (sigma * sigma + 3.0) * t022
+                    - 5.0 * sigma * t004)
+                    * t022
+                    / b020)
+                / div;
+            let nu = 3.0 * mu / (16.0 * sigma)
+                + phi024 / (8.0 * sigma)
+                + t004 * t022 / b020;
+            let lamda = 5.0 * nu / sigma
+                + phi222 / (sigma * 2.0)
+                + (-t220 / (sigma * 2.0) + t202
+                    - t022 / (sigma * sigma)
+                    - 2.0 * t004 / sigma)
+                    * t022
+                    / b020;
+
+            ret.phij = phi600 - lamda;
+            ret.phijk = phi420 + 6.0 * lamda - 3.0 * mu;
+            ret.phikj = phi240 - 5.0 * lamda + 10.0 * mu;
+            ret.phik = phi060 - 7.0 * mu;
+            ret.sphij = phi402 - nu;
+            ret.sphijk = phi204 + lamda / 2.0;
+            ret.sphik = phi006 + nu;
         };
 
         // TODO linear molecule case and spherical top case

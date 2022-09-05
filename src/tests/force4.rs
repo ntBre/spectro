@@ -48,7 +48,7 @@ pub(crate) fn test_force4() {
         let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
         let fxm = s.form_sec(fc2, &sqm);
         let (harms, lxm) = symm_eigen_decomp(fxm);
-        let freq = to_wavenumbers(harms);
+        let freq = to_wavenumbers(&harms);
         let lx = s.make_lx(&sqm, &lxm);
         let f4x = load_fc4(test.fort40, s.n3n);
         let f4x = s.rot4th(f4x, s.axes);

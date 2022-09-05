@@ -361,7 +361,7 @@ fn inner(tests: &[Test]) {
         let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
         let fxm = s.form_sec(fc2, &sqm);
         let (harms, lxm) = symm_eigen_decomp(fxm);
-        let freq = to_wavenumbers(harms);
+        let freq = to_wavenumbers(&harms);
         let lx = s.make_lx(&sqm, &lxm);
         let (zmat, _wila) = s.zeta(&lxm, &w);
         let f3x = load_fc3(&test.fort30, s.n3n);

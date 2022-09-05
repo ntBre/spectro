@@ -51,7 +51,7 @@ fn test_quartic() {
         let sqm: Vec<_> = w.iter().map(|w: &f64| 1.0 / w.sqrt()).collect();
         let fxm = s.form_sec(fc2, &sqm);
         let (harms, lxm) = symm_eigen_decomp(fxm);
-        let freq = to_wavenumbers(harms);
+        let freq = to_wavenumbers(&harms);
         let (_zmat, wila) = s.zeta(&lxm, &w);
         let got = Quartic::new(&s, &freq, &wila);
         // println!("got\n{}", got);

@@ -175,7 +175,7 @@ fn test_lxm() {
         let (harms, lxm) = symm_eigen_decomp(fxm);
 
         assert_abs_diff_eq!(
-            to_wavenumbers(harms),
+            to_wavenumbers(&harms),
             Dvec::from(test.harm),
             epsilon = 6e-6
         );

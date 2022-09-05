@@ -945,9 +945,10 @@ impl Spectro {
                 State::I1st(v) => {
                     ret.push(Rot::new(v.clone(), bza, bxa, bya));
                 }
-                State::I2st(_) => todo!(),
-                State::I3st(_) => todo!(),
-                State::I12st { i1st: _, i2st: _ } => todo!(),
+                _ => (),
+                // State::I2st(_) => todo!(),
+                // State::I3st(_) => todo!(),
+                // State::I12st { i1st: _, i2st: _ } => todo!(),
             }
             // TODO return these S ones too
             // let bxs = b1s + vibr[0];
@@ -973,7 +974,7 @@ impl Spectro {
         let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
         let fxm = self.form_sec(fc2, &sqm);
         let (harms, lxm) = symm_eigen_decomp(fxm);
-        let freq = to_wavenumbers(harms);
+        let freq = to_wavenumbers(&harms);
 
         // form the LX matrix
         let lx = self.make_lx(&sqm, &lxm);
@@ -999,15 +1000,64 @@ impl Spectro {
             modes,
         } = self.restst(&zmat, &f3qcm, &freq);
 
-        let (xcnst, e0) = if self.rotor.is_sym_top() {
-            self.xcals(
+        let (xcnst, gcnst, e0) = if self.rotor.is_sym_top() {
+            let (x, g, e) = self.xcals(
                 &f4qcm, &freq, &f3qcm, &zmat, &fermi1, &fermi2, &modes, &wila,
-            )
+            );
+            (x, Some(g), e)
         } else {
-            self.xcalc(&f4qcm, &freq, &f3qcm, &zmat, &fermi1, &fermi2)
+            let (x, e) =
+                self.xcalc(&f4qcm, &freq, &f3qcm, &zmat, &fermi1, &fermi2);
+            (x, None, e)
         };
 
-        let funds = make_funds(&freq, self.nvib, &xcnst);
+        let (harms, funds) = if self.rotor.is_sym_top() {
+            let (n1dm, n2dm, _) = Mode::count(&modes);
+            let (i1mode, i2mode, _) = Mode::partition(&modes);
+            let mut harms = Vec::new();
+            let mut funds = Vec::new();
+            for ii in 0..n1dm {
+                let i = i1mode[ii];
+                let mut val = freq[i] + xcnst[(i, i)] * 2.0;
+                for jj in 0..n1dm {
+                    let j = i1mode[jj];
+                    if j != i {
+                        val += 0.5 * xcnst[(i, j)];
+                    }
+                }
+                for jj in 0..n2dm {
+                    let j = i2mode[jj].0;
+                    val += xcnst[(i, j)];
+                }
+                harms.push(freq[i]);
+                funds.push(val);
+            }
+
+            for ii in 0..n2dm {
+                let i = i2mode[ii].0;
+                let mut val = freq[i]
+                    + 3.0 * xcnst[(i, i)]
+                    + gcnst.as_ref().unwrap()[(i, i)];
+                for jj in 0..n1dm {
+                    let j = i1mode[jj];
+                    val += 0.5 * xcnst[(i, j)];
+                }
+                for jj in 0..n2dm {
+                    let j = i2mode[jj].0;
+                    if j != i {
+                        val += xcnst[(i, j)]
+                    }
+                }
+                harms.push(freq[i]);
+                funds.push(val);
+            }
+            (harms, funds)
+        } else {
+            (
+                harms.as_slice().to_vec(),
+                make_funds(&freq, self.nvib, &xcnst),
+            )
+        };
 
         // TODO good to here
         let rotnst = if self.rotor.is_sym_top() {
@@ -1048,15 +1098,13 @@ impl Spectro {
         }
 
         enrgy(
-            &freq, &xcnst, &f3qcm, e0, &states, &modes, &fermi1, &fermi2,
-            &mut eng,
+            &freq, &xcnst, &gcnst, &f3qcm, e0, &states, &modes, &fermi1,
+            &fermi2, &mut eng,
         );
 
         let mut corrs = Vec::new();
-        let mut harms = Vec::new();
         for i in 1..self.nvib + 1 {
             corrs.push(eng[i] - eng[0]);
-            harms.push(freq[i - 1]);
         }
 
         // print_vib_states(&eng, &states);
@@ -1066,7 +1114,7 @@ impl Spectro {
         let rots = self.rota(&rotnst, &states, &quartic);
 
         Output {
-            harms: Dvec::from(harms),
+            harms,
             funds,
             rots,
             corrs,
@@ -1203,7 +1251,7 @@ impl Spectro {
         fermi2: &[Fermi2],
         modes: &[Mode],
         wila: &Dmat,
-    ) -> (Dmat, f64) {
+    ) -> (Dmat, Dmat, f64) {
         use Rotor::*;
         let (ia, ib) = match self.rotor {
             Diatomic => todo!("try this as linear"),
@@ -1524,7 +1572,138 @@ impl Spectro {
                 xcnst[(l2, k2)] = value;
             }
         }
-        (xcnst, 0.0)
+
+        // g constants for degenerate modes
+        let mut gcnst = Dmat::zeros(self.nvib, self.nvib);
+        for kk in 0..n2dm {
+            let (k, k2) = i2mode[kk];
+            let val1 = -f4qcm[(k, k, k, k)] / 48.0;
+            let wk = freq[k].powi(2);
+
+            let valu: f64 = i1mode
+                .iter()
+                .map(|&l| {
+                    let val2 = f3qcm[(k, k, l)].powi(2);
+                    if ifrm1.check(k, l) {
+                        let val3 = 32.0 * (2.0 * freq[(k)] + freq[(l)]);
+                        val2 / val3
+                    } else {
+                        let wl = freq[(l)] * freq[(l)];
+                        let val3 = val2 * freq[(l)];
+                        let val4 = 16.0 * (4.0 * wk - wl);
+                        -val3 / val4
+                    }
+                })
+                .sum();
+
+            let valus: f64 = i2mode
+                .iter()
+                .map(|&(l, _)| {
+                    let val2 = f3qcm[(k, k, l)].powi(2);
+                    if ifrm1.check(k, l) {
+                        let val3 = 1.0 / (8.0 * freq[(l)]);
+                        let val4 = 1.0 / (32.0 * (2.0 * freq[(k)] + freq[(l)]));
+                        -val2 * (val3 + val4)
+                    } else {
+                        let wl = freq[(l)] * freq[(l)];
+                        let val3 = 8.0 * wk - wl;
+                        let val4 = 16.0 * freq[(l)] * (4.0 * wk - wl);
+                        val2 * val3 / val4
+                    }
+                })
+                .sum();
+
+            let val7 = self.rotcon[(ia)] * (zmat[(k, k2, 2)].powi(2));
+            let value = val1 + valu + valus + val7;
+            gcnst[(k, k)] = value;
+            gcnst[(k2, k2)] = value;
+        }
+        for kk in 1..n2dm {
+            let (k, k2) = i2mode[kk];
+            for ll in 0..kk {
+                let (l, l222) = i2mode[ll];
+
+                let valu: f64 = i1mode
+                    .iter()
+                    .map(|&m| {
+                        let d1 = freq[(k)] + freq[(l)] + freq[(m)];
+                        let d2 = freq[(k)] - freq[(l)] + freq[(m)];
+                        let d3 = freq[(k)] + freq[(l)] - freq[(m)];
+                        let d4 = -freq[(k)] + freq[(l)] + freq[(m)];
+
+                        let klm = (k, l, m);
+                        if ifrmchk[(k, l, m)] != 0 {
+                            let delta = 1.0 / d1 + 1.0 / d2 + 1.0 / d4;
+                            -(f3qcm[(klm)].powi(2)) * delta / 8.0
+                        } else if ifrmchk[(l, m, k)] != 0 {
+                            let delta = 1.0 / d1 + 1.0 / d2 + 1.0 / d3;
+                            -(f3qcm[(klm)].powi(2)) * delta / 8.0
+                        } else if ifrmchk[(k, m, l)] != 0 {
+                            let delta = 1.0 / d1 + 1.0 / d3 + 1.0 / d4;
+                            -(f3qcm[(klm)].powi(2)) * delta / 8.0
+                        } else {
+                            let delta = -d1 * d2 * d3 * d4;
+                            let val3 = freq[(m)] * freq[(k)] * freq[(l)];
+                            0.5 * (f3qcm[(klm)].powi(2)) * val3 / delta
+                        }
+                    })
+                    .sum();
+
+                let valus: f64 = i2mode
+                    .iter()
+                    .map(|&(m, _)| {
+                        let d1 = freq[(k)] + freq[(l)] + freq[(m)];
+                        let d2 = freq[(k)] - freq[(l)] + freq[(m)];
+                        let d3 = freq[(k)] + freq[(l)] - freq[(m)];
+                        let d4 = -freq[(k)] + freq[(l)] + freq[(m)];
+
+                        let klm = (k, l, m);
+                        if ifrmchk[(l, m, k)] != 0 {
+                            let delta = 8.0 * (2.0 * freq[(l)] + freq[(k)]);
+                            -(f3qcm[(klm)].powi(2)) / delta
+                        } else if ifrmchk[(k, m, l)] != 0 {
+                            let delta = 8.0 * (2.0 * freq[(k)] + freq[(l)]);
+                            -(f3qcm[(klm)].powi(2)) / delta
+                        } else if ifrmchk[(k, l, m)] != 0 {
+                            let delta = 1.0 / d1 + 1.0 / d2 + 1.0 / d4;
+                            -(f3qcm[(klm)].powi(2)) * delta / 8.0
+                        } else if ifrmchk[(l, m, k)] != 0 {
+                            let delta = 1.0 / d1 + 1.0 / d2 + 1.0 / d3;
+                            -(f3qcm[(klm)].powi(2)) * delta / 8.0
+                        } else if ifrmchk[(k, m, l)] != 0 {
+                            let delta = 1.0 / d1 + 1.0 / d3 + 1.0 / d4;
+                            -(f3qcm[(klm)].powi(2)) * delta / 8.0
+                        } else {
+                            let delta = -d1 * d2 * d3 * d4;
+                            let val3 = freq[(m)] * freq[(k)] * freq[(l)];
+                            -(f3qcm[(klm)].powi(2)) * val3 / delta
+                        }
+                    })
+                    .sum();
+
+                let val7 =
+                    -2.0 * self.rotcon[(ib)] * (zmat[(k, l, ixyz)].powi(2))
+                        + self.rotcon[(ia)] * (zmat[(k, l222, 2)].powi(2))
+                        + 2.0
+                            * self.rotcon[(ia)]
+                            * zmat[(k, k2, 2)]
+                            * zmat[(l, l222, 2)];
+                // NOTE last two zmat values are the same sign instead of
+                // opposite for nh3, causes an issue in gcnst. hopefully it will
+                // cause small issues later on.. geometry looks okay, just
+                // pointing the opposite direction on the z axis from the
+                // fortran version. an element with the other sign exists in my
+                // zmat, but I don't really want to start randomly changing
+                // stuff without more tests. If I see multiple cases like this,
+                // I will feel more comfortable changing the index in the code
+                let value = valu + valus + val7;
+                gcnst[(k, l)] = value;
+                gcnst[(l, k)] = value;
+                gcnst[(k2, l222)] = value;
+                gcnst[(l222, k2)] = value;
+            }
+        }
+        (xcnst, gcnst, 0.0)
     }
 
     // should return all of the resonances, as well as the states (I think)
@@ -1793,7 +1972,7 @@ fn make_resin(
 #[derive(Clone, Debug)]
 pub struct Output {
     /// harmonic frequencies
-    pub harms: Dvec,
+    pub harms: Vec<f64>,
 
     /// partially resonance-corrected anharmonic frequencies
     pub funds: Vec<f64>,
