@@ -69,10 +69,10 @@ fn test_xcalc() {
             fermi2,
             darling: _,
             states: _,
-            modes: _,
+            modes,
         } = s.restst(&zmat, &f3qcm, &freq);
         let (xcnst, e0) =
-            s.xcalc(&f4qcm, &freq, &f3qcm, &zmat, &fermi1, &fermi2);
+            s.xcalc(&f4qcm, &freq, &f3qcm, &zmat, &modes, &fermi1, &fermi2);
         // println!("\n{}", test.infile);
         // println!("got\n{:.12}", xcnst);
         // println!("want\n{:.12}", test.xcnst);

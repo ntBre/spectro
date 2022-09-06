@@ -12,7 +12,7 @@ use tensor::Tensor4;
 type Tensor3 = tensor::tensor3::Tensor3<f64>;
 
 use crate::{
-    f3qcm::F3qcm, f4qcm::F4qcm, ifrm1::Ifrm1, state::State, Dmat, Dvec,
+    f3qcm::F3qcm, f4qcm::F4qcm, ifrm1::Ifrm1, state::State, Dmat, Dvec, Mode,
     Spectro, FACT3, FACT4, FUNIT3, FUNIT4, ICTOP, IPTOC, WAVE,
 };
 
@@ -343,19 +343,22 @@ pub fn force4(
 }
 
 pub(crate) fn make_e0(
-    nvib: usize,
+    modes: &[Mode],
     f4qcm: &F4qcm,
     f3qcm: &F3qcm,
     freq: &Dvec,
-    ifrm1: Ifrm1,
-    ifrmchk: tensor::Tensor3<usize>,
+    ifrm1: &Ifrm1,
+    ifrmchk: &tensor::Tensor3<usize>,
 ) -> f64 {
     // NOTE: took out some weird IA stuff here and reproduced their results.
     // maybe my signs are actually right and theirs are wrong.
     let mut f4k = 0.0;
     let mut f3k = 0.0;
     let mut f3kkl = 0.0;
-    for k in 0..nvib {
+    let (n1dm, _, _) = Mode::count(modes);
+    let (i1mode, _, _) = Mode::partition(modes);
+    for kk in 0..n1dm {
+        let k = i1mode[kk];
         // kkkk and kkk terms
         let fiqcm = f4qcm[(k, k, k, k)];
         f4k += fiqcm / 64.0;
@@ -363,7 +366,8 @@ pub(crate) fn make_e0(
         let wk = freq[k].powi(2);
 
         // kkl terms
-        for l in 0..nvib {
+        for ll in 0..n1dm {
+            let l = i1mode[ll];
             if k == l {
                 continue;
             }
@@ -382,9 +386,18 @@ pub(crate) fn make_e0(
     }
     // klm terms
     let mut f3klm = 0.0;
-    for k in 0..nvib {
-        for l in 0..k {
-            for m in 0..l {
+    for kk in 0..n1dm {
+        let k = i1mode[kk];
+        for ll in 0..n1dm {
+            let l = i1mode[ll];
+            if k <= l {
+                continue;
+            }
+            for mm in 0..n1dm {
+                let m = i1mode[mm];
+                if l <= m {
+                    continue;
+                }
                 let zval3 = f3qcm[(k, l, m)].powi(2);
                 let xklm = freq[k] * freq[l] * freq[m];
                 let d1 = freq[k] + freq[l] + freq[m];

@@ -1123,8 +1123,8 @@ impl Spectro {
             );
             (x, Some(g), e)
         } else {
-            let (x, e) =
-                self.xcalc(&f4qcm, &freq, &f3qcm, &zmat, &fermi1, &fermi2);
+            let (x, e) = self
+                .xcalc(&f4qcm, &freq, &f3qcm, &zmat, &modes, &fermi1, &fermi2);
             (x, None, e)
         };
 
@@ -1207,6 +1207,7 @@ impl Spectro {
         freq: &Dvec,
         f3qcm: &F3qcm,
         zmat: &Tensor3,
+        modes: &[Mode],
         fermi1: &[Fermi1],
         fermi2: &[Fermi2],
     ) -> (Dmat, f64) {
@@ -1291,7 +1292,7 @@ impl Spectro {
                 xcnst[(l, k)] = value;
             }
         }
-        let e0 = make_e0(self.nvib, f4qcm, f3qcm, freq, ifrm1, ifrmchk);
+        let e0 = make_e0(modes, f4qcm, f3qcm, freq, &ifrm1, &ifrmchk);
         (xcnst, e0)
     }
 
@@ -1331,15 +1332,7 @@ impl Spectro {
         modes: &[Mode],
         wila: &Dmat,
     ) -> (Dmat, Dmat, f64) {
-        use Rotor::*;
-        let (ia, ib) = match self.rotor {
-            Diatomic => todo!("try this as linear"),
-            Linear | OblateSymmTop => (2, 1),
-            ProlateSymmTop => (0, 1),
-            SphericalTop => panic!("you should be in wcals"),
-            AsymmTop => panic!("you should be xcalc"),
-            None => unset_rotor!(),
-        };
+        let (ia, ib) = (2, 1);
         let (_, n2dm, _) = Mode::count(modes);
         let (i1mode, i2mode, _) = Mode::partition(modes);
         // find out which of a(xz)tb or a(yz)tb are zero
@@ -1356,20 +1349,23 @@ impl Spectro {
                 }
             }
             if ixz > 0 && iyz > 0 {
-                panic!("big problems in xcals");
+                (1, 2, 3, 0, 1)
             } else if ixz > 0 {
                 (1, 2, 3, 0, 1)
             } else if iyz > 0 {
                 (0, 0, 4, 1, 0)
             } else {
-                panic!("I think this is also a big problem");
+                panic!("big problem in xcals");
             }
-        // NOTE skipping zeta checks, but they only print stuff
         } else {
             todo!()
         };
+        // NOTE skipping zeta checks, but they only print stuff
 
         let (ifrmchk, ifrm1) = self.make_fermi_checks(fermi1, fermi2);
+
+        let e1 = make_e0(&modes, f4qcm, f3qcm, freq, &ifrm1, &ifrmchk);
+        dbg!(e1);
 
         // start calculating anharmonic constants
         let mut xcnst = Dmat::zeros(self.nvib, self.nvib);
