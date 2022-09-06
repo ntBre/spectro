@@ -146,7 +146,10 @@ fn test_funds_and_e0() {
             darling: _,
             modes,
             states: _,
-        } = s.restst(&zmat, &f3qcm, &freq);
+            ifunda: _,
+            iovrtn: _,
+            icombn: _,
+        } = Restst::new(&s, &zmat, &f3qcm, &freq);
         let (xcnst, e0) =
             s.xcalc(&f4qcm, &freq, &f3qcm, &zmat, &modes, &fermi1, &fermi2);
         assert_abs_diff_eq!(e0, test.want_e0, epsilon = test.e_eps);
@@ -179,31 +182,24 @@ fn test_enrgy() {
     let f4x = load_fc4("testfiles/fort.40", s.n3n);
     let f4x = s.rot4th(f4x, s.axes);
     let f4qcm = force4(s.n3n, &f4x, &lx, s.nvib, &freq);
+    let restst = Restst::new(&s, &zmat, &f3qcm, &freq);
     let Restst {
         coriolis: _,
         fermi1,
         fermi2,
         darling: _,
         modes,
-        states: _,
-    } = s.restst(&zmat, &f3qcm, &freq);
+        states,
+        ifunda: _,
+        iovrtn: _,
+        icombn: _,
+    } = &restst;
     let (xcnst, e0) =
         s.xcalc(&f4qcm, &freq, &f3qcm, &zmat, &modes, &fermi1, &fermi2);
     let wante0 = 20.057563725859055;
     assert_abs_diff_eq!(e0, wante0, epsilon = 6e-8);
-    let Restst {
-        coriolis: _,
-        fermi1,
-        fermi2,
-        darling: _,
-        states,
-        modes: i1mode,
-    } = s.restst(&zmat, &f3qcm, &freq);
     let mut got = vec![0.0; states.len()];
-    s.enrgy(
-        &freq, &xcnst, &None, &f3qcm, e0, &states, &i1mode, &fermi1, &fermi2,
-        &mut got,
-    );
+    s.enrgy(&freq, &xcnst, &None, &restst, &f3qcm, e0, &mut got);
     // my numbers after comparing visually to fortran
     let want = vec![
         4656.438188555293,

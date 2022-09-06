@@ -53,7 +53,7 @@ fn test_alpha() {
         let f3x = load_fc3(test.fort30, s.n3n);
         let mut f3x = s.rot3rd(f3x, s.axes);
         let f3qcm = force3(s.n3n, &mut f3x, &lx, s.nvib, &freq);
-        let r = s.restst(&zmat, &f3qcm, &freq);
+        let r = Restst::new(&s, &zmat, &f3qcm, &freq);
         let got = s.alpha(&freq, &wila, &zmat, &f3qcm, &r.coriolis);
         if abs_diff_ne!(got, test.want, epsilon = 3e-6) {
             println!("got\n{:.8}", got);
@@ -90,7 +90,10 @@ fn test_alphaa() {
         darling: _,
         states,
         modes,
-    } = s.restst(&zmat, &f3qcm, &freq);
+        ifunda: _,
+        iovrtn: _,
+        icombn: _,
+    } = Restst::new(&s, &zmat, &f3qcm, &freq);
     let got = s.alphaa(
         &s.rotcon, &freq, &wila, &zmat, &f3qcm, &modes, &states, &coriolis,
     );

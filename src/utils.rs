@@ -342,6 +342,7 @@ pub fn force4(
     f4qcm
 }
 
+/// make E0 for asymmetric tops or the first component of E0 for symmetric tops
 pub(crate) fn make_e0(
     modes: &[Mode],
     f4qcm: &F4qcm,
@@ -496,20 +497,22 @@ pub(crate) fn rsfrm2(
     // TODO left out properties
 }
 
+/// calculate the type-1 fermi resonance contribution to the energy. `deg` is
+/// usually false, but true in one case for symmetric tops
 pub(crate) fn rsfrm1(
+    ist: usize,
+    jst: usize,
     ivib: usize,
     jvib: usize,
     f3qcm: &F3qcm,
-    n1dm: usize,
     eng: &mut [f64],
+    deg: bool,
 ) {
-    // NOTE skipping degmode check here
-    let val = 0.25 * f3qcm[(ivib, ivib, jvib)];
-    // ist is the overtone corresponding to i, jst is the fundamental
-    // corresponding to j, basically 2vi = vj or the definition of a fermi 1
-    // resonance. + 1 to skip the ground state
-    let ist = n1dm + ivib + 1;
-    let jst = jvib + 1;
+    let val = if deg {
+        f3qcm[(ivib, ivib, jvib)] / f64::sqrt(8.0)
+    } else {
+        0.25 * f3qcm[(ivib, ivib, jvib)]
+    };
     // this is actually a symmetric matrix I think
     let eres = [eng[ist] - eng[0], val, eng[jst] - eng[0]];
     // TODO left out printed error measures

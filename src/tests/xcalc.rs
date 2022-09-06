@@ -70,7 +70,10 @@ fn test_xcalc() {
             darling: _,
             states: _,
             modes,
-        } = s.restst(&zmat, &f3qcm, &freq);
+            ifunda: _,
+            iovrtn: _,
+            icombn: _,
+        } = Restst::new(&s, &zmat, &f3qcm, &freq);
         let (xcnst, e0) =
             s.xcalc(&f4qcm, &freq, &f3qcm, &zmat, &modes, &fermi1, &fermi2);
         // println!("\n{}", test.infile);

@@ -15,7 +15,7 @@ use f4qcm::F4qcm;
 use ifrm1::Ifrm1;
 use nalgebra::DMatrix;
 use quartic::Quartic;
-use resonance::{Coriolis, Darling, Fermi1, Fermi2};
+use resonance::{Coriolis, Fermi1, Fermi2, Restst};
 use rot::Rot;
 use rotor::{Rotor, ROTOR_EPS};
 use sextic::Sextic;
@@ -133,16 +133,6 @@ pub struct Spectro {
     pub rotcon: Vec<f64>,
 }
 
-#[derive(Clone, Debug, Default, PartialEq)]
-pub struct Restst {
-    pub coriolis: Vec<Coriolis>,
-    pub fermi1: Vec<Fermi1>,
-    pub fermi2: Vec<Fermi2>,
-    pub darling: Vec<Darling>,
-    pub states: Vec<State>,
-    pub modes: Vec<Mode>,
-}
-
 #[derive(Clone, Debug, PartialEq)]
 pub enum Mode {
     I1(usize),
@@ -170,7 +160,7 @@ impl Mode {
     /// as `i1mode`, `i2mode`, and `i3mode`.
     pub fn partition(
         modes: &[Self],
-    ) -> (Vec<usize>, Vec<(usize, usize)>, Vec<usize>) {
+    ) -> (Vec<usize>, Vec<(usize, usize)>, Vec<(usize, usize, usize)>) {
         let mut ret = (vec![], vec![], vec![]);
         for m in modes {
             match m {
@@ -179,9 +169,7 @@ impl Mode {
                     ret.1.push((i, j));
                 }
                 &Mode::I3(i, j, k) => {
-                    ret.2.push(i);
-                    ret.2.push(j);
-                    ret.2.push(k);
+                    ret.2.push((i, j, k));
                 }
             }
         }
@@ -190,388 +178,6 @@ impl Mode {
 }
 
 impl Spectro {
-    pub fn is_linear(&self) -> bool {
-        self.rotor == Rotor::Linear
-    }
-
-    /// return a ready-to-use spectro without a template
-    pub fn nocurvil() -> Self {
-        Self {
-            // only important fields are 1=Ncart to ignore curvils, 2=Isotop to
-            // use default weights, 8=Nderiv to do a QFF, and 21=Iaverg to get
-            // vibrationally averaged coordinates (that one might not be
-            // important)
-            header: vec![
-                99, 1, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-                0, 0, 0, 0, 0, 0, 0, 0, 0,
-            ],
-            ..Self::default()
-        }
-    }
-
-    pub fn load<P>(filename: P) -> Self
-    where
-        P: AsRef<Path> + Debug + Clone,
-    {
-        let f = match File::open(filename.clone()) {
-            Ok(f) => f,
-            Err(_) => {
-                eprintln!("failed to open infile '{:?}'", filename);
-                std::process::exit(1);
-            }
-        };
-        let reader = BufReader::new(f);
-        enum State {
-            Header,
-            Geom,
-            Weight,
-            Curvil,
-            Degmode,
-            None,
-        }
-        // map of string coordinates to their atom number
-        let mut coord_map = HashMap::new();
-        let mut state = State::None;
-        let mut skip = 0;
-        let mut ret = Spectro::default();
-        for line in reader.lines().flatten() {
-            if skip > 0 {
-                skip -= 1;
-            } else if line.contains("SPECTRO") {
-                state = State::Header;
-            } else if line.contains("GEOM") {
-                skip = 1;
-                state = State::Geom;
-            } else if line.contains("WEIGHT") {
-                skip = 1;
-                state = State::Weight;
-            } else if line.contains("CURVIL") {
-                state = State::Curvil;
-            } else if line.contains("DEGMODE") {
-                state = State::Degmode;
-            } else {
-                match state {
-                    State::Header => {
-                        ret.header.extend(
-                            line.split_whitespace()
-                                .map(|s| s.parse::<usize>().unwrap()),
-                        );
-                    }
-                    State::Geom => {
-                        let mut fields = line.split_whitespace();
-                        let atomic_number =
-                            fields.next().unwrap().parse::<f64>().unwrap()
-                                as usize;
-                        // collect after nexting off the first value
-                        let fields: Vec<_> = fields.collect();
-                        match atomic_number {
-                            0 => {
-                                let mut dummy_coords = Vec::new();
-                                for coord in fields {
-                                    dummy_coords.push(
-                                        if let Some(idx) = coord_map.get(coord)
-                                        {
-                                            DummyVal::Atom(*idx)
-                                        } else {
-                                            DummyVal::Value(
-                                                coord.parse().unwrap(),
-                                            )
-                                        },
-                                    );
-                                }
-                                ret.dummies.push(Dummy::from(dummy_coords));
-                            }
-                            _ => {
-                                let atom_index = ret.geom.atoms.len();
-                                for coord in &fields {
-                                    // don't mind overwriting another atom
-                                    // because that means their coordinates are
-                                    // the same
-                                    coord_map
-                                        .insert(coord.to_string(), atom_index);
-                                }
-                                ret.geom.atoms.push(Atom {
-                                    atomic_number,
-                                    x: fields[0].parse().unwrap(),
-                                    y: fields[1].parse().unwrap(),
-                                    z: fields[2].parse().unwrap(),
-                                });
-                            }
-                        }
-                    }
-                    State::Weight => {
-                        let fields =
-                            line.split_whitespace().collect::<Vec<_>>();
-                        ret.weights.push((
-                            fields[0].parse::<usize>().unwrap(),
-                            fields[1].parse::<f64>().unwrap(),
-                        ));
-                    }
-                    State::Curvil => {
-                        use crate::Curvil::*;
-                        let v = parse_line(&line);
-                        // TODO differentiate between other curvils with 4
-                        // coordinates. probably by requiring them to be written
-                        // out like in intder so they don't have to be specified
-                        // at the top too
-                        match v.len() {
-                            2 => ret.curvils.push(Bond(v[0], v[1])),
-                            3 => ret.curvils.push(Bend(v[0], v[1], v[2])),
-                            4 => ret.curvils.push(Tors(v[0], v[1], v[2], v[3])),
-                            0 => (),
-                            _ => todo!("unrecognized number of curvils"),
-                        }
-                    }
-                    State::Degmode => {
-                        let v = parse_line(&line);
-                        if !v.is_empty() {
-                            ret.degmodes.push(v);
-                        }
-                    }
-                    State::None => (),
-                }
-            }
-        }
-        // assumes input geometry in bohr
-        ret.geom.to_angstrom();
-        let (pr, axes) = ret.geom.normalize();
-        ret.primat = Vec::from(pr.as_slice());
-        ret.rotcon = pr.iter().map(|m| CONST / m).collect();
-        ret.axes = axes;
-        ret.rotor = ret.rotor_type();
-        ret.natom = ret.natoms();
-        let n3n = 3 * ret.natoms();
-        ret.n3n = n3n;
-        ret.i3n3n = n3n * (n3n + 1) * (n3n + 2) / 6;
-        ret.i4n3n = n3n * (n3n + 1) * (n3n + 2) * (n3n + 3) / 24;
-        let nvib = n3n - 6 + if ret.is_linear() { 1 } else { 0 };
-        ret.nvib = nvib;
-        ret.i2vib = ioff(nvib + 1);
-        ret.i3vib = nvib * (nvib + 1) * (nvib + 2) / 6;
-        ret.i4vib = nvib * (nvib + 1) * (nvib + 2) * (nvib + 3) / 24;
-        ret
-    }
-
-    pub fn write(&self, filename: &str) -> Result<()> {
-        use std::io::Write;
-        let mut f = File::create(filename)?;
-        writeln!(f, "{}", self)?;
-        Ok(())
-    }
-
-    /// compute the type of molecular rotor in `self.geom` assuming it has
-    /// already been normalized and reordered. These tests are taken from the
-    /// [Crawford Programming
-    /// Projects](https://github.com/CrawfordGroup/ProgrammingProjects/blob/master/Project%2301/hints/step7-solution.md)
-    fn rotor_type(&self) -> Rotor {
-        if self.geom.atoms.len() == 2 {
-            return Rotor::Diatomic;
-        }
-        let close = |a, b| f64::abs(a - b) < ROTOR_EPS;
-        let moms = &self.primat;
-        if moms[0] < ROTOR_EPS {
-            Rotor::Linear
-        } else if close(moms[0], moms[1]) && close(moms[1], moms[2]) {
-            Rotor::SphericalTop
-        } else if close(moms[0], moms[1]) && !close(moms[1], moms[2]) {
-            Rotor::OblateSymmTop
-        } else if !close(moms[0], moms[1]) && close(moms[1], moms[2]) {
-            Rotor::ProlateSymmTop
-        } else {
-            Rotor::AsymmTop
-        }
-    }
-
-    pub fn natoms(&self) -> usize {
-        self.geom.atoms.len()
-    }
-
-    /// Calculate the zeta, big A and Wilson A and J matrices. Zeta is for the
-    /// coriolis coupling constants
-    fn zeta(&self, lxm: &Dmat, w: &[f64]) -> (Tensor3, Dmat) {
-        let zmat = make_zmat(self.nvib, self.natom, lxm);
-        // calculate the A vectors. says only half is formed since it's
-        // symmetric
-        let mut wila = Dmat::zeros(self.nvib, 6);
-        for k in 0..self.nvib {
-            let mut valuxx = 0.0;
-            let mut valuyy = 0.0;
-            let mut valuzz = 0.0;
-            let mut valuxy = 0.0;
-            let mut valuxz = 0.0;
-            let mut valuyz = 0.0;
-            for i in 0..self.natom {
-                let ix = 3 * i;
-                let iy = ix + 1;
-                let iz = iy + 1;
-                let xcm = self.geom.atoms[i].x;
-                let ycm = self.geom.atoms[i].y;
-                let zcm = self.geom.atoms[i].z;
-                let rmass = w[i].sqrt();
-                valuxx += rmass * (ycm * lxm[(iy, k)] + zcm * lxm[(iz, k)]);
-                valuyy += rmass * (xcm * lxm[(ix, k)] + zcm * lxm[(iz, k)]);
-                valuzz += rmass * (xcm * lxm[(ix, k)] + ycm * lxm[(iy, k)]);
-                valuxy -= rmass * xcm * lxm[(iy, k)];
-                valuxz -= rmass * xcm * lxm[(iz, k)];
-                valuyz -= rmass * ycm * lxm[(iz, k)];
-            }
-            wila[(k, 0)] = 2.0 * valuxx;
-            wila[(k, 1)] = 2.0 * valuxy;
-            wila[(k, 2)] = 2.0 * valuyy;
-            wila[(k, 3)] = 2.0 * valuxz;
-            wila[(k, 4)] = 2.0 * valuyz;
-            wila[(k, 5)] = 2.0 * valuzz;
-        }
-        (zmat, wila)
-    }
-
-    /// formation of the secular equation
-    pub fn form_sec(&self, fx: Dmat, sqm: &[f64]) -> Dmat {
-        let mut fxm = fx.clone();
-        for i in 0..self.n3n {
-            let ii = i / 3;
-            for j in i..self.n3n {
-                let jj = j / 3;
-                fxm[(i, j)] = sqm[ii] * fx[(i, j)] * sqm[jj];
-            }
-        }
-        fxm.fill_lower_triangle_with_upper_triangle();
-        fxm
-    }
-
-    /// rotate the harmonic force constants in `fx` to align with the principal
-    /// axes in `self.axes` used to align the geometry
-    pub fn rot2nd(&self, fx: Dmat) -> Dmat {
-        let (a, b) = fx.shape();
-        let mut ret = Dmat::zeros(a, b);
-        let natom = self.natoms();
-        for ia in (0..3 * natom).step_by(3) {
-            for ib in (0..3 * natom).step_by(3) {
-                // grab 3x3 blocks of FX into A, perform Eg × A × Egᵀ and set
-                // that block in the return matrix
-                let a = fx.fixed_slice::<3, 3>(ia, ib);
-                let temp2 = self.axes.transpose() * a * self.axes;
-                let mut targ = ret.fixed_slice_mut::<3, 3>(ia, ib);
-                targ.copy_from(&temp2);
-            }
-        }
-        ret
-    }
-
-    /// rotate the cubic force constants in `f3x` to align with the principal
-    /// axes in `eg` used to align the geometry
-    pub fn rot3rd(&self, f3x: Tensor3, eg: Mat3) -> Tensor3 {
-        let (a, b, c) = f3x.shape();
-        let mut ret = Tensor3::zeros(a, b, c);
-        // TODO could try slice impl like in rot2nd, but it will be harder with
-        // tensors
-        for i in 0..self.n3n {
-            for j in 0..self.natom {
-                let ib = j * 3;
-                for k in 0..self.natom {
-                    let ic = k * 3;
-                    let mut a = Mat3::zeros();
-                    for jj in 0..3 {
-                        for kk in 0..3 {
-                            a[(jj, kk)] = f3x[(ib + jj, ic + kk, i)];
-                        }
-                    }
-                    let temp2 = eg.transpose() * a * eg;
-                    for jj in 0..3 {
-                        for kk in 0..3 {
-                            ret[(ib + jj, ic + kk, i)] = temp2[(jj, kk)];
-                        }
-                    }
-                }
-            }
-        }
-
-        for j in 0..self.n3n {
-            for k in 0..self.n3n {
-                for i in 0..self.natom {
-                    let ia = i * 3;
-                    let mut val = [0.0; 3];
-                    for ii in 0..3 {
-                        val[ii] = ret[(j, k, ia)] * eg[(0, ii)]
-                            + ret[(j, k, ia + 1)] * eg[(1, ii)]
-                            + ret[(j, k, ia + 2)] * eg[(2, ii)];
-                    }
-
-                    for ii in 0..3 {
-                        ret[(j, k, ia + ii)] = val[ii];
-                    }
-                }
-            }
-        }
-        ret
-    }
-
-    /// rotate the quartic force constants in `f4x` to align with the principal
-    /// axes in `eg` used to align the geometry
-    pub fn rot4th(&self, f4x: Tensor4, eg: Mat3) -> Tensor4 {
-        let egt = eg.transpose();
-        let (a, b, c, d) = f4x.shape();
-        let mut ret = Tensor4::zeros(a, b, c, d);
-        for i in 0..self.n3n {
-            for j in 0..self.n3n {
-                for k in 0..self.natom {
-                    let ic = k * 3;
-                    for l in 0..self.natom {
-                        let id = l * 3;
-                        let mut a = Mat3::zeros();
-                        for kk in 0..3 {
-                            for ll in 0..3 {
-                                a[(kk, ll)] = f4x[(i, j, ic + kk, id + ll)];
-                            }
-                        }
-                        let temp2 = egt * a * eg;
-                        for kk in 0..3 {
-                            for ll in 0..3 {
-                                ret[(i, j, ic + kk, id + ll)] = temp2[(kk, ll)];
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        for k in 0..self.n3n {
-            for l in 0..self.n3n {
-                for i in 0..self.natom {
-                    let ia = i * 3;
-                    for j in 0..self.natom {
-                        let ib = j * 3;
-                        let mut a = Mat3::zeros();
-                        for ii in 0..3 {
-                            for jj in 0..3 {
-                                a[(ii, jj)] = ret[(ia + ii, ib + jj, k, l)];
-                            }
-                        }
-                        let temp2 = egt * a * eg;
-                        for ii in 0..3 {
-                            for jj in 0..3 {
-                                ret[(ia + ii, ib + jj, k, l)] = temp2[(ii, jj)];
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        ret
-    }
-
-    /// make the LX matrix
-    fn make_lx(&self, sqm: &[f64], lxm: &Dmat) -> Dmat {
-        let mut lx = Dmat::zeros(self.n3n, self.n3n);
-        for i in 0..self.n3n {
-            let ii = i / 3;
-            for j in 0..self.n3n {
-                lx[(i, j)] = sqm[ii] * lxm[(i, j)];
-            }
-        }
-        lx
-    }
-
     /// helper method for alpha matrix in `alphaa`
     fn alpha(
         &self,
@@ -620,6 +226,49 @@ impl Spectro {
             }
         }
         alpha
+    }
+
+    /// compute the vibrationally-averaged rotational constants for asymmetric
+    /// tops
+    fn alphaa(
+        &self,
+        rotcon: &[f64],
+        freq: &Dvec,
+        wila: &Dmat,
+        zmat: &Tensor3,
+        f3qcm: &F3qcm,
+        modes: &[Mode],
+        states: &[State],
+        coriolis: &[Coriolis],
+    ) -> Dmat {
+        let alpha = self.alpha(freq, &wila, &zmat, f3qcm, coriolis);
+        // do the fundamentals + the ground state
+        let nstop = self.nvib + 1;
+        let (n1dm, _, _) = Mode::count(modes);
+        let mut rotnst = Dmat::zeros(nstop, 3);
+        for axis in 0..3 {
+            for ist in 0..nstop {
+                let mut suma = 0.0;
+                for ii in 0..n1dm {
+                    let i = match modes[ii] {
+                        Mode::I1(i) => i,
+                        Mode::I2(_, _) => todo!(),
+                        Mode::I3(_, _, _) => todo!(),
+                    };
+                    match &states[ist] {
+                        State::I1st(v) => {
+                            suma += alpha[(i, axis)] * (v[ii] as f64 + 0.5);
+                        }
+                        State::I2st(_) => todo!(),
+                        State::I3st(_) => todo!(),
+                        State::I12st { i1st: _, i2st: _ } => todo!(),
+                    }
+                }
+                let bva = rotcon[axis] + suma;
+                rotnst[(ist, axis)] = bva;
+            }
+        }
+        rotnst
     }
 
     /// compute the vibrationally-averaged rotational constants for symmetric
@@ -857,47 +506,498 @@ impl Spectro {
         rotnst
     }
 
-    /// compute the vibrationally-averaged rotational constants for asymmetric
-    /// tops
-    fn alphaa(
+    /// vibrational energy levels and properties in resonance. returns the
+    /// energies in the same order as the states in `i1sts`
+    fn enrgy(
         &self,
-        rotcon: &[f64],
         freq: &Dvec,
-        wila: &Dmat,
-        zmat: &Tensor3,
+        xcnst: &Dmat,
+        gcnst: &Option<Dmat>,
+        restst: &Restst,
         f3qcm: &F3qcm,
-        modes: &[Mode],
-        states: &[State],
-        coriolis: &[Coriolis],
-    ) -> Dmat {
-        let alpha = self.alpha(freq, &wila, &zmat, f3qcm, coriolis);
-        // do the fundamentals + the ground state
-        let nstop = self.nvib + 1;
-        let (n1dm, _, _) = Mode::count(modes);
-        let mut rotnst = Dmat::zeros(nstop, 3);
-        for axis in 0..3 {
-            for ist in 0..nstop {
-                let mut suma = 0.0;
-                for ii in 0..n1dm {
-                    let i = match modes[ii] {
-                        Mode::I1(i) => i,
-                        Mode::I2(_, _) => todo!(),
-                        Mode::I3(_, _, _) => todo!(),
-                    };
-                    match &states[ist] {
-                        State::I1st(v) => {
-                            suma += alpha[(i, axis)] * (v[ii] as f64 + 0.5);
-                        }
-                        State::I2st(_) => todo!(),
-                        State::I3st(_) => todo!(),
-                        State::I12st { i1st: _, i2st: _ } => todo!(),
+        e0: f64,
+        eng: &mut [f64],
+    ) {
+        let Restst {
+            coriolis: _,
+            fermi1,
+            fermi2,
+            darling: _,
+            states,
+            modes,
+            ifunda,
+            iovrtn,
+            icombn: _,
+        }: &Restst = restst;
+
+        let nstate = states.len();
+        let (n1dm, n2dm, _) = Mode::count(modes);
+        let (i1mode, i2mode, _) = Mode::partition(modes);
+        let (i1sts, i2sts, _) = State::partition(states);
+        for nst in 0..nstate {
+            let mut val1 = 0.0;
+            for (ii, &i) in i1mode.iter().enumerate() {
+                val1 += freq[i] * ((i1sts[nst][ii] as f64) + 0.5);
+            }
+
+            let mut val2 = 0.0;
+            for (ii, &(i, _)) in i2mode.iter().enumerate() {
+                val2 += freq[i] * (i2sts[nst][ii].0 as f64 + 1.0);
+            }
+
+            // this is val2 in the asym top code
+            let mut val3 = 0.0;
+            for ii in 0..n1dm {
+                let i = i1mode[ii];
+                for jj in 0..=ii {
+                    let j = i1mode[jj];
+                    val3 += xcnst[(i, j)]
+                        * ((i1sts[nst][ii] as f64) + 0.5)
+                        * ((i1sts[nst][jj] as f64) + 0.5);
+                }
+            }
+
+            let mut val4 = 0.0;
+            for (ii, &i) in i1mode.iter().enumerate() {
+                for (jj, &(j, _)) in i2mode.iter().enumerate() {
+                    val4 += xcnst[(i, j)]
+                        * ((i1sts[nst][ii] as f64 + 0.5)
+                            * (i2sts[nst][jj].0 as f64 + 1.0));
+                }
+            }
+
+            let mut val5 = 0.0;
+            for ii in 0..n2dm {
+                let i = i2mode[ii].0;
+                for jj in 0..=ii {
+                    let j = i2mode[jj].0;
+                    val5 += xcnst[(i, j)]
+                        * ((i2sts[nst][ii].0 as f64 + 1.0)
+                            * (i2sts[nst][jj].0 as f64 + 1.0));
+                }
+            }
+
+            let mut val6 = 0.0;
+            for (ii, &(i, _)) in i2mode.iter().enumerate() {
+                for (jj, &(j, _)) in i2mode.iter().take(ii + 1).enumerate() {
+                    val6 += gcnst
+                        .as_ref()
+                        .expect("g constants required for symmetric tops")
+                        [(i, j)]
+                        * (i2sts[nst][ii].1 as f64)
+                        * (i2sts[nst][jj].1 as f64);
+                }
+            }
+
+            eng[nst] = val1 + val2 + val3 + val4 + val5 + val6 + e0;
+        }
+
+        let (_, ifrm1) = self.make_fermi_checks(fermi1, fermi2);
+        let mut ifrm2: HashMap<(usize, usize), usize> = HashMap::new();
+        for f in fermi2 {
+            ifrm2.insert((f.i, f.j), f.k);
+        }
+        // TODO rsfrm2 is supposed to take ist/jst type args as well, but I
+        // don't have any test cases requiring that yet
+        if self.rotor.is_sym_top() {
+            // NOTE I think this is not going to work at all :( I think my
+            // ist/jst stuff inside rsfrm1 is going to break spectacularly here
+            // but we'll see
+            for ii in 0..n1dm {
+                let ivib = i1mode[ii];
+                // type 1 fermi resonance
+                if let Some(&jvib) = ifrm1.get(&ivib) {
+                    let ist = iovrtn[ivib];
+                    let jst = ifunda[jvib];
+                    rsfrm1(ist, jst, ivib, jvib, f3qcm, eng, false);
+                }
+
+                // type 2 fermi resonance
+                for jj in ii + 1..n1dm {
+                    let jvib = i1mode[jj];
+                    if let Some(&kvib) = ifrm2.get(&(jvib, ivib)) {
+                        rsfrm2(ivib, jvib, kvib, f3qcm, states, eng);
                     }
                 }
-                let bva = rotcon[axis] + suma;
-                rotnst[(ist, axis)] = bva;
+
+                for jj in 0..n2dm {
+                    let (jvib, _) = i2mode[jj];
+                    if let Some(&kvib) = ifrm2.get(&(jvib, ivib)) {
+                        rsfrm2(ivib, jvib, kvib, f3qcm, states, eng);
+                    }
+                }
+            }
+
+            // type 1 again
+            for ii in 0..n2dm {
+                let (ivib, _) = i2mode[ii];
+                if let Some(&jvib) = ifrm1.get(&ivib) {
+                    let ist = iovrtn[ivib];
+                    let jst = ifunda[jvib];
+                    rsfrm1(ist, jst, ivib, jvib, f3qcm, eng, true);
+                }
+
+                // type 2 again
+                for jj in ii + 1..n2dm {
+                    let (jvib, _) = i2mode[jj];
+                    if let Some(&kvib) = ifrm2.get(&(jvib, ivib)) {
+                        rsfrm2(ivib, jvib, kvib, f3qcm, states, eng);
+                    }
+                }
+            }
+        } else {
+            for iii in 0..n1dm {
+                let ivib = i1mode[iii];
+                if let Some(&jvib) = ifrm1.get(&ivib) {
+                    let ist = iovrtn[ivib];
+                    let jst = ifunda[jvib];
+                    rsfrm1(ist, jst, ivib, jvib, f3qcm, eng, false);
+                }
+                for jjj in iii + 1..n1dm {
+                    let jvib = i1mode[jjj];
+                    if let Some(kvib) = ifrm2.get(&(jvib, ivib)) {
+                        rsfrm2(ivib, jvib, *kvib, f3qcm, states, eng);
+                    }
+                }
             }
         }
-        rotnst
+    }
+
+    /// formation of the secular equation
+    pub fn form_sec(&self, fx: Dmat, sqm: &[f64]) -> Dmat {
+        let mut fxm = fx.clone();
+        for i in 0..self.n3n {
+            let ii = i / 3;
+            for j in i..self.n3n {
+                let jj = j / 3;
+                fxm[(i, j)] = sqm[ii] * fx[(i, j)] * sqm[jj];
+            }
+        }
+        fxm.fill_lower_triangle_with_upper_triangle();
+        fxm
+    }
+
+    pub fn is_linear(&self) -> bool {
+        self.rotor == Rotor::Linear
+    }
+
+    pub fn load<P>(filename: P) -> Self
+    where
+        P: AsRef<Path> + Debug + Clone,
+    {
+        let f = match File::open(filename.clone()) {
+            Ok(f) => f,
+            Err(_) => {
+                eprintln!("failed to open infile '{:?}'", filename);
+                std::process::exit(1);
+            }
+        };
+        let reader = BufReader::new(f);
+        enum State {
+            Header,
+            Geom,
+            Weight,
+            Curvil,
+            Degmode,
+            None,
+        }
+        // map of string coordinates to their atom number
+        let mut coord_map = HashMap::new();
+        let mut state = State::None;
+        let mut skip = 0;
+        let mut ret = Spectro::default();
+        for line in reader.lines().flatten() {
+            if skip > 0 {
+                skip -= 1;
+            } else if line.contains("SPECTRO") {
+                state = State::Header;
+            } else if line.contains("GEOM") {
+                skip = 1;
+                state = State::Geom;
+            } else if line.contains("WEIGHT") {
+                skip = 1;
+                state = State::Weight;
+            } else if line.contains("CURVIL") {
+                state = State::Curvil;
+            } else if line.contains("DEGMODE") {
+                state = State::Degmode;
+            } else {
+                match state {
+                    State::Header => {
+                        ret.header.extend(
+                            line.split_whitespace()
+                                .map(|s| s.parse::<usize>().unwrap()),
+                        );
+                    }
+                    State::Geom => {
+                        let mut fields = line.split_whitespace();
+                        let atomic_number =
+                            fields.next().unwrap().parse::<f64>().unwrap()
+                                as usize;
+                        // collect after nexting off the first value
+                        let fields: Vec<_> = fields.collect();
+                        match atomic_number {
+                            0 => {
+                                let mut dummy_coords = Vec::new();
+                                for coord in fields {
+                                    dummy_coords.push(
+                                        if let Some(idx) = coord_map.get(coord)
+                                        {
+                                            DummyVal::Atom(*idx)
+                                        } else {
+                                            DummyVal::Value(
+                                                coord.parse().unwrap(),
+                                            )
+                                        },
+                                    );
+                                }
+                                ret.dummies.push(Dummy::from(dummy_coords));
+                            }
+                            _ => {
+                                let atom_index = ret.geom.atoms.len();
+                                for coord in &fields {
+                                    // don't mind overwriting another atom
+                                    // because that means their coordinates are
+                                    // the same
+                                    coord_map
+                                        .insert(coord.to_string(), atom_index);
+                                }
+                                ret.geom.atoms.push(Atom {
+                                    atomic_number,
+                                    x: fields[0].parse().unwrap(),
+                                    y: fields[1].parse().unwrap(),
+                                    z: fields[2].parse().unwrap(),
+                                });
+                            }
+                        }
+                    }
+                    State::Weight => {
+                        let fields =
+                            line.split_whitespace().collect::<Vec<_>>();
+                        ret.weights.push((
+                            fields[0].parse::<usize>().unwrap(),
+                            fields[1].parse::<f64>().unwrap(),
+                        ));
+                    }
+                    State::Curvil => {
+                        use crate::Curvil::*;
+                        let v = parse_line(&line);
+                        // TODO differentiate between other curvils with 4
+                        // coordinates. probably by requiring them to be written
+                        // out like in intder so they don't have to be specified
+                        // at the top too
+                        match v.len() {
+                            2 => ret.curvils.push(Bond(v[0], v[1])),
+                            3 => ret.curvils.push(Bend(v[0], v[1], v[2])),
+                            4 => ret.curvils.push(Tors(v[0], v[1], v[2], v[3])),
+                            0 => (),
+                            _ => todo!("unrecognized number of curvils"),
+                        }
+                    }
+                    State::Degmode => {
+                        let v = parse_line(&line);
+                        if !v.is_empty() {
+                            ret.degmodes.push(v);
+                        }
+                    }
+                    State::None => (),
+                }
+            }
+        }
+        // assumes input geometry in bohr
+        ret.geom.to_angstrom();
+        let (pr, axes) = ret.geom.normalize();
+        ret.primat = Vec::from(pr.as_slice());
+        ret.rotcon = pr.iter().map(|m| CONST / m).collect();
+        ret.axes = axes;
+        ret.rotor = ret.rotor_type();
+        ret.natom = ret.natoms();
+        let n3n = 3 * ret.natoms();
+        ret.n3n = n3n;
+        ret.i3n3n = n3n * (n3n + 1) * (n3n + 2) / 6;
+        ret.i4n3n = n3n * (n3n + 1) * (n3n + 2) * (n3n + 3) / 24;
+        let nvib = n3n - 6 + if ret.is_linear() { 1 } else { 0 };
+        ret.nvib = nvib;
+        ret.i2vib = ioff(nvib + 1);
+        ret.i3vib = nvib * (nvib + 1) * (nvib + 2) / 6;
+        ret.i4vib = nvib * (nvib + 1) * (nvib + 2) * (nvib + 3) / 24;
+        ret
+    }
+
+    fn make_fermi_checks(
+        &self,
+        fermi1: &[Fermi1],
+        fermi2: &[Fermi2],
+    ) -> (tensor::Tensor3<usize>, Ifrm1) {
+        let mut ifrmchk = tensor::tensor3::Tensor3::<usize>::zeros(
+            self.nvib, self.nvib, self.nvib,
+        );
+        // using a hash here instead of an array because I need some way to
+        // signal that the value is not there. in fortran they use an array of
+        // zeros because zero will never be a valid index. I could use -1, but
+        // then the vec has to be of isize and I have to do a lot of casting.
+        let mut ifrm1 = Ifrm1::new();
+        for f in fermi1 {
+            ifrmchk[(f.i, f.i, f.j)] = 1;
+            ifrm1.insert(f.i, f.j);
+        }
+        for f in fermi2 {
+            ifrmchk[(f.i, f.j, f.k)] = 1;
+            ifrmchk[(f.j, f.i, f.k)] = 1;
+        }
+        (ifrmchk, ifrm1)
+    }
+
+    /// make the LX matrix
+    fn make_lx(&self, sqm: &[f64], lxm: &Dmat) -> Dmat {
+        let mut lx = Dmat::zeros(self.n3n, self.n3n);
+        for i in 0..self.n3n {
+            let ii = i / 3;
+            for j in 0..self.n3n {
+                lx[(i, j)] = sqm[ii] * lxm[(i, j)];
+            }
+        }
+        lx
+    }
+
+    pub fn natoms(&self) -> usize {
+        self.geom.atoms.len()
+    }
+
+    /// return a ready-to-use spectro without a template
+    pub fn nocurvil() -> Self {
+        Self {
+            // only important fields are 1=Ncart to ignore curvils, 2=Isotop to
+            // use default weights, 8=Nderiv to do a QFF, and 21=Iaverg to get
+            // vibrationally averaged coordinates (that one might not be
+            // important)
+            header: vec![
+                99, 1, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+                0, 0, 0, 0, 0, 0, 0, 0, 0,
+            ],
+            ..Self::default()
+        }
+    }
+
+    /// rotate the harmonic force constants in `fx` to align with the principal
+    /// axes in `self.axes` used to align the geometry
+    pub fn rot2nd(&self, fx: Dmat) -> Dmat {
+        let (a, b) = fx.shape();
+        let mut ret = Dmat::zeros(a, b);
+        let natom = self.natoms();
+        for ia in (0..3 * natom).step_by(3) {
+            for ib in (0..3 * natom).step_by(3) {
+                // grab 3x3 blocks of FX into A, perform Eg × A × Egᵀ and set
+                // that block in the return matrix
+                let a = fx.fixed_slice::<3, 3>(ia, ib);
+                let temp2 = self.axes.transpose() * a * self.axes;
+                let mut targ = ret.fixed_slice_mut::<3, 3>(ia, ib);
+                targ.copy_from(&temp2);
+            }
+        }
+        ret
+    }
+
+    /// rotate the cubic force constants in `f3x` to align with the principal
+    /// axes in `eg` used to align the geometry
+    pub fn rot3rd(&self, f3x: Tensor3, eg: Mat3) -> Tensor3 {
+        let (a, b, c) = f3x.shape();
+        let mut ret = Tensor3::zeros(a, b, c);
+        // TODO could try slice impl like in rot2nd, but it will be harder with
+        // tensors
+        for i in 0..self.n3n {
+            for j in 0..self.natom {
+                let ib = j * 3;
+                for k in 0..self.natom {
+                    let ic = k * 3;
+                    let mut a = Mat3::zeros();
+                    for jj in 0..3 {
+                        for kk in 0..3 {
+                            a[(jj, kk)] = f3x[(ib + jj, ic + kk, i)];
+                        }
+                    }
+                    let temp2 = eg.transpose() * a * eg;
+                    for jj in 0..3 {
+                        for kk in 0..3 {
+                            ret[(ib + jj, ic + kk, i)] = temp2[(jj, kk)];
+                        }
+                    }
+                }
+            }
+        }
+
+        for j in 0..self.n3n {
+            for k in 0..self.n3n {
+                for i in 0..self.natom {
+                    let ia = i * 3;
+                    let mut val = [0.0; 3];
+                    for ii in 0..3 {
+                        val[ii] = ret[(j, k, ia)] * eg[(0, ii)]
+                            + ret[(j, k, ia + 1)] * eg[(1, ii)]
+                            + ret[(j, k, ia + 2)] * eg[(2, ii)];
+                    }
+
+                    for ii in 0..3 {
+                        ret[(j, k, ia + ii)] = val[ii];
+                    }
+                }
+            }
+        }
+        ret
+    }
+
+    /// rotate the quartic force constants in `f4x` to align with the principal
+    /// axes in `eg` used to align the geometry
+    pub fn rot4th(&self, f4x: Tensor4, eg: Mat3) -> Tensor4 {
+        let egt = eg.transpose();
+        let (a, b, c, d) = f4x.shape();
+        let mut ret = Tensor4::zeros(a, b, c, d);
+        for i in 0..self.n3n {
+            for j in 0..self.n3n {
+                for k in 0..self.natom {
+                    let ic = k * 3;
+                    for l in 0..self.natom {
+                        let id = l * 3;
+                        let mut a = Mat3::zeros();
+                        for kk in 0..3 {
+                            for ll in 0..3 {
+                                a[(kk, ll)] = f4x[(i, j, ic + kk, id + ll)];
+                            }
+                        }
+                        let temp2 = egt * a * eg;
+                        for kk in 0..3 {
+                            for ll in 0..3 {
+                                ret[(i, j, ic + kk, id + ll)] = temp2[(kk, ll)];
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        for k in 0..self.n3n {
+            for l in 0..self.n3n {
+                for i in 0..self.natom {
+                    let ia = i * 3;
+                    for j in 0..self.natom {
+                        let ib = j * 3;
+                        let mut a = Mat3::zeros();
+                        for ii in 0..3 {
+                            for jj in 0..3 {
+                                a[(ii, jj)] = ret[(ia + ii, ib + jj, k, l)];
+                            }
+                        }
+                        let temp2 = egt * a * eg;
+                        for ii in 0..3 {
+                            for jj in 0..3 {
+                                ret[(ia + ii, ib + jj, k, l)] = temp2[(ii, jj)];
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        ret
     }
 
     /// rotational energy levels of an asymmmetric top
@@ -958,120 +1058,26 @@ impl Spectro {
         ret
     }
 
-    /// vibrational energy levels and properties in resonance. returns the
-    /// energies in the same order as the states in `i1sts`
-    fn enrgy(
-        &self,
-        freq: &Dvec,
-        xcnst: &Dmat,
-        gcnst: &Option<Dmat>,
-        f3qcm: &F3qcm,
-        e0: f64,
-        states: &[State],
-        modes: &[Mode],
-        fermi1: &[Fermi1],
-        fermi2: &[Fermi2],
-        eng: &mut [f64],
-    ) {
-        let nstate = states.len();
-        let (n1dm, n2dm, _) = Mode::count(modes);
-        let (i1mode, i2mode, _) = Mode::partition(modes);
-        let (i1sts, i2sts, _) = State::partition(states);
-        for nst in 0..nstate {
-            let mut val1 = 0.0;
-            for (ii, &i) in i1mode.iter().enumerate() {
-                val1 += freq[i] * ((i1sts[nst][ii] as f64) + 0.5);
-            }
-
-            let mut val2 = 0.0;
-            for (ii, &(i, _)) in i2mode.iter().enumerate() {
-                val2 += freq[i] * (i2sts[nst][ii].0 as f64 + 1.0);
-            }
-
-            // this is val2 in the asym top code
-            let mut val3 = 0.0;
-            for (ii, &i) in i1mode.iter().enumerate() {
-                for (jj, &j) in i1mode.iter().take(ii + 1).enumerate() {
-                    val3 += xcnst[(i, j)]
-                        * ((i1sts[nst][ii] as f64) + 0.5)
-                        * ((i1sts[nst][jj] as f64) + 0.5);
-                }
-            }
-
-            let mut val4 = 0.0;
-            for (ii, &i) in i1mode.iter().enumerate() {
-                for (jj, &(j, _)) in i2mode.iter().enumerate() {
-                    val4 += xcnst[(i, j)]
-                        * ((i1sts[nst][ii] as f64 + 0.5)
-                            * (i2sts[nst][jj].0 as f64 + 1.0));
-                }
-            }
-
-            let mut val5 = 0.0;
-            for ii in 0..n2dm {
-                let i = i2mode[ii].0;
-                for jj in 0..=ii {
-                    let j = i2mode[jj].0;
-                    val5 += xcnst[(i, j)]
-                        * ((i2sts[nst][ii].0 as f64 + 1.0)
-                            * (i2sts[nst][jj].0 as f64 + 1.0));
-                }
-            }
-
-            let mut val6 = 0.0;
-            for (ii, &(i, _)) in i2mode.iter().enumerate() {
-                for (jj, &(j, _)) in i2mode.iter().take(ii + 1).enumerate() {
-                    val6 += gcnst
-                        .as_ref()
-                        .expect("g constants required for symmetric tops")
-                        [(i, j)]
-                        * (i2sts[nst][ii].1 as f64)
-                        * (i2sts[nst][jj].1 as f64);
-                }
-            }
-
-            eng[nst] = val1 + val2 + val3 + val4 + val5 + val6 + e0;
+    /// compute the type of molecular rotor in `self.geom` assuming it has
+    /// already been normalized and reordered. These tests are taken from the
+    /// [Crawford Programming
+    /// Projects](https://github.com/CrawfordGroup/ProgrammingProjects/blob/master/Project%2301/hints/step7-solution.md)
+    fn rotor_type(&self) -> Rotor {
+        if self.geom.atoms.len() == 2 {
+            return Rotor::Diatomic;
         }
-
-        let (_, ifrm1) = self.make_fermi_checks(fermi1, fermi2);
-        let mut ifrm2: HashMap<(usize, usize), usize> = HashMap::new();
-        for f in fermi2 {
-            ifrm2.insert((f.i, f.j), f.k);
-        }
-        if self.rotor.is_sym_top() {
-            // so far this is the same as the other case
-
-            // NOTE I think this is not going to work at all :( I think my
-            // ist/jst stuff inside rsfrm1 is going to break spectacularly here
-            // but we'll see
-            for ii in 0..n1dm {
-                let ivib = i1mode[ii];
-                // type 1 fermi resonance
-                if let Some(&jvib) = ifrm1.get(&ivib) {
-                    rsfrm1(ivib, jvib, f3qcm, n1dm, eng);
-                }
-
-                // type 2 fermi resonance
-                for jj in ii + 1..n1dm {
-                    let jvib = i1mode[jj];
-                    if let Some(&kvib) = ifrm2.get(&(jvib, ivib)) {
-                        rsfrm2(ivib, jvib, kvib, f3qcm, states, eng);
-                    }
-                }
-            }
+        let close = |a, b| f64::abs(a - b) < ROTOR_EPS;
+        let moms = &self.primat;
+        if moms[0] < ROTOR_EPS {
+            Rotor::Linear
+        } else if close(moms[0], moms[1]) && close(moms[1], moms[2]) {
+            Rotor::SphericalTop
+        } else if close(moms[0], moms[1]) && !close(moms[1], moms[2]) {
+            Rotor::OblateSymmTop
+        } else if !close(moms[0], moms[1]) && close(moms[1], moms[2]) {
+            Rotor::ProlateSymmTop
         } else {
-            for iii in 0..n1dm {
-                let ivib = i1mode[iii];
-                if let Some(jvib) = ifrm1.get(&ivib) {
-                    rsfrm1(ivib, *jvib, f3qcm, n1dm, eng);
-                }
-                for jjj in iii + 1..n1dm {
-                    let jvib = i1mode[jjj];
-                    if let Some(kvib) = ifrm2.get(&(jvib, ivib)) {
-                        rsfrm2(ivib, jvib, *kvib, f3qcm, states, eng);
-                    }
-                }
-            }
+            Rotor::AsymmTop
         }
     }
 
@@ -1108,6 +1114,7 @@ impl Spectro {
 
         let (zmat, wila) = self.zeta(&lxm, &w);
 
+        let restst = Restst::new(&self, &zmat, &f3qcm, &freq);
         let Restst {
             coriolis,
             fermi1,
@@ -1115,7 +1122,10 @@ impl Spectro {
             darling: _,
             states,
             modes,
-        } = self.restst(&zmat, &f3qcm, &freq);
+            ifunda: _,
+            iovrtn: _,
+            icombn: _,
+        } = &restst;
 
         let (xcnst, gcnst, e0) = if self.rotor.is_sym_top() {
             let (x, g, e) = self.xcals(
@@ -1175,11 +1185,10 @@ impl Spectro {
             // );
         }
 
-        self.enrgy(
-            &freq, &xcnst, &gcnst, &f3qcm, e0, &states, &modes, &fermi1,
-            &fermi2, &mut eng,
-        );
+        self.enrgy(&freq, &xcnst, &gcnst, &restst, &f3qcm, e0, &mut eng);
 
+        // it's not obvious that the states are in this proper order, but by
+        // construction that seems to be the case
         let mut corrs = Vec::new();
         let (n1dm, n2dm, n3dm) = Mode::count(&modes);
         for i in 1..n1dm + n2dm + n3dm + 1 {
@@ -1198,6 +1207,13 @@ impl Spectro {
             rots,
             corrs,
         }
+    }
+
+    pub fn write(&self, filename: &str) -> Result<()> {
+        use std::io::Write;
+        let mut f = File::create(filename)?;
+        writeln!(f, "{}", self)?;
+        Ok(())
     }
 
     /// calculate the anharmonic constants and E_0 for an asymmetric top
@@ -1296,30 +1312,6 @@ impl Spectro {
         (xcnst, e0)
     }
 
-    fn make_fermi_checks(
-        &self,
-        fermi1: &[Fermi1],
-        fermi2: &[Fermi2],
-    ) -> (tensor::Tensor3<usize>, Ifrm1) {
-        let mut ifrmchk = tensor::tensor3::Tensor3::<usize>::zeros(
-            self.nvib, self.nvib, self.nvib,
-        );
-        // using a hash here instead of an array because I need some way to
-        // signal that the value is not there. in fortran they use an array of
-        // zeros because zero will never be a valid index. I could use -1, but
-        // then the vec has to be of isize and I have to do a lot of casting.
-        let mut ifrm1 = Ifrm1::new();
-        for f in fermi1 {
-            ifrmchk[(f.i, f.i, f.j)] = 1;
-            ifrm1.insert(f.i, f.j);
-        }
-        for f in fermi2 {
-            ifrmchk[(f.i, f.j, f.k)] = 1;
-            ifrmchk[(f.j, f.i, f.k)] = 1;
-        }
-        (ifrmchk, ifrm1)
-    }
-
     /// calculate the anharmonic constants and E_0 for a symmetric top
     pub fn xcals(
         &self,
@@ -1358,14 +1350,18 @@ impl Spectro {
                 panic!("big problem in xcals");
             }
         } else {
+            // actually everything I have here pretty much assumes the molecule
+            // is not linear, so good to have this todo here
             todo!()
         };
         // NOTE skipping zeta checks, but they only print stuff
 
         let (ifrmchk, ifrm1) = self.make_fermi_checks(fermi1, fermi2);
 
-        let e1 = make_e0(&modes, f4qcm, f3qcm, freq, &ifrm1, &ifrmchk);
-        dbg!(e1);
+        let e1 = make_e0(modes, f4qcm, f3qcm, freq, &ifrm1, &ifrmchk);
+        let e2 = make_e2(modes, freq, f4qcm, f3qcm, &ifrm1);
+        let e3 = make_e3(modes, freq, f3qcm, &ifrm1, &ifrmchk);
+        let e0 = e1 + e2 + e3;
 
         // start calculating anharmonic constants
         let mut xcnst = Dmat::zeros(self.nvib, self.nvib);
@@ -1778,156 +1774,183 @@ impl Spectro {
                 gcnst[(l222, k2)] = value;
             }
         }
-        (xcnst, gcnst, 0.0)
+        (xcnst, gcnst, e0)
     }
 
-    // should return all of the resonances, as well as the states (I think)
-    pub(crate) fn restst(
-        &self,
-        zmat: &Tensor3,
-        f3qcm: &F3qcm,
-        freq: &Dvec,
-    ) -> Restst {
-        let mut modes = Vec::new();
-        // probably I could get rid of this if, but I guess it protects against
-        // accidental degmodes in asymmetric tops. is an accident still
-        // degenerate?
-        use Mode::*;
-        if self.rotor.is_sym_top() {
-            const DEG_TOL: f64 = 0.1;
-            let mut triples = HashSet::new();
-            for i in 0..self.nvib {
-                let fi = freq[i];
-                for j in i + 1..self.nvib {
-                    let fj = freq[j];
-                    for k in j + 1..self.nvib {
-                        let fk = freq[k];
-                        if close(fi, fj, DEG_TOL) && close(fi, fk, DEG_TOL) {
-                            triples.insert(i);
-                            triples.insert(j);
-                            triples.insert(k);
-                            modes.push(I3(i, j, k));
-                        }
+    /// Calculate the zeta, big A and Wilson A and J matrices. Zeta is for the
+    /// coriolis coupling constants
+    fn zeta(&self, lxm: &Dmat, w: &[f64]) -> (Tensor3, Dmat) {
+        let zmat = make_zmat(self.nvib, self.natom, lxm);
+        // calculate the A vectors. says only half is formed since it's
+        // symmetric
+        let mut wila = Dmat::zeros(self.nvib, 6);
+        for k in 0..self.nvib {
+            let mut valuxx = 0.0;
+            let mut valuyy = 0.0;
+            let mut valuzz = 0.0;
+            let mut valuxy = 0.0;
+            let mut valuxz = 0.0;
+            let mut valuyz = 0.0;
+            for i in 0..self.natom {
+                let ix = 3 * i;
+                let iy = ix + 1;
+                let iz = iy + 1;
+                let xcm = self.geom.atoms[i].x;
+                let ycm = self.geom.atoms[i].y;
+                let zcm = self.geom.atoms[i].z;
+                let rmass = w[i].sqrt();
+                valuxx += rmass * (ycm * lxm[(iy, k)] + zcm * lxm[(iz, k)]);
+                valuyy += rmass * (xcm * lxm[(ix, k)] + zcm * lxm[(iz, k)]);
+                valuzz += rmass * (xcm * lxm[(ix, k)] + ycm * lxm[(iy, k)]);
+                valuxy -= rmass * xcm * lxm[(iy, k)];
+                valuxz -= rmass * xcm * lxm[(iz, k)];
+                valuyz -= rmass * ycm * lxm[(iz, k)];
+            }
+            wila[(k, 0)] = 2.0 * valuxx;
+            wila[(k, 1)] = 2.0 * valuxy;
+            wila[(k, 2)] = 2.0 * valuyy;
+            wila[(k, 3)] = 2.0 * valuxz;
+            wila[(k, 4)] = 2.0 * valuyz;
+            wila[(k, 5)] = 2.0 * valuzz;
+        }
+        (zmat, wila)
+    }
+}
+
+/// make the second component of E0 for symmetric tops
+fn make_e2(
+    modes: &[Mode],
+    freq: &Dvec,
+    f4qcm: &F4qcm,
+    f3qcm: &F3qcm,
+    ifrm1: &Ifrm1,
+) -> f64 {
+    let (n1dm, n2dm, _) = Mode::count(modes);
+    let (i1mode, i2mode, _) = Mode::partition(modes);
+    // e2
+    // sss and ssss terms
+    let mut f4s = 0.0;
+    let mut f3s = 0.0;
+    let mut f3kss = 0.0;
+    for kk in 0..n2dm {
+        let (k, _) = i2mode[kk];
+        let wk = freq[k].powi(2);
+        f4s += f4qcm[(k, k, k, k)] / 48.0;
+        f3s += 11.0 * f3qcm[(k, k, k)].powi(2) / (freq[k] * 144.0);
+
+        // kss and fss terms
+        for ll in 0..n1dm {
+            let l = i1mode[ll];
+            let zval4 = f3qcm[(k, k, l)].powi(2);
+            let wl = freq[l].powi(2);
+            if ifrm1.check(k, l) {
+                let delta4 = 2.0 * (2.0 * freq[k] + freq[l]);
+                f3kss += zval4 / (16.0 * delta4);
+            } else {
+                let delta4 = 4.0 * wk - wl;
+                f3kss += zval4 * freq[l] / (16.0 * delta4);
+            }
+        }
+    }
+    f4s + f3s + f3kss
+}
+
+/// make the third component of E0 for symmetric tops
+fn make_e3(
+    modes: &[Mode],
+    freq: &Dvec,
+    f3qcm: &F3qcm,
+    ifrm1: &Ifrm1,
+    ifrmchk: &tensor::Tensor3<usize>,
+) -> f64 {
+    let (n1dm, n2dm, _) = Mode::count(modes);
+    let (i1mode, i2mode, _) = Mode::partition(modes);
+    let mut f3kst = 0.0;
+    let mut f3sst = 0.0;
+    let mut f3stu = 0.0;
+    // they check that ilin == 0 again here, but this all should only be called
+    // if the molecule isn't linear
+    for kk in 0..n2dm {
+        let (k, _) = i2mode[kk];
+        let wk = freq[k].powi(2);
+        for ll in 0..n2dm {
+            let (l, _) = i2mode[ll];
+            if k == l {
+                continue;
+            }
+            let wl = freq[l].powi(2);
+            let zval5 = f3qcm[(k, k, l)].powi(2);
+            if ifrm1.check(k, l) {
+                // very encouraging comment from jan martin here: "this is
+                // completely hosed!!!! dimension is cm-1 and should be cm !!!
+                // perhaps he's multiplying by 2*FREQ(L) when he should divide?"
+                // I'm assuming he fixed this and the code I've translated is
+                // right.
+                let delta5 =
+                    (8.0 * wk + wl) / (2.0 * freq[k] + freq[l]) / (2.0 * wl);
+                f3sst += zval5 * delta5 / 16.0;
+            } else {
+                let delta5 = (8.0 * wk + wl) / (freq[l] * (4.0 * wk - wl));
+                f3sst += zval5 * delta5 / 16.0;
+            }
+
+            for mm in 0..n1dm {
+                let m = i1mode[mm];
+                if k <= l {
+                    f3kst = 0.0;
+                } else {
+                    let zval6 = f3qcm[(k, l, m)].powi(2);
+                    let xkst = freq[(k)] * freq[(l)] * freq[(m)];
+                    let d1 = freq[(k)] + freq[(l)] + freq[(m)];
+                    let d2 = freq[(k)] - freq[(l)] + freq[(m)];
+                    let d3 = freq[(k)] + freq[(l)] - freq[(m)];
+                    let d4 = freq[(k)] - freq[(l)] - freq[(m)];
+                    if ifrmchk[(k, l, m)] != 0 {
+                        let delta6 = 1.0 / d1 + 1.0 / d2 + 1.0 / d4;
+                        f3kst -= zval6 * delta6 / 8.0;
+                    } else if ifrmchk[(l, m, k)] != 0 {
+                        let delta6 = 1.0 / d1 + 1.0 / d2 - 1.0 / d3;
+                        f3kst -= zval6 * delta6 / 8.0;
+                    } else if ifrmchk[(k, m, l)] != 0 {
+                        let delta6 = 1.0 / d1 - 1.0 / d3 + 1.0 / d4;
+                        f3kst -= zval6 * delta6 / 8.0;
+                    } else {
+                        let delta6 = d1 * d2 * d3 * d4;
+                        f3kst -= zval6 * xkst / (2.0 * delta6);
                     }
                 }
             }
-            // run these in two passes to avoid counting something as
-            // triply-degenerate AND doubly-degenerate
-            let mut doubles = HashSet::new();
-            for i in 0..self.nvib {
-                let fi = freq[i];
-                for j in i + 1..self.nvib {
-                    let fj = freq[j];
-                    if close(fi, fj, DEG_TOL)
-                        && !triples.contains(&i)
-                        && !triples.contains(&j)
-                    {
-                        doubles.insert(i);
-                        doubles.insert(j);
-                        modes.push(I2(i, j));
+
+            // stu term
+            for mm in 0..n2dm {
+                let (m, _) = i2mode[mm];
+                if k <= l || l <= m {
+                    f3stu = 0.0;
+                } else {
+                    let zval7 = f3qcm[(k, l, m)].powi(2);
+                    let xstu = freq[(k)] * freq[(l)] * freq[(m)];
+                    let d1 = freq[(k)] + freq[(l)] + freq[(m)];
+                    let d2 = freq[(k)] - freq[(l)] + freq[(m)];
+                    let d3 = freq[(k)] + freq[(l)] - freq[(m)];
+                    let d4 = freq[(k)] - freq[(l)] - freq[(m)];
+                    if ifrmchk[(k, l, m)] != 0 {
+                        let delta7 = 1.0 / d1 + 1.0 / d2 + 1.0 / d4;
+                        f3stu -= 2.0 * zval7 * delta7 / 4.0;
+                    } else if ifrmchk[(l, m, k)] != 0 {
+                        let delta7 = 1.0 / d1 + 1.0 / d2 - 1.0 / d3;
+                        f3stu -= 2.0 * zval7 * delta7 / 4.0;
+                    } else if ifrmchk[(k, m, l)] != 0 {
+                        let delta7 = 1.0 / d1 - 1.0 / d3 + 1.0 / d4;
+                        f3stu -= 2.0 * zval7 * delta7 / 4.0;
+                    } else {
+                        let delta7 = d1 * d2 * d3 * d4;
+                        f3stu -= 2.0 * zval7 * xstu / (delta7);
                     }
                 }
             }
-            for i in 0..self.nvib {
-                if !triples.contains(&i) && !doubles.contains(&i) {
-                    modes.push(I1(i));
-                }
-            }
-        } else {
-            for i in 0..self.nvib {
-                modes.push(I1(i));
-            }
-        };
-        let coriolis = self.rotor.coriolis(&modes, freq, zmat);
-        let fermi1 = self.rotor.fermi1(&modes, freq, f3qcm);
-        let fermi2 = self.rotor.fermi2(&modes, freq, f3qcm);
-        let darling = self.rotor.darling(&modes, freq);
-
-        let (n1dm, n2dm, n3dm) = Mode::count(&modes);
-        if n3dm > 0 {
-            todo!("untested");
-        }
-
-        let mut states = Vec::new();
-        use state::State::*;
-
-        // ground state, all zeros
-        states.push(I1st(vec![0; self.nvib]));
-
-        // fundamentals, single excitations
-        for ii in 0..n1dm {
-            let mut tmp = vec![0; self.nvib];
-            tmp[ii] = 1;
-            states.push(I1st(tmp));
-        }
-        for ii in 0..n2dm {
-            let mut tmp = vec![(0, 0); self.nvib];
-            tmp[ii] = (1, 1);
-            states.push(I2st(tmp));
-        }
-        for ii in 0..n3dm {
-            let mut tmp = vec![0; self.nvib];
-            tmp[ii] = 1;
-            states.push(I3st(tmp));
-        }
-        // NOTE: triply-degenerate modes are only handled for fundamentals. also
-        // their resonances are not handled at all
-
-        // overtones, double excitations in one mode
-        for ii in 0..n1dm {
-            let mut tmp = vec![0; self.nvib];
-            tmp[ii] = 2;
-            states.push(I1st(tmp));
-        }
-        for ii in 0..n2dm {
-            let mut tmp = vec![(0, 0); self.nvib];
-            tmp[ii] = (2, 0);
-            states.push(I2st(tmp));
-        }
-
-        // combination bands
-        for ii in 0..n1dm {
-            // nondeg - nondeg combination
-            for jj in ii + 1..n1dm {
-                let mut tmp = vec![0; self.nvib];
-                tmp[ii] = 1;
-                tmp[jj] = 1;
-                states.push(I1st(tmp));
-            }
-
-            // nondeg - deg combination
-            for jj in 0..n2dm {
-                // I guess you push this to states as well. might have to change
-                // how I index these because they set states(ii, ist) to this,
-                // which I guess syncs it with ist in i2sts. we'll see how it's
-                // accessed. I'm not that interested in combination bands anyway
-                let mut i1st = vec![0; self.nvib];
-                i1st[ii] = 1;
-                let mut i2st = vec![(0, 0); self.nvib];
-                i2st[jj] = (1, 1);
-                states.push(I12st { i1st, i2st })
-            }
-        }
-
-        // deg-deg combination
-        for ii in 0..n2dm {
-            for jj in ii + 1..n2dm {
-                let mut tmp = vec![(0, 0); self.nvib];
-                tmp[ii] = (1, 1);
-                tmp[jj] = (1, 1);
-                states.push(I2st(tmp));
-            }
-        }
-
-        Restst {
-            coriolis,
-            fermi1,
-            fermi2,
-            darling,
-            states,
-            modes,
         }
     }
+    f3kst + f3sst + f3stu
 }
 
 fn make_sym_funds(

@@ -1,4 +1,4 @@
-use crate::{state::States, *};
+use crate::{resonance::Darling, state::States, *};
 
 struct Test {
     infile: String,
@@ -50,6 +50,9 @@ fn restst_asym() {
                     I1st(vec![0, 1, 1]),
                 ],
                 modes: vec![I1(0), I1(1), I1(2)],
+                ifunda: vec![1, 2, 3],
+                iovrtn: vec![4, 5, 6],
+                icombn: vec![0, 7, 0, 8, 9, 0],
             },
         ),
         Test::new(
@@ -90,6 +93,12 @@ fn restst_asym() {
                     I1st(vec![0, 0, 0, 0, 1, 1]),
                 ],
                 modes: vec![I1(0), I1(1), I1(2), I1(3), I1(4), I1(5)],
+                ifunda: vec![1, 2, 3, 4, 5, 6],
+                iovrtn: vec![7, 8, 9, 10, 11, 12],
+                icombn: vec![
+                    0, 13, 0, 14, 18, 0, 15, 19, 22, 0, 16, 20, 23, 25, 0, 17,
+                    21, 24, 26, 27, 0,
+                ],
             },
         ),
         Test::new(
@@ -187,6 +196,13 @@ fn restst_asym() {
                     I1(6),
                     I1(7),
                     I1(8),
+                ],
+                ifunda: vec![1, 2, 3, 4, 5, 6, 7, 8, 9],
+                iovrtn: vec![10, 11, 12, 13, 14, 15, 16, 17, 18],
+                icombn: vec![
+                    0, 19, 0, 20, 27, 0, 21, 28, 34, 0, 22, 29, 35, 40, 0, 23,
+                    30, 36, 41, 45, 0, 24, 31, 37, 42, 46, 49, 0, 25, 32, 38,
+                    43, 47, 50, 52, 0, 26, 33, 39, 44, 48, 51, 53, 54, 0,
                 ],
             },
         ),
@@ -289,6 +305,13 @@ fn restst_asym() {
                     I1(7),
                     I1(8),
                 ],
+                ifunda: vec![1, 2, 3, 4, 5, 6, 7, 8, 9],
+                iovrtn: vec![10, 11, 12, 13, 14, 15, 16, 17, 18],
+                icombn: vec![
+                    0, 19, 0, 20, 27, 0, 21, 28, 34, 0, 22, 29, 35, 40, 0, 23,
+                    30, 36, 41, 45, 0, 24, 31, 37, 42, 46, 49, 0, 25, 32, 38,
+                    43, 47, 50, 52, 0, 26, 33, 39, 44, 48, 51, 53, 54, 0,
+                ],
             },
         ),
     ];
@@ -346,6 +369,12 @@ fn restst_sym() {
                 I2st(vec![(1, 1), (1, 1), (0, 0), (0, 0), (0, 0), (0, 0)]),
             ],
             modes: vec![I2(0, 1), I2(3, 4), I1(2), I1(5)],
+            ifunda: vec![3, 3, 1, 4, 4, 2],
+            iovrtn: vec![7, 7, 5, 8, 8, 6],
+            icombn: vec![
+                0, 0, 0, 10, 10, 0, 14, 14, 11, 0, 14, 14, 11, 0, 0, 12, 12, 9,
+                13, 13, 0,
+            ],
         },
     )];
     inner(&tests);
@@ -367,7 +396,7 @@ fn inner(tests: &[Test]) {
         let f3x = load_fc3(&test.fort30, s.n3n);
         let mut f3x = s.rot3rd(f3x, s.axes);
         let f3qcm = force3(s.n3n, &mut f3x, &lx, s.nvib, &freq);
-        let got = s.restst(&zmat, &f3qcm, &freq);
+        let got = Restst::new(&s, &zmat, &f3qcm, &freq);
         assert_eq!(got.coriolis, test.want.coriolis);
         assert_eq!(got.fermi1, test.want.fermi1);
         assert_eq!(got.fermi2, test.want.fermi2);
@@ -387,6 +416,9 @@ fn inner(tests: &[Test]) {
         assert_eq!(i3sts, want_i3);
         assert_eq!(got.states, test.want.states);
         assert_eq!(got.modes, test.want.modes);
+        assert_eq!(got.ifunda, test.want.ifunda);
+        assert_eq!(got.iovrtn, test.want.iovrtn);
+        assert_eq!(got.icombn, test.want.icombn);
         assert_eq!(got, test.want);
     }
 }
