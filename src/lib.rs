@@ -74,16 +74,16 @@ const ALPHA_CONST: f64 = 0.086112;
 
 /// PRINCIPAL ---> CARTESIAN
 static IPTOC: nalgebra::Matrix3x6<usize> = nalgebra::matrix![
-2,0,1,1,2,0;
-0,1,2,2,1,0;
-0,2,1,1,0,2;
+    2,    1,    0,    2,    0,    1;
+    0,    2,    1,    1,    2,    0;
+    1,    0,    2,    0,    1,    2;
 ];
 
 /// CARTESIAN---> PRINCIPAL
 static ICTOP: nalgebra::Matrix3x6<usize> = nalgebra::matrix![
-    1,2,0,2,0,1;
-    0,1,2,2,1,0;
-    0,2,1,1,0,2;
+    1,    2,    0,    2,    0,    1;
+    2,    0,    1,    1,    2,    0;
+    0,    1,    2,    0,    1,    2;
 ];
 
 /// avogadro's number
@@ -1212,7 +1212,14 @@ impl Spectro {
 
         let quartic = Quartic::new(&self, &freq, &wila);
         let _sextic = Sextic::new(&self, &wila, &zmat, &freq, &f3qcm);
-        let rots = self.rota(&rotnst, &states, &quartic);
+        let rots = if self.rotor.is_sym_top() {
+            if self.rotor.is_spherical_top() {
+                panic!("don't know what to do with a spherical top here");
+            }
+            self.rots(&rotnst, &states, &quartic)
+        } else {
+            self.rota(&rotnst, &states, &quartic)
+        };
 
         Output {
             harms,
@@ -1827,6 +1834,26 @@ impl Spectro {
             wila[(k, 5)] = 2.0 * valuzz;
         }
         (zmat, wila)
+    }
+
+    /// compute the rotational energy levels of a symmetric top
+    #[allow(unused)]
+    fn rots(
+        &self,
+        rotnst: &Dmat,
+        states: &[State],
+        quartic: &Quartic,
+    ) -> Vec<Rot> {
+        let (ia, ib) = if self.rotor.is_prolate() {
+            (0, 1)
+        } else if self.rotor.is_oblate() {
+            (2, 1)
+        } else {
+            panic!("not a symmetric top");
+        };
+        let irep = 5;
+        let (ic, _) = princ_cart(irep);
+        todo!()
     }
 }
 

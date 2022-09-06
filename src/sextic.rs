@@ -545,14 +545,7 @@ impl Sextic {
                     / b002;
         } else {
             let irep = if s.rotor.is_prolate() { 0 } else { 5 };
-            let (_, id) = {
-                use crate::{ICTOP, IPTOC};
-                // have to inline this because the indices are swapped around
-                // somehow
-                let ic = [IPTOC[(0, irep)], IPTOC[(1, irep)], IPTOC[(2, irep)]];
-                let id = [ICTOP[(0, irep)], ICTOP[(1, irep)], ICTOP[(2, irep)]];
-                (ic, id)
-            };
+            let (_, id) = princ_cart(irep);
             let rkappa =
                 (2.0 * s.rotcon[id[0]] - s.rotcon[id[1]] - s.rotcon[id[2]])
                     / (s.rotcon[id[1]] - s.rotcon[id[2]]);

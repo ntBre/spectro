@@ -442,7 +442,7 @@ impl Rotor {
     ///
     /// [`OblateSymmTop`]: Rotor::OblateSymmTop
     #[must_use]
-    pub fn is_oblate_symm_top(&self) -> bool {
+    pub fn is_oblate(&self) -> bool {
         matches!(self, Self::OblateSymmTop)
     }
 
@@ -460,6 +460,14 @@ impl Rotor {
     #[must_use]
     pub fn is_diatomic(&self) -> bool {
         matches!(self, Self::Diatomic)
+    }
+
+    /// Returns `true` if the rotor is [`SphericalTop`].
+    ///
+    /// [`SphericalTop`]: Rotor::SphericalTop
+    #[must_use]
+    pub fn is_spherical_top(&self) -> bool {
+        matches!(self, Self::SphericalTop)
     }
 }
 

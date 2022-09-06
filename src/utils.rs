@@ -572,10 +572,10 @@ pub(crate) fn make_tau(
 }
 
 /// set up vectors for principal -> cartesian and cartesian -> principal
-/// transformations
+/// transformations for asymmetric tops
 pub(crate) fn princ_cart(irep: usize) -> ([usize; 3], [usize; 3]) {
-    let ic = [IPTOC[(irep, 0)], IPTOC[(irep, 1)], IPTOC[(irep, 2)]];
-    let id = [ICTOP[(irep, 0)], ICTOP[(irep, 1)], ICTOP[(irep, 2)]];
+    let ic = [IPTOC[(0, irep)], IPTOC[(1, irep)], IPTOC[(2, irep)]];
+    let id = [ICTOP[(0, irep)], ICTOP[(1, irep)], ICTOP[(2, irep)]];
     (ic, id)
 }
 
