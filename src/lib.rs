@@ -1021,20 +1021,8 @@ impl Spectro {
         quartic: &Quartic,
     ) -> Vec<Rot> {
         let (b4a, b5a, b6a) = quartic.arots();
-
-        // I think this is always 3, but that doesn't really make sense. set
-        // to 0 in mains, then passed to readw which never touches it and
-        // then set to 3 if it's still 0. there might also be a better way
-        // to set these than maxk. check what they actually loop over
-        // NOTE: pretty sure this is always the case
         let irep = 0;
         let (ic, _) = princ_cart(irep);
-        // number of states here is just the ground state + fundamentals,
-        // singly-vibrationally excited states, but changes with resonances
-        // TODO take this from actual i1sts when I have that. currently i1sts is
-        // all states, but I want to partition it to the singly-degenerate
-        // states.
-
         // use the nstop determined earlier
         let (nstop, _) = rotnst.shape();
         let nderiv = self.header[7];
@@ -1846,14 +1834,48 @@ impl Spectro {
     ) -> Vec<Rot> {
         let (ia, ib) = if self.rotor.is_prolate() {
             (0, 1)
-        } else if self.rotor.is_oblate() {
-            (2, 1)
         } else {
-            panic!("not a symmetric top");
+            (2, 1)
         };
         let irep = 5;
         let (ic, _) = princ_cart(irep);
-        todo!()
+        let (nstop, _) = rotnst.shape();
+        let (b1s, b2s, b3s) = quartic.srots();
+        dbg!(b1s, b2s, b3s);
+        let mut ret = Vec::new();
+        for nst in 0..nstop {
+            let vib1 = rotnst[(nst, ia)] - self.rotcon[ia];
+            let vib2 = rotnst[(nst, ib)] - self.rotcon[ib];
+
+            let mut vibr = [0.0; 3];
+            vibr[ic[0]] = vib1;
+            vibr[ic[1]] = vib2;
+            vibr[ic[2]] = vib2;
+            if self.rotor.is_prolate() {
+                let bxs = b1s + vibr[(1)];
+                let bys = b2s + vibr[(0)];
+                let bzs = b3s + vibr[(2)];
+                match &states[nst] {
+                    State::I1st(v) => {
+                        ret.push(Rot::new(v.clone(), bzs, bxs, bys));
+                    }
+                    _ => (),
+                }
+            } else {
+                // only difference is order of vibr indices here
+                let bxs = b1s + vibr[(2)];
+                let bys = b2s + vibr[(0)];
+                let bzs = b3s + vibr[(1)];
+                // TODO share this match as well
+                match &states[nst] {
+                    State::I1st(v) => {
+                        ret.push(Rot::new(v.clone(), bzs, bxs, bys));
+                    }
+                    _ => (),
+                }
+            }
+        }
+        ret
     }
 }
 

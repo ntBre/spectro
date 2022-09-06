@@ -8,16 +8,52 @@ use crate::*;
 use na::DVector;
 use nalgebra as na;
 
-fn load_want(filename: PathBuf) -> Output {
-    #[derive(Clone, Deserialize, Debug)]
-    struct Want {
-        harms: Vec<f64>,
-        funds: Vec<f64>,
-        corrs: Vec<f64>,
-        rots: Vec<Vec<f64>>,
-    }
+#[derive(Clone, Deserialize, Debug)]
+struct Want {
+    harms: Vec<f64>,
+    funds: Vec<f64>,
+    corrs: Vec<f64>,
+    rots: Vec<Vec<f64>>,
+}
+
+fn load_want(filename: PathBuf, sym: bool) -> Output {
     let data = read_to_string(filename).unwrap();
     let want: Want = serde_json::from_str(&data).unwrap();
+    let rots = if sym {
+        rots_sym(&want)
+    } else {
+        rots_asym(&want)
+    };
+    Output {
+        harms: want.harms,
+        funds: want.funds,
+        corrs: want.corrs,
+        rots,
+    }
+}
+
+fn rots_sym(want: &Want) -> Vec<Rot> {
+    let mut rots = vec![Rot::new(
+        vec![0; want.harms.len()],
+        want.rots[0][1],
+        want.rots[0][0],
+        want.rots[0][2],
+    )];
+    // TODO fix the states
+    for i in 0..want.harms.len() {
+        let mut tmp = vec![0; want.harms.len()];
+        tmp[i] = 1;
+        rots.push(Rot::new(
+            tmp,
+            want.rots[i + 1][1],
+            want.rots[i + 1][0],
+            want.rots[i + 1][2],
+        ));
+    }
+    rots
+}
+
+fn rots_asym(want: &Want) -> Vec<Rot> {
     let mut rots = vec![Rot::new(
         vec![0; want.harms.len()],
         want.rots[0][2],
@@ -34,12 +70,7 @@ fn load_want(filename: PathBuf) -> Output {
             want.rots[i + 1][1],
         ));
     }
-    Output {
-        harms: want.harms,
-        funds: want.funds,
-        corrs: want.corrs,
-        rots,
-    }
+    rots
 }
 
 #[derive(Clone)]
@@ -52,14 +83,14 @@ struct Test {
 }
 
 impl Test {
-    fn new(dir: &'static str) -> Self {
+    fn new(dir: &'static str, sym: bool) -> Self {
         let start = Path::new("testfiles");
         Self {
             infile: start.join(dir).join("spectro.in"),
             fort15: start.join(dir).join("fort.15"),
             fort30: start.join(dir).join("fort.30"),
             fort40: start.join(dir).join("fort.40"),
-            want: load_want(start.join(dir).join("summary.json")),
+            want: load_want(start.join(dir).join("summary.json"), sym),
         }
     }
 }
@@ -127,38 +158,38 @@ fn check_rots(got: Vec<Rot>, want: Vec<Rot>, infile: &str) {
 #[test]
 fn run_asym() {
     let tests = [
-        Test::new("h2o"),
-        Test::new("h2co"),
-        Test::new("c3h2"),
-        Test::new("c2h4"),
-        Test::new("c4h3+"),
-        Test::new("allyl"),
-        Test::new("h2o_sic"),
-        Test::new("c3hf"),
-        Test::new("c3hcl"),
-        Test::new("c3hcn"),
-        Test::new("c3hcn010"),
-        Test::new("c-hoco"),
-        Test::new("hno"),
-        Test::new("hocn"),
-        Test::new("hoco+"),
-        Test::new("hpsi"),
-        Test::new("hso"),
-        Test::new("hss"),
-        Test::new("nh2-"),
-        Test::new("nnoh+"),
-        Test::new("sic2"),
-        Test::new("t-hoco"),
-        Test::new("hoof"),
-        Test::new("hosh"),
-        Test::new("hssh"),
+        Test::new("h2o", false),
+        Test::new("h2co", false),
+        Test::new("c3h2", false),
+        Test::new("c2h4", false),
+        Test::new("c4h3+", false),
+        Test::new("allyl", false),
+        Test::new("h2o_sic", false),
+        Test::new("c3h,f", false),
+        Test::new("c3hcl", false),
+        Test::new("c3hcn", false),
+        Test::new("c3hcn010", false),
+        Test::new("c-hoco", false),
+        Test::new("hno", false),
+        Test::new("hocn", false),
+        Test::new("hoco+", false),
+        Test::new("hpsi", false),
+        Test::new("hso", false),
+        Test::new("hss", false),
+        Test::new("nh2-", false),
+        Test::new("nnoh+", false),
+        Test::new("sic2", false),
+        Test::new("t-hoco", false),
+        Test::new("hoof", false),
+        Test::new("hosh", false),
+        Test::new("hssh", false),
     ];
     inner(&tests);
 }
 
 #[test]
 fn run_sym() {
-    let tests = [Test::new("nh3")];
+    let tests = [Test::new("nh3", true)];
     inner(&tests);
 }
 
@@ -166,11 +197,11 @@ fn run_sym() {
 #[ignore]
 fn run_lin() {
     let tests = [
-        Test::new("c2h-"),
-        Test::new("hcn"),
-        Test::new("hco+"),
-        Test::new("hmgnc"),
-        Test::new("hnc"),
+        Test::new("c2h-", true),
+        Test::new("hcn", true),
+        Test::new("hco+", true),
+        Test::new("hmgnc", true),
+        Test::new("hnc", true),
     ];
     inner(&tests);
 }

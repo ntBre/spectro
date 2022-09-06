@@ -24,6 +24,7 @@ pub(crate) struct Quartic {
     pub(crate) deljk: f64,
     pub(crate) sdelk: f64,
     pub(crate) sdelj: f64,
+    /// Watson A-reduced Hamiltonian rotational constants
     pub(crate) bxa: f64,
     pub(crate) bya: f64,
     pub(crate) bza: f64,
@@ -38,6 +39,7 @@ pub(crate) struct Quartic {
     pub(crate) dk: f64,
     pub(crate) sd1: f64,
     pub(crate) sd2: f64,
+    /// Watson S-reduced Hamiltonian rotational constants
     pub(crate) bxs: f64,
     pub(crate) bys: f64,
     pub(crate) bzs: f64,
@@ -153,10 +155,16 @@ impl Display for Quartic {
 }
 
 impl Quartic {
-    /// return the effective rotational constants in the Watson A reduced
+    /// return the effective rotational constants in the Watson A-reduced
     /// Hamiltonian that are stored in `self`
     pub(crate) fn arots(&self) -> (f64, f64, f64) {
         (self.bxa, self.bya, self.bza)
+    }
+
+    /// return the effective rotational constants in the Watson S-reduced
+    /// Hamiltonian that are stored in `self`
+    pub(crate) fn srots(&self) -> (f64, f64, f64) {
+        (self.bxs, self.bys, self.bzs)
     }
 
     /// calculate the quartic centrifugal distortion constants
