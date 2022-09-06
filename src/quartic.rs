@@ -173,8 +173,37 @@ impl Quartic {
         let tau = make_tau(maxcor, s.nvib, freq, &s.primat, wila);
         let taupcm = tau_prime(maxcor, &tau);
         // NOTE: pretty sure this is always the case
-        let irep = 0;
+        let irep = if s.rotor.is_sym_top() { 5 } else { 0 };
         let (ic, id) = princ_cart(irep);
+
+        // TODO try to match this
+        let (rkappa, sigma) = if s.rotor.is_sym_top()
+            && !s.rotor.is_linear()
+            && !s.rotor.is_spherical_top()
+        {
+            let rkappa =
+                (2.0 * s.rotcon[id[0]] - s.rotcon[id[1]] - s.rotcon[id[2]])
+                    / (s.rotcon[id[1]] - s.rotcon[id[2]]);
+            if rkappa < 0.0 {
+                // prolate
+                let sigma = -9999999999999.0;
+                (rkappa, sigma)
+            } else {
+                // oblate
+                let bo = (rkappa - 1.0) / (rkappa + 3.0);
+                let sigma = 1.0 / bo;
+                (rkappa, sigma)
+            }
+        } else if s.rotor.is_asymm_top() {
+            let sigma =
+                (2.0 * s.rotcon[id[2]] - s.rotcon[id[0]] - s.rotcon[id[1]])
+                    / (s.rotcon[id[0]] - s.rotcon[id[1]]);
+            let rkappa = (2.0 * s.rotcon[1] - s.rotcon[0] - s.rotcon[2])
+                / (s.rotcon[0] - s.rotcon[2]);
+            (rkappa, sigma)
+        } else {
+            panic!("didn't expect that kind");
+        };
 
         let mut t = Dmat::zeros(maxcor, maxcor);
         for ixyz in 0..maxcor {
@@ -191,16 +220,8 @@ impl Quartic {
         let t022 = (t[(0, 2)] - t[(1, 2)]) / 2.0e0 - t202;
         let t004 = (t[(0, 0)] + t[(1, 1)] - 2.0e0 * t[(0, 1)]) / 16.0e0;
 
-        let sigma = (2.0 * s.rotcon[id[2]] - s.rotcon[id[0]] - s.rotcon[id[1]])
-            / (s.rotcon[id[0]] - s.rotcon[id[1]]);
         let djw = -taupcm[(ic[0], ic[0])] / 4.0;
         Quartic {
-            // asymmetric top
-            sigma: (2.0 * s.rotcon[id[2]] - s.rotcon[id[0]] - s.rotcon[id[1]])
-                / (s.rotcon[id[0]] - s.rotcon[id[1]]),
-            // definitely need not to do this if it's not an asymmetric top
-            rkappa: (2.0 * s.rotcon[1] - s.rotcon[0] - s.rotcon[2])
-                / (s.rotcon[0] - s.rotcon[2]),
             // coefficients in the Watson A reduction
             delj: -t400 - 2.0 * t004,
             delk: -t040 - 10.0 * t004,
@@ -233,6 +254,8 @@ impl Quartic {
             djkw: -2.0 * djw - taupcm[(ic[0], ic[2])] / 2.0,
             dkw: djw - taupcm[(ic[2], ic[2])] / 4.0
                 + taupcm[(ic[0], ic[2])] / 2.0,
+            sigma,
+            rkappa,
         }
     }
 }

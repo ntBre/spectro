@@ -469,6 +469,14 @@ impl Rotor {
     pub fn is_spherical_top(&self) -> bool {
         matches!(self, Self::SphericalTop)
     }
+
+    /// Returns `true` if the rotor is [`AsymmTop`].
+    ///
+    /// [`AsymmTop`]: Rotor::AsymmTop
+    #[must_use]
+    pub fn is_asymm_top(&self) -> bool {
+        matches!(self, Self::AsymmTop)
+    }
 }
 
 fn ferm1_test(

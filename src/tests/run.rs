@@ -34,7 +34,7 @@ fn load_want(filename: PathBuf, sym: bool) -> Output {
 
 fn rots_sym(want: &Want) -> Vec<Rot> {
     let mut rots = vec![Rot::new(
-        vec![0; want.harms.len()],
+        State::I1st(vec![0; want.harms.len()]),
         want.rots[0][1],
         want.rots[0][0],
         want.rots[0][2],
@@ -44,7 +44,7 @@ fn rots_sym(want: &Want) -> Vec<Rot> {
         let mut tmp = vec![0; want.harms.len()];
         tmp[i] = 1;
         rots.push(Rot::new(
-            tmp,
+            State::I1st(tmp),
             want.rots[i + 1][1],
             want.rots[i + 1][0],
             want.rots[i + 1][2],
@@ -55,7 +55,7 @@ fn rots_sym(want: &Want) -> Vec<Rot> {
 
 fn rots_asym(want: &Want) -> Vec<Rot> {
     let mut rots = vec![Rot::new(
-        vec![0; want.harms.len()],
+        State::I1st(vec![0; want.harms.len()]),
         want.rots[0][2],
         want.rots[0][0],
         want.rots[0][1],
@@ -64,7 +64,7 @@ fn rots_asym(want: &Want) -> Vec<Rot> {
         let mut tmp = vec![0; want.harms.len()];
         tmp[i] = 1;
         rots.push(Rot::new(
-            tmp,
+            State::I1st(tmp),
             want.rots[i + 1][2],
             want.rots[i + 1][0],
             want.rots[i + 1][1],
@@ -165,7 +165,7 @@ fn run_asym() {
         Test::new("c4h3+", false),
         Test::new("allyl", false),
         Test::new("h2o_sic", false),
-        Test::new("c3h,f", false),
+        Test::new("c3hf", false),
         Test::new("c3hcl", false),
         Test::new("c3hcn", false),
         Test::new("c3hcn010", false),
@@ -189,7 +189,21 @@ fn run_asym() {
 
 #[test]
 fn run_sym() {
-    let tests = [Test::new("nh3", true)];
+    use State::*;
+    // manual workaround for the states not being in the summarize output
+    let states = [[
+        I1st(vec![0, 0, 0, 0, 0, 0]),
+        I1st(vec![1, 0, 0, 0, 0, 0]),
+        I1st(vec![0, 1, 0, 0, 0, 0]),
+        I2st(vec![(1, 1), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0)]),
+        I2st(vec![(0, 0), (1, 1), (0, 0), (0, 0), (0, 0), (0, 0)]),
+    ]];
+    let mut tests = [Test::new("nh3", true)];
+    for (i, test) in tests.iter_mut().enumerate() {
+        for j in 0..test.want.rots.len() {
+            test.want.rots[j].state = states[i][j].clone();
+        }
+    }
     inner(&tests);
 }
 

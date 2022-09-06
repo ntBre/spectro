@@ -480,7 +480,7 @@ impl Spectro {
         // vibrationally averaged rotational constants
 
         // use nstop again to compute only the fundamentals, not every state
-        let nstop = self.nvib + 1;
+        let nstop = states.len();
         let mut rotnst = Dmat::zeros(nstop, 3);
         // only one axis for linear molecules
         let axes = if self.rotor.is_linear() {
@@ -1043,8 +1043,8 @@ impl Spectro {
             let bya = b5a + vibr[1];
             let bza = b6a + vibr[2];
             match &states[nst] {
-                State::I1st(v) => {
-                    ret.push(Rot::new(v.clone(), bza, bxa, bya));
+                State::I1st(_) => {
+                    ret.push(Rot::new(states[nst].clone(), bza, bxa, bya));
                 }
                 _ => (),
                 // State::I2st(_) => todo!(),
@@ -1148,7 +1148,6 @@ impl Spectro {
             )
         };
 
-        // TODO good to here
         let rotnst = if self.rotor.is_sym_top() {
             self.alphas(
                 &self.rotcon,
@@ -1825,7 +1824,6 @@ impl Spectro {
     }
 
     /// compute the rotational energy levels of a symmetric top
-    #[allow(unused)]
     fn rots(
         &self,
         rotnst: &Dmat,
@@ -1841,9 +1839,24 @@ impl Spectro {
         let (ic, _) = princ_cart(irep);
         let (nstop, _) = rotnst.shape();
         let (b1s, b2s, b3s) = quartic.srots();
-        dbg!(b1s, b2s, b3s);
         let mut ret = Vec::new();
+        // TODO want only fundamental states
         for nst in 0..nstop {
+            match &states[nst] {
+                State::I1st(v) => {
+                    // accept all zeros=ground state or a single 1=fund
+                    if v.iter().sum::<usize>() > 1 {
+                        continue;
+                    }
+                }
+                State::I2st(v) => {
+                    if v.iter().filter(|&&p| p == (1, 1)).count() != 1 {
+                        continue;
+                    }
+                }
+                State::I3st(_) => todo!(),
+                State::I12st { i1st: _, i2st: _ } => continue,
+            }
             let vib1 = rotnst[(nst, ia)] - self.rotcon[ia];
             let vib2 = rotnst[(nst, ib)] - self.rotcon[ib];
 
@@ -1851,28 +1864,23 @@ impl Spectro {
             vibr[ic[0]] = vib1;
             vibr[ic[1]] = vib2;
             vibr[ic[2]] = vib2;
-            if self.rotor.is_prolate() {
+            let (bxs, bys, bzs) = if self.rotor.is_prolate() {
                 let bxs = b1s + vibr[(1)];
                 let bys = b2s + vibr[(0)];
                 let bzs = b3s + vibr[(2)];
-                match &states[nst] {
-                    State::I1st(v) => {
-                        ret.push(Rot::new(v.clone(), bzs, bxs, bys));
-                    }
-                    _ => (),
-                }
+                (bxs, bys, bzs)
             } else {
                 // only difference is order of vibr indices here
                 let bxs = b1s + vibr[(2)];
                 let bys = b2s + vibr[(0)];
                 let bzs = b3s + vibr[(1)];
-                // TODO share this match as well
-                match &states[nst] {
-                    State::I1st(v) => {
-                        ret.push(Rot::new(v.clone(), bzs, bxs, bys));
-                    }
-                    _ => (),
+                (bxs, bys, bzs)
+            };
+            match &states[nst] {
+                State::I1st(_) | State::I2st(_) => {
+                    ret.push(Rot::new(states[nst].clone(), bys, bxs, bzs));
                 }
+                _ => (),
             }
         }
         ret
