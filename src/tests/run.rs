@@ -157,7 +157,6 @@ fn run_asym() {
 }
 
 #[test]
-#[ignore]
 fn run_sym() {
     let tests = [Test::new("nh3")];
     inner(&tests);

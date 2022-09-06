@@ -319,7 +319,6 @@ fn restst_asym() {
 }
 
 #[test]
-#[ignore]
 fn restst_sym() {
     use state::State::*;
     use Mode::*;

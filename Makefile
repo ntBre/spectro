@@ -1,16 +1,9 @@
-TESTFLAGS = -- --nocapture --test-threads=1
 ARGS =
 
-ifeq ($(ARGS),sym)
-TESTFLAGS += --include-ignored _sym
-else ifeq ($(ARGS),all)
-TESTFLAGS += --include-ignored
-else
-TESTARGS = $(ARGS)
-endif
+TESTFLAGS = -- --nocapture --test-threads=1
 
 test:
-	RUST_BACKTRACE=1 cargo test ${TESTFLAGS} ${TESTARGS}
+	RUST_BACKTRACE=1 cargo test ${TESTFLAGS} ${ARGS}
 
 #############
 # PROFILING #
