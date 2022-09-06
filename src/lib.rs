@@ -1,6 +1,7 @@
 #![feature(test)]
 
 use std::{
+    cmp::{max, min},
     collections::{HashMap, HashSet},
     f64::consts::PI,
     fmt::Debug,
@@ -527,7 +528,7 @@ impl Spectro {
             modes,
             ifunda,
             iovrtn,
-            icombn: _,
+            icombn,
         }: &Restst = restst;
 
         let nstate = states.len();
@@ -597,8 +598,7 @@ impl Spectro {
         for f in fermi2 {
             ifrm2.insert((f.i, f.j), f.k);
         }
-        // TODO rsfrm2 is supposed to take ist/jst type args as well, but I
-        // don't have any test cases requiring that yet
+
         if self.rotor.is_sym_top() {
             // NOTE I think this is not going to work at all :( I think my
             // ist/jst stuff inside rsfrm1 is going to break spectacularly here
@@ -616,14 +616,21 @@ impl Spectro {
                 for jj in ii + 1..n1dm {
                     let jvib = i1mode[jj];
                     if let Some(&kvib) = ifrm2.get(&(jvib, ivib)) {
-                        rsfrm2(ivib, jvib, kvib, f3qcm, states, eng);
+                        // +1 because that's how I inserted them in restst
+                        let ijvib = ioff(max(ivib, jvib) + 1) + min(ivib, jvib);
+                        let ijst = icombn[ijvib];
+                        let kst = ifunda[kvib];
+                        rsfrm2(ijst, kst, ivib, jvib, kvib, f3qcm, eng);
                     }
                 }
 
                 for jj in 0..n2dm {
                     let (jvib, _) = i2mode[jj];
                     if let Some(&kvib) = ifrm2.get(&(jvib, ivib)) {
-                        rsfrm2(ivib, jvib, kvib, f3qcm, states, eng);
+                        let ijvib = ioff(max(ivib, jvib) + 1) + min(ivib, jvib);
+                        let ijst = icombn[ijvib];
+                        let kst = ifunda[kvib];
+                        rsfrm2(ijst, kst, ivib, jvib, kvib, f3qcm, eng);
                     }
                 }
             }
@@ -641,7 +648,10 @@ impl Spectro {
                 for jj in ii + 1..n2dm {
                     let (jvib, _) = i2mode[jj];
                     if let Some(&kvib) = ifrm2.get(&(jvib, ivib)) {
-                        rsfrm2(ivib, jvib, kvib, f3qcm, states, eng);
+                        let ijvib = ioff(max(ivib, jvib) + 1) + min(ivib, jvib);
+                        let ijst = icombn[ijvib];
+                        let kst = ifunda[kvib];
+                        rsfrm2(ijst, kst, ivib, jvib, kvib, f3qcm, eng);
                     }
                 }
             }
@@ -655,8 +665,11 @@ impl Spectro {
                 }
                 for jjj in iii + 1..n1dm {
                     let jvib = i1mode[jjj];
-                    if let Some(kvib) = ifrm2.get(&(jvib, ivib)) {
-                        rsfrm2(ivib, jvib, *kvib, f3qcm, states, eng);
+                    if let Some(&kvib) = ifrm2.get(&(jvib, ivib)) {
+                        let ijvib = ioff(max(ivib, jvib) + 1) + min(ivib, jvib);
+                        let ijst = icombn[ijvib];
+                        let kst = ifunda[kvib];
+                        rsfrm2(ijst, kst, ivib, jvib, kvib, f3qcm, eng);
                     }
                 }
             }

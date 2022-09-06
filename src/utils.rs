@@ -12,8 +12,8 @@ use tensor::Tensor4;
 type Tensor3 = tensor::tensor3::Tensor3<f64>;
 
 use crate::{
-    f3qcm::F3qcm, f4qcm::F4qcm, ifrm1::Ifrm1, state::State, Dmat, Dvec, Mode,
-    Spectro, FACT3, FACT4, FUNIT3, FUNIT4, ICTOP, IPTOC, WAVE,
+    f3qcm::F3qcm, f4qcm::F4qcm, ifrm1::Ifrm1, Dmat, Dvec, Mode, Spectro, FACT3,
+    FACT4, FUNIT3, FUNIT4, ICTOP, IPTOC, WAVE,
 };
 
 // separate for macro
@@ -460,24 +460,14 @@ pub(crate) fn print_vib_states(reng: &[f64], i1sts: &Vec<Vec<usize>>) {
 }
 
 pub(crate) fn rsfrm2(
+    ijst: usize,
+    kst: usize,
     ivib: usize,
     jvib: usize,
     kvib: usize,
     f3qcm: &F3qcm,
-    i1sts: &[State],
     eng: &mut [f64],
 ) {
-    // I can't figure out the formula so just search for it
-    let ijst = i1sts
-        .iter()
-        .position(|x| match &x {
-            State::I1st(v) => v[ivib] == 1 && v[jvib] == 1,
-            State::I2st(_) => todo!(),
-            State::I3st(_) => todo!(),
-            State::I12st { i1st: _, i2st: _ } => todo!(),
-        })
-        .unwrap();
-    let kst = kvib + 1;
     let val = f3qcm[(ivib, jvib, kvib)] / (2.0 * SQRT_2);
     let eres = dmatrix![
     eng[ijst] - eng[0], val;
