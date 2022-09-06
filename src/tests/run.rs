@@ -191,14 +191,23 @@ fn run_asym() {
 fn run_sym() {
     use State::*;
     // manual workaround for the states not being in the summarize output
-    let states = [[
-        I1st(vec![0, 0, 0, 0, 0, 0]),
-        I1st(vec![1, 0, 0, 0, 0, 0]),
-        I1st(vec![0, 1, 0, 0, 0, 0]),
-        I2st(vec![(1, 1), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0)]),
-        I2st(vec![(0, 0), (1, 1), (0, 0), (0, 0), (0, 0), (0, 0)]),
-    ]];
-    let mut tests = [Test::new("nh3", true)];
+    let states = [
+        [
+            I1st(vec![0, 0, 0, 0, 0, 0]),
+            I1st(vec![1, 0, 0, 0, 0, 0]),
+            I1st(vec![0, 1, 0, 0, 0, 0]),
+            I2st(vec![(1, 1), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0)]),
+            I2st(vec![(0, 0), (1, 1), (0, 0), (0, 0), (0, 0), (0, 0)]),
+        ],
+        [
+            I1st(vec![0, 0, 0, 0, 0, 0]),
+            I1st(vec![1, 0, 0, 0, 0, 0]),
+            I1st(vec![0, 1, 0, 0, 0, 0]),
+            I2st(vec![(1, 1), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0)]),
+            I2st(vec![(0, 0), (1, 1), (0, 0), (0, 0), (0, 0), (0, 0)]),
+        ],
+    ];
+    let mut tests = [Test::new("nh3", true), Test::new("ph3", true)];
     for (i, test) in tests.iter_mut().enumerate() {
         for j in 0..test.want.rots.len() {
             test.want.rots[j].state = states[i][j].clone();
