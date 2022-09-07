@@ -2,6 +2,7 @@ use std::ops::Index;
 
 use crate::utils::find3;
 
+#[derive(Debug)]
 pub struct F3qcm(Vec<f64>);
 
 impl F3qcm {
