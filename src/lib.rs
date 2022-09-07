@@ -836,6 +836,14 @@ impl Spectro {
         ret
     }
 
+    /// Note that `ifrm1` and `ifrm2` are deduplicated because of the Hash, but
+    /// `ifrmchk` includes all of the resonances. This is the desired behavior
+    /// from the Fortran version. I think this deduplication is a mistake, but
+    /// I'm reproducing the Fortran behavior for now. It could be an intentional
+    /// decision to prevent double-counting, but the way it's implemented by
+    /// overwriting the array index when you read another resonance makes it
+    /// look like a mistake. Why would you ever want the second resonance input
+    /// to take precedence if you were doing this intentionally?
     fn make_fermi_checks(
         &self,
         fermi1: &[Fermi1],
@@ -849,11 +857,12 @@ impl Spectro {
         // zeros because zero will never be a valid index. I could use -1, but
         // then the vec has to be of isize and I have to do a lot of casting.
         let mut ifrm1 = Ifrm1::new();
+        let mut ifrm2 = Ifrm2::new();
         for f in fermi1 {
             ifrmchk[(f.i, f.i, f.j)] = 1;
             ifrm1.insert(f.i, f.j);
+            ifrm2.insert((f.i, f.i), f.j);
         }
-        let mut ifrm2 = Ifrm2::new();
         for f in fermi2 {
             ifrmchk[(f.i, f.j, f.k)] = 1;
             ifrmchk[(f.j, f.i, f.k)] = 1;
