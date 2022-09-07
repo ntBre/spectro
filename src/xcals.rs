@@ -671,7 +671,7 @@ impl Spectro {
         };
         // NOTE skipping zeta checks, but they only print stuff
 
-        let (ifrmchk, ifrm1) = self.make_fermi_checks(fermi1, fermi2);
+        let (ifrmchk, ifrm1, _) = self.make_fermi_checks(fermi1, fermi2);
 
         let e1 = make_e0(modes, f4qcm, f3qcm, freq, &ifrm1, &ifrmchk);
         let e2 = make_e2(modes, freq, f4qcm, f3qcm, &ifrm1);

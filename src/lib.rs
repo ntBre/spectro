@@ -14,6 +14,7 @@ use dummy::{Dummy, DummyVal};
 use f3qcm::F3qcm;
 use f4qcm::F4qcm;
 use ifrm1::Ifrm1;
+use ifrm2::Ifrm2;
 use nalgebra::DMatrix;
 use quartic::Quartic;
 use resonance::{Coriolis, Fermi1, Fermi2, Restst};
@@ -29,6 +30,7 @@ mod dummy;
 mod f3qcm;
 mod f4qcm;
 mod ifrm1;
+mod ifrm2;
 mod quartic;
 mod resonance;
 mod rot;
@@ -594,11 +596,7 @@ impl Spectro {
             eng[nst] = val1 + val2 + val3 + val4 + val5 + val6 + e0;
         }
 
-        let (_, ifrm1) = self.make_fermi_checks(fermi1, fermi2);
-        let mut ifrm2: HashMap<(usize, usize), usize> = HashMap::new();
-        for f in fermi2 {
-            ifrm2.insert((f.i, f.j), f.k);
-        }
+        let (_, ifrm1, ifrm2) = self.make_fermi_checks(fermi1, fermi2);
 
         if self.rotor.is_sym_top() {
             // NOTE I think this is not going to work at all :( I think my
@@ -842,7 +840,7 @@ impl Spectro {
         &self,
         fermi1: &[Fermi1],
         fermi2: &[Fermi2],
-    ) -> (tensor::Tensor3<usize>, Ifrm1) {
+    ) -> (tensor::Tensor3<usize>, Ifrm1, Ifrm2) {
         let mut ifrmchk = tensor::tensor3::Tensor3::<usize>::zeros(
             self.nvib, self.nvib, self.nvib,
         );
@@ -855,11 +853,13 @@ impl Spectro {
             ifrmchk[(f.i, f.i, f.j)] = 1;
             ifrm1.insert(f.i, f.j);
         }
+        let mut ifrm2 = Ifrm2::new();
         for f in fermi2 {
             ifrmchk[(f.i, f.j, f.k)] = 1;
             ifrmchk[(f.j, f.i, f.k)] = 1;
+            ifrm2.insert((f.i, f.j), f.k);
         }
-        (ifrmchk, ifrm1)
+        (ifrmchk, ifrm1, ifrm2)
     }
 
     /// make the LX matrix
@@ -1235,7 +1235,7 @@ impl Spectro {
         fermi1: &[Fermi1],
         fermi2: &[Fermi2],
     ) -> (Dmat, f64) {
-        let (ifrmchk, ifrm1) = self.make_fermi_checks(fermi1, fermi2);
+        let (ifrmchk, ifrm1, _) = self.make_fermi_checks(fermi1, fermi2);
         let mut xcnst = Dmat::zeros(self.nvib, self.nvib);
         // diagonal contributions to the anharmonic constants
         for k in 0..self.nvib {
