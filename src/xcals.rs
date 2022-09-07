@@ -1,16 +1,5 @@
 //! calculate anharmonic constants for symmetric tops
 
-use std::{
-    f64::consts::SQRT_2,
-    fmt::{Debug, Display},
-    fs::read_to_string,
-    iter::zip,
-    path::Path,
-    str::FromStr,
-};
-
-use nalgebra::{dmatrix, SymmetricEigen};
-use tensor::Tensor4;
 type Tensor3 = tensor::tensor3::Tensor3<f64>;
 
 use crate::{
@@ -20,8 +9,7 @@ use crate::{
     ifrm2::Ifrm2,
     resonance::{Fermi1, Fermi2},
     utils::make_e0,
-    Dmat, Dvec, Mode, Spectro, FACT3, FACT4, FUNIT3, FUNIT4, ICTOP, IPTOC,
-    WAVE,
+    Dmat, Dvec, Mode, Spectro,
 };
 
 /// make the second component of E0 for symmetric tops

@@ -3,9 +3,10 @@ use std::{fs::read_to_string, path::Path};
 use approx::assert_abs_diff_eq;
 
 use crate::{
+    consts::FACT2,
     quartic::Quartic,
     utils::{load_fc2, symm_eigen_decomp, to_wavenumbers},
-    Spectro, FACT2,
+    Spectro,
 };
 
 #[derive(Clone)]

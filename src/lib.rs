@@ -3,13 +3,13 @@
 use std::{
     cmp::{max, min},
     collections::{HashMap, HashSet},
-    f64::consts::PI,
     fmt::Debug,
     fs::File,
     io::{BufRead, BufReader, Result},
     path::Path,
 };
 
+use consts::{ALPHA_CONST, FACT2};
 use dummy::{Dummy, DummyVal};
 use f3qcm::F3qcm;
 use f4qcm::F4qcm;
@@ -26,6 +26,9 @@ use symm::{Atom, Molecule};
 use tensor::Tensor4;
 use utils::*;
 
+use crate::consts::CONST;
+
+mod consts;
 mod dummy;
 mod f3qcm;
 mod f4qcm;
@@ -47,55 +50,6 @@ type Tensor3 = tensor::tensor3::Tensor3<f64>;
 type Mat3 = nalgebra::Matrix3<f64>;
 type Dvec = nalgebra::DVector<f64>;
 type Dmat = nalgebra::DMatrix<f64>;
-
-const _HE: f64 = 4.359813653;
-const _A0: f64 = 0.52917706;
-/// HE / (AO * AO) from fortran. something about hartrees and AO is bohr radius
-const FACT2: f64 = 4.359813653 / (0.52917706 * 0.52917706);
-const FUNIT3: f64 = 4.359813653 / (0.52917706 * 0.52917706 * 0.52917706);
-const FUNIT4: f64 =
-    4.359813653 / (0.52917706 * 0.52917706 * 0.52917706 * 0.52917706);
-/// pre-computed √(elmass/amu)
-const _FAC1: f64 = 0.02342178947039116194;
-const _AMU: f64 = 1.66056559e-27;
-const _ELMASS: f64 = 0.91095344e-30;
-/// looks like cm-1 to mhz factor
-const CL: f64 = 2.99792458;
-const ALAM: f64 = 4.0e-2 * (PI * PI * CL) / (PH * AVN);
-/// constant for converting moments of inertia to rotational constants
-const CONST: f64 = 1.0e+02 * (PH * AVN) / (8.0e+00 * PI * PI * CL);
-/// planck's constant in atomic units?
-
-const PH: f64 = 6.626176;
-/// pre-computed sqrt of ALAM
-const SQLAM: f64 = 0.17222125037910759882;
-const FACT3: f64 = 1.0e6 / (SQLAM * SQLAM * SQLAM * PH * CL);
-const FACT4: f64 = 1.0e6 / (ALAM * ALAM * PH * CL);
-
-/// ALPHA_CONST IS THE PI*SQRT(C/H) FACTOR
-const ALPHA_CONST: f64 = 0.086112;
-
-/// PRINCIPAL ---> CARTESIAN
-static IPTOC: nalgebra::Matrix3x6<usize> = nalgebra::matrix![
-    2,    1,    0,    2,    0,    1;
-    0,    2,    1,    1,    2,    0;
-    1,    0,    2,    0,    1,    2;
-];
-
-/// CARTESIAN---> PRINCIPAL
-static ICTOP: nalgebra::Matrix3x6<usize> = nalgebra::matrix![
-    1,    2,    0,    2,    0,    1;
-    2,    0,    1,    1,    2,    0;
-    0,    1,    2,    0,    1,    2;
-];
-
-/// avogadro's number
-const AVN: f64 = 6.022045;
-const _PARA: f64 = 1.0 / AVN;
-// pre-compute the sqrt and make const
-const SQRT_AVN: f64 = 2.4539855337796920273026076438896;
-// conversion to cm-1
-const WAVE: f64 = 1e4 * SQRT_AVN / (2.0 * PI * CL);
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Curvil {
