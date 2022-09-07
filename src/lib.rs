@@ -552,6 +552,10 @@ impl Spectro {
             // value from dist.f:310
             const TOL: f64 = 1e-5;
             let [a, b, c] = [m[0], m[1], m[2]];
+            // TODO you actually want the unique moment of inertia along the z
+            // axis like the comment said. I'm not sure why this code works for
+            // oblate tops, but for prolate tops you need to swap differently,
+            // at least for the one I have. I think so at least
             if close(a, b, TOL) {
                 // c is unique. -> swap x and z
                 for atom in ret.geom.atoms.iter_mut() {
@@ -903,6 +907,10 @@ impl Spectro {
                 .xcalc(&f4qcm, &freq, &f3qcm, &zmat, &modes, &fermi1, &fermi2);
             (x, None, e)
         };
+
+        println!("{:.6}", xcnst);
+        println!("{:.8}", gcnst.as_ref().unwrap());
+        println!("{:.8}", e0);
 
         let (harms, funds) = if self.rotor.is_sym_top() {
             make_sym_funds(&modes, &freq, &xcnst, &gcnst)
