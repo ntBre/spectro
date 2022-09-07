@@ -486,13 +486,6 @@ impl Spectro {
 
                 let mut valu = 0.0;
                 for &(m, _) in i2mode {
-                    // NOTE there's a ridiculous line in the fortran code that
-                    // says
-                    //
-                    // if k == 7 || k == 12 { m = i2mode(mm, 2) }
-                    //
-                    // that can't be right in general and must have been a
-                    // special case right?
                     let klm = (k, l, m);
                     let d1 = freq[(k)] + freq[(l)] + freq[(m)];
                     let d2 = freq[(k)] - freq[(l)] + freq[(m)];
