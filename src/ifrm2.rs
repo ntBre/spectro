@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{hash_map::Entry, HashMap};
 
 pub(crate) struct Ifrm2(HashMap<(usize, usize), usize>);
 

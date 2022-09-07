@@ -17,6 +17,7 @@ use crate::{
     f3qcm::F3qcm,
     f4qcm::F4qcm,
     ifrm1::Ifrm1,
+    ifrm2::Ifrm2,
     resonance::{Fermi1, Fermi2},
     utils::make_e0,
     Dmat, Dvec, Mode, Spectro, FACT3, FACT4, FUNIT3, FUNIT4, ICTOP, IPTOC,
@@ -468,15 +469,14 @@ impl Spectro {
         f4qcm: &F4qcm,
         f3qcm: &F3qcm,
         freq: &Dvec,
-        ifrmchk: &tensor::Tensor3<usize>,
+        ifrm2: &Ifrm2,
         ib: usize,
         zmat: &tensor::Tensor3<f64>,
         xcnst: &mut Dmat,
     ) {
         for &k in i1mode {
-            for (ll, &(l, _)) in i2mode.iter().enumerate() {
-                let kkll = (k, k, l, l);
-                let val1 = f4qcm[kkll] / 4.0;
+            for &(l, l2) in i2mode {
+                let val1 = f4qcm[(k, k, l, l)] / 4.0;
 
                 let mut val2 = 0.0;
                 for &m in i1mode {
@@ -492,16 +492,16 @@ impl Spectro {
                     let d3 = freq[(k)] + freq[(l)] - freq[(m)];
                     let d4 = -freq[(k)] + freq[(l)] + freq[(m)];
 
-                    if ifrmchk[(l, m, k)] != 0 {
+                    if ifrm2.check((l, m), k) {
                         let delta = 8.0 * (2.0 * freq[(l)] + freq[(k)]);
                         valu -= (f3qcm[(klm)].powi(2)) / delta;
-                    } else if ifrmchk[(k, l, m)] != 0 {
+                    } else if ifrm2.check((k, l), m) {
                         let delta = 1.0 / d1 + 1.0 / d2 + 1.0 / d4;
                         valu = valu - (f3qcm[(klm)].powi(2)) * delta / 8.0;
-                    } else if ifrmchk[(l, m, k)] != 0 {
+                    } else if ifrm2.check((l, m), k) {
                         let delta = 1.0 / d1 + 1.0 / d2 + 1.0 / d3;
                         valu = valu - (f3qcm[(klm)].powi(2)) * delta / 8.0;
-                    } else if ifrmchk[(k, m, l)] != 0 {
+                    } else if ifrm2.check((k, m), l) {
                         let delta = 1.0 / d1 + 1.0 / d3 + 1.0 / d4;
                         valu = valu - (f3qcm[(klm)].powi(2)) * delta / 8.0;
                     } else {
@@ -519,7 +519,6 @@ impl Spectro {
                     * (zmat[(k, l, 0)].powi(2) + zmat[(k, l, 1)].powi(2));
                 let val8 = (val5 + val6) * val7;
                 let value = val1 + val2 + valu + val8;
-                let l2 = i2mode[ll].1;
                 xcnst[(k, l)] = value;
                 xcnst[(l, k)] = value;
                 xcnst[(k, l2)] = value;
@@ -671,7 +670,7 @@ impl Spectro {
         };
         // NOTE skipping zeta checks, but they only print stuff
 
-        let (ifrmchk, ifrm1, _) = self.make_fermi_checks(fermi1, fermi2);
+        let (ifrmchk, ifrm1, ifrm2) = self.make_fermi_checks(fermi1, fermi2);
 
         let e1 = make_e0(modes, f4qcm, f3qcm, freq, &ifrm1, &ifrmchk);
         let e2 = make_e2(modes, freq, f4qcm, f3qcm, &ifrm1);
@@ -686,11 +685,8 @@ impl Spectro {
         );
 
         self.nondeg_deg(
-            &i1mode, &i2mode, f4qcm, f3qcm, freq, &ifrmchk, ib, zmat,
-            &mut xcnst,
+            &i1mode, &i2mode, f4qcm, f3qcm, freq, &ifrm2, ib, zmat, &mut xcnst,
         );
-
-        println!("{:.8}", xcnst);
 
         self.deg_deg(
             &i2mode, f4qcm, freq, &i1mode, f3qcm, &ifrm1, &mut xcnst, n2dm,

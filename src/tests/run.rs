@@ -213,7 +213,7 @@ fn run_sym() {
             test.want.rots[j].state = states[i][j].clone();
         }
     }
-    inner(&tests);
+    inner(&tests[..]);
 }
 
 #[test]
