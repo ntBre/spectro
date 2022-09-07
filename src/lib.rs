@@ -543,6 +543,41 @@ impl Spectro {
         ret.rotcon = pr.iter().map(|m| CONST / m).collect();
         ret.axes = axes;
         ret.rotor = ret.rotor_type();
+        // reorient everything s.t. unique moment of inertia is along the x
+        // axis. rotcon and primat are already sorted, so only move axes and the
+        // geometry
+        if ret.rotor.is_sym_top() {
+            // look at unsorted moments
+            let m = ret.geom.principal_moments();
+            // value from dist.f:310
+            const TOL: f64 = 1e-5;
+            let [a, b, c] = [m[0], m[1], m[2]];
+            if close(a, b, TOL) {
+                // c is unique. -> swap x and z
+                for atom in ret.geom.atoms.iter_mut() {
+                    (atom.x, atom.z) = (atom.z, atom.x);
+                }
+                ret.axes = nalgebra::Matrix3::from_columns(&[
+                    ret.axes.column(2),
+                    ret.axes.column(1),
+                    ret.axes.column(0),
+                ]);
+            } else if close(a, c, TOL) {
+                // b is unique. -> swap x and y
+                for atom in ret.geom.atoms.iter_mut() {
+                    (atom.x, atom.y) = (atom.y, atom.x);
+                }
+                ret.axes = nalgebra::Matrix3::from_columns(&[
+                    ret.axes.column(1),
+                    ret.axes.column(0),
+                    ret.axes.column(2),
+                ]);
+            } else if close(b, c, TOL) {
+                // a is unique and already in the right position
+            } else {
+                panic!("not a symmetric top")
+            }
+        }
         ret.natom = ret.natoms();
         let n3n = 3 * ret.natoms();
         ret.n3n = n3n;

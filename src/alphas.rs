@@ -36,8 +36,6 @@ impl Spectro {
             &i2mode, iaib, ib, ibib, ibic, ic,
         );
 
-        println!("{:.8}", alpha);
-
         // vibrationally averaged rotational constants
 
         // use nstop again to compute only the fundamentals, not every state

@@ -410,7 +410,9 @@ fn restst_sym() {
             Restst {
                 coriolis: vec![Coriolis::new(5, 3, 1), Coriolis::new(3, 5, 1)],
                 fermi1: vec![Fermi1::new(3, 2), Fermi1::new(3, 0)],
-                fermi2: vec![Fermi2::new(3, 0, 3)],
+                // you get it twice because we don't know about degeneracies at
+                // this point
+                fermi2: vec![Fermi2::new(3, 0, 3), Fermi2::new(3, 0, 3)],
                 darling: vec![Darling::new(5, 3)],
                 states: vec![
                     // ground state
