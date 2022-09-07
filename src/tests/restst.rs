@@ -323,59 +323,170 @@ fn restst_sym() {
     use state::State::*;
     use Mode::*;
     // NOTE just pasted the states in for now
-    let tests = [Test::new(
-        "nh3",
-        Restst {
-            coriolis: vec![],
-            fermi1: vec![Fermi1::new(3, 2)],
-            fermi2: vec![],
-            darling: vec![],
-            states: vec![
-                // ground state
-                I1st(vec![0, 0, 0, 0, 0, 0]),
-                // non-deg funds
-                I1st(vec![1, 0, 0, 0, 0, 0]),
-                I1st(vec![0, 1, 0, 0, 0, 0]),
-                // deg funds
-                I2st(vec![(1, 1), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0)]),
-                I2st(vec![(0, 0), (1, 1), (0, 0), (0, 0), (0, 0), (0, 0)]),
-                // non-deg overtones
-                I1st(vec![2, 0, 0, 0, 0, 0]),
-                I1st(vec![0, 2, 0, 0, 0, 0]),
-                // deg overtones
-                I2st(vec![(2, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0)]),
-                I2st(vec![(0, 0), (2, 0), (0, 0), (0, 0), (0, 0), (0, 0)]),
-                // nondeg-nondeg combination
-                I1st(vec![1, 1, 0, 0, 0, 0]),
-                // nondeg-deg combinations
-                I12st {
-                    i1st: vec![1, 0, 0, 0, 0, 0],
-                    i2st: vec![(1, 1), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0)],
-                },
-                I12st {
-                    i1st: vec![1, 0, 0, 0, 0, 0],
-                    i2st: vec![(0, 0), (1, 1), (0, 0), (0, 0), (0, 0), (0, 0)],
-                },
-                I12st {
-                    i1st: vec![0, 1, 0, 0, 0, 0],
-                    i2st: vec![(1, 1), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0)],
-                },
-                I12st {
-                    i1st: vec![0, 1, 0, 0, 0, 0],
-                    i2st: vec![(0, 0), (1, 1), (0, 0), (0, 0), (0, 0), (0, 0)],
-                },
-                // deg-deg combination
-                I2st(vec![(1, 1), (1, 1), (0, 0), (0, 0), (0, 0), (0, 0)]),
-            ],
-            modes: vec![I2(0, 1), I2(3, 4), I1(2), I1(5)],
-            ifunda: vec![3, 3, 1, 4, 4, 2],
-            iovrtn: vec![7, 7, 5, 8, 8, 6],
-            icombn: vec![
-                0, 0, 0, 10, 10, 0, 14, 14, 11, 0, 14, 14, 11, 0, 0, 12, 12, 9,
-                13, 13, 0,
-            ],
-        },
-    )];
+    let tests = [
+        Test::new(
+            "nh3",
+            Restst {
+                coriolis: vec![],
+                fermi1: vec![Fermi1::new(3, 2)],
+                fermi2: vec![],
+                darling: vec![],
+                states: vec![
+                    // ground state
+                    I1st(vec![0, 0, 0, 0, 0, 0]),
+                    // non-deg funds
+                    I1st(vec![1, 0, 0, 0, 0, 0]),
+                    I1st(vec![0, 1, 0, 0, 0, 0]),
+                    // deg funds
+                    I2st(vec![(1, 1), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0)]),
+                    I2st(vec![(0, 0), (1, 1), (0, 0), (0, 0), (0, 0), (0, 0)]),
+                    // non-deg overtones
+                    I1st(vec![2, 0, 0, 0, 0, 0]),
+                    I1st(vec![0, 2, 0, 0, 0, 0]),
+                    // deg overtones
+                    I2st(vec![(2, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0)]),
+                    I2st(vec![(0, 0), (2, 0), (0, 0), (0, 0), (0, 0), (0, 0)]),
+                    // nondeg-nondeg combination
+                    I1st(vec![1, 1, 0, 0, 0, 0]),
+                    // nondeg-deg combinations
+                    I12st {
+                        i1st: vec![1, 0, 0, 0, 0, 0],
+                        i2st: vec![
+                            (1, 1),
+                            (0, 0),
+                            (0, 0),
+                            (0, 0),
+                            (0, 0),
+                            (0, 0),
+                        ],
+                    },
+                    I12st {
+                        i1st: vec![1, 0, 0, 0, 0, 0],
+                        i2st: vec![
+                            (0, 0),
+                            (1, 1),
+                            (0, 0),
+                            (0, 0),
+                            (0, 0),
+                            (0, 0),
+                        ],
+                    },
+                    I12st {
+                        i1st: vec![0, 1, 0, 0, 0, 0],
+                        i2st: vec![
+                            (1, 1),
+                            (0, 0),
+                            (0, 0),
+                            (0, 0),
+                            (0, 0),
+                            (0, 0),
+                        ],
+                    },
+                    I12st {
+                        i1st: vec![0, 1, 0, 0, 0, 0],
+                        i2st: vec![
+                            (0, 0),
+                            (1, 1),
+                            (0, 0),
+                            (0, 0),
+                            (0, 0),
+                            (0, 0),
+                        ],
+                    },
+                    // deg-deg combination
+                    I2st(vec![(1, 1), (1, 1), (0, 0), (0, 0), (0, 0), (0, 0)]),
+                ],
+                modes: vec![I2(0, 1), I2(3, 4), I1(2), I1(5)],
+                ifunda: vec![3, 3, 1, 4, 4, 2],
+                iovrtn: vec![7, 7, 5, 8, 8, 6],
+                icombn: vec![
+                    0, 0, 0, 10, 10, 0, 14, 14, 11, 0, 14, 14, 11, 0, 0, 12,
+                    12, 9, 13, 13, 0,
+                ],
+            },
+        ),
+        Test::new(
+            "ph3",
+            Restst {
+                coriolis: vec![Coriolis::new(5, 3, 1), Coriolis::new(3, 5, 1)],
+                fermi1: vec![Fermi1::new(3, 2), Fermi1::new(3, 0)],
+                fermi2: vec![Fermi2::new(3, 0, 3)],
+                darling: vec![Darling::new(5, 3)],
+                states: vec![
+                    // ground state
+                    I1st(vec![0, 0, 0, 0, 0, 0]),
+                    // non-deg funds
+                    I1st(vec![1, 0, 0, 0, 0, 0]),
+                    I1st(vec![0, 1, 0, 0, 0, 0]),
+                    // deg funds
+                    I2st(vec![(1, 1), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0)]),
+                    I2st(vec![(0, 0), (1, 1), (0, 0), (0, 0), (0, 0), (0, 0)]),
+                    // non-deg overtones
+                    I1st(vec![2, 0, 0, 0, 0, 0]),
+                    I1st(vec![0, 2, 0, 0, 0, 0]),
+                    // deg overtones
+                    I2st(vec![(2, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0)]),
+                    I2st(vec![(0, 0), (2, 0), (0, 0), (0, 0), (0, 0), (0, 0)]),
+                    // nondeg-nondeg combination
+                    I1st(vec![1, 1, 0, 0, 0, 0]),
+                    // nondeg-deg combinations
+                    I12st {
+                        i1st: vec![1, 0, 0, 0, 0, 0],
+                        i2st: vec![
+                            (1, 1),
+                            (0, 0),
+                            (0, 0),
+                            (0, 0),
+                            (0, 0),
+                            (0, 0),
+                        ],
+                    },
+                    I12st {
+                        i1st: vec![1, 0, 0, 0, 0, 0],
+                        i2st: vec![
+                            (0, 0),
+                            (1, 1),
+                            (0, 0),
+                            (0, 0),
+                            (0, 0),
+                            (0, 0),
+                        ],
+                    },
+                    I12st {
+                        i1st: vec![0, 1, 0, 0, 0, 0],
+                        i2st: vec![
+                            (1, 1),
+                            (0, 0),
+                            (0, 0),
+                            (0, 0),
+                            (0, 0),
+                            (0, 0),
+                        ],
+                    },
+                    I12st {
+                        i1st: vec![0, 1, 0, 0, 0, 0],
+                        i2st: vec![
+                            (0, 0),
+                            (1, 1),
+                            (0, 0),
+                            (0, 0),
+                            (0, 0),
+                            (0, 0),
+                        ],
+                    },
+                    // deg-deg combination
+                    I2st(vec![(1, 1), (1, 1), (0, 0), (0, 0), (0, 0), (0, 0)]),
+                ],
+                modes: vec![I2(0, 1), I2(3, 4), I1(2), I1(5)],
+                ifunda: vec![3, 3, 1, 4, 4, 2],
+                iovrtn: vec![7, 7, 5, 8, 8, 6],
+                icombn: vec![
+                    0, 0, 0, 10, 10, 0, 14, 14, 11, 0, 14, 14, 11, 0, 0, 12,
+                    12, 9, 13, 13, 0,
+                ],
+            },
+        ),
+    ];
     inner(&tests);
 }
 

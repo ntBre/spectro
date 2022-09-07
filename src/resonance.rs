@@ -152,7 +152,8 @@ impl Restst {
                 modes.push(I1(i));
             }
         };
-        let coriolis = spectro.rotor.coriolis(&modes, freq, zmat);
+
+        let coriolis = spectro.rotor.coriolis(&spectro, &modes, freq, zmat);
         let fermi1 = spectro.rotor.fermi1(&modes, freq, f3qcm);
         let fermi2 = spectro.rotor.fermi2(&modes, freq, f3qcm);
         let darling = spectro.rotor.darling(&modes, freq);
