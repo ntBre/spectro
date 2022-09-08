@@ -2,6 +2,8 @@ use approx::assert_abs_diff_eq;
 
 use crate::*;
 
+use super::check_vec;
+
 #[derive(Clone)]
 struct Test {
     infile: String,
@@ -31,7 +33,7 @@ impl Test {
 }
 
 #[test]
-pub(crate) fn test_force4() {
+fn asym() {
     let tests = [
         Test::new("h2o", 2.2e-6),
         Test::new("h2co", 1.7e-6),
@@ -55,7 +57,30 @@ pub(crate) fn test_force4() {
         let got = force4(s.n3n, &f4x, &lx, s.nvib, &freq);
         let got = Dvec::from(got).abs();
         let want = Dvec::from(test.want).abs();
-        // println!("\ndiff = {:.2e}", (got.clone() - want.clone()).max());
-        assert_abs_diff_eq!(got, want, epsilon = test.eps);
+        check_vec(got, want, test.eps, &test.infile);
+    }
+}
+
+#[test]
+fn sym() {
+    let tests = [Test::new("nh3", 2.2e-6)];
+    for test in tests {
+        let s = Spectro::load(&test.infile);
+        let fc2 = load_fc2(test.fort15, s.n3n);
+        let fc2 = s.rot2nd(fc2);
+        let fc2 = FACT2 * fc2;
+        let w = s.geom.weights();
+        let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
+        let fxm = s.form_sec(fc2, &sqm);
+        let (harms, mut lxm) = symm_eigen_decomp(fxm);
+        let freq = to_wavenumbers(&harms);
+        let mut lx = s.make_lx(&sqm, &lxm);
+        s.bdegnl(&freq, &mut lxm, &w, &mut lx);
+        let f4x = load_fc4(test.fort40, s.n3n);
+        let f4x = s.rot4th(f4x, s.axes);
+        let got = force4(s.n3n, &f4x, &lx, s.nvib, &freq);
+        let got = Dvec::from(got).abs();
+        let want = Dvec::from(test.want).abs();
+        check_vec(got, want, test.eps, &test.infile);
     }
 }

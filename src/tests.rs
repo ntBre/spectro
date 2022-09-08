@@ -1,6 +1,8 @@
+//! uncategorized tests and utilities shared by the other modules
+
 use std::fs::read_to_string;
 
-use approx::assert_abs_diff_eq;
+use approx::{abs_diff_eq, assert_abs_diff_eq};
 
 use crate::*;
 
@@ -36,6 +38,33 @@ fn load_dmat<P: AsRef<Path> + Debug + Clone>(
         data.split_whitespace().map(|s| s.parse().unwrap()),
     )
     .transpose()
+}
+
+fn check_vec(got: Dvec, want: Dvec, eps: f64, infile: &str) {
+    if !abs_diff_eq!(got, want, epsilon = eps) {
+        assert_eq!(got.len(), want.len());
+        println!(
+            "\n{:>5}{:>20.12}{:>20.12}{:>20.12}",
+            "Iter", "Got", "Want", "Diff",
+        );
+        for i in 0..got.len() {
+            if (got[i].abs() - want[i].abs()).abs() > eps {
+                println!(
+                    "{:5}{:20.12}{:20.12}{:20.12}",
+                    i,
+                    got[i],
+                    want[i],
+                    got[i] - want[i]
+                );
+            }
+        }
+        assert!(
+            false,
+            "differs by {:.2e} on {}",
+            (got.clone() - want.clone()).max(),
+            infile
+        );
+    }
 }
 
 #[test]

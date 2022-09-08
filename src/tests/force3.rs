@@ -2,6 +2,8 @@ use approx::abs_diff_eq;
 
 use crate::*;
 
+use super::check_vec;
+
 #[derive(Clone)]
 struct Test {
     infile: String,
@@ -47,30 +49,7 @@ fn inner(tests: &[Test]) {
         let got = force3(s.n3n, &mut f3x, &lx, s.nvib, &freq);
         let got = Dvec::from(got).abs();
         let want = Dvec::from(test.want.clone()).abs();
-        if !abs_diff_eq!(got, want, epsilon = test.eps) {
-            assert_eq!(got.len(), want.len());
-            println!(
-                "\n{:>5}{:>20.12}{:>20.12}{:>20.12}",
-                "Iter", "Got", "Want", "Diff",
-            );
-            for i in 0..got.len() {
-                if (got[i].abs() - want[i].abs()).abs() > test.eps {
-                    println!(
-                        "{:5}{:20.12}{:20.12}{:20.12}",
-                        i,
-                        got[i],
-                        want[i],
-                        got[i] - want[i]
-                    );
-                }
-            }
-            assert!(
-                false,
-                "differs by {:.2e} on {}",
-                (got.clone() - want.clone()).max(),
-                test.infile
-            );
-        }
+        check_vec(got, want, test.eps, &test.infile);
     }
 }
 
