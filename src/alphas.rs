@@ -5,7 +5,7 @@ use crate::f3qcm::F3qcm;
 use crate::resonance::Coriolis;
 use crate::rotor::Rotor;
 use crate::state::State;
-use crate::{make_icorol, Dmat, Dvec, Mode, Spectro, Tensor3};
+use crate::{make_icorol, mode::Mode, Dmat, Dvec, Spectro, Tensor3};
 
 impl Spectro {
     pub(crate) fn alphas(
@@ -115,6 +115,7 @@ impl Spectro {
             }
             alpha[(k, ia)] = valu0 * (valu1 + valu2 + ALPHA_CONST * valu3);
         }
+
         for kk in 0..n2dm {
             let k = i2mode[kk].0;
             let valu0 = 2.0 * self.rotcon[ia].powi(2) / freq[k];

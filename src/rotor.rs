@@ -1,6 +1,6 @@
 use crate::f3qcm::F3qcm;
 use crate::resonance::{Coriolis, Darling, Fermi1, Fermi2};
-use crate::{Dvec, Mode};
+use crate::{mode::Mode, Dvec};
 use std::fmt::Display;
 type Tensor3 = tensor::tensor3::Tensor3<f64>;
 

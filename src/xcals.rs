@@ -7,9 +7,10 @@ use crate::{
     f4qcm::F4qcm,
     ifrm1::Ifrm1,
     ifrm2::Ifrm2,
+    mode::Mode,
     resonance::{Fermi1, Fermi2},
     utils::make_e0,
-    Dmat, Dvec, Mode, Spectro,
+    Dmat, Dvec, Spectro,
 };
 
 /// make the second component of E0 for symmetric tops

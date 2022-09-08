@@ -363,8 +363,8 @@ fn asym() {
 
 #[test]
 fn sym() {
+    use mode::Mode::*;
     use state::State::*;
-    use Mode::*;
     // NOTE just pasted the states in for now
     let tests = [
         Test::new(

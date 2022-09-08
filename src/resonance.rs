@@ -5,9 +5,10 @@ use std::{
 
 use crate::{
     f3qcm::F3qcm,
+    mode::Mode,
     state::State,
     utils::{close, ioff},
-    Dvec, Mode, Spectro, Tensor3,
+    Dvec, Spectro, Tensor3,
 };
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
