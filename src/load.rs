@@ -193,6 +193,67 @@ impl Spectro {
         let com = ret.geom.com();
         ret.geom.translate(-com);
 
+        // detect atom not on principal axis and bisected by a mirror plane, in
+        // other words, the coordinate on the axis perpendicular to the mirror
+        // plane is zero AND the other coordinate not on the axis is non-zero
+        //
+        // for example, in the ammonia geometry:
+        //
+        // H     -0.93663636 -0.00000000 -0.31301502
+        // N     -0.00000001  0.00000000  0.06758466
+        // H      0.46831825 -0.81115089 -0.31301496
+        // H      0.46831825  0.81115089 -0.31301496
+        //
+        // both H1 and N meet the first criterion, both have Y = 0, but N also
+        // has X = 0, which breaks the second criterion, meaning we should
+        // rotate H1 to the X axis, but it's already there
+        if ret.rotor.is_sym_top() {
+            let mut geom = ret.geom.clone();
+            geom.normalize();
+            // NOTE smallest eps for which this works for the current test cases
+            const TOL: f64 = 1e-6;
+            let pg = geom.point_group_approx(TOL);
+            use symm::PointGroup::*;
+            let iatl = match pg {
+                C1 => todo!(),
+                C2 { axis } => todo!(),
+                Cs { plane } => todo!(),
+                C2v { axis, planes } => todo!(),
+                C3v { axis, plane } => {
+                    println!("{:.8}", geom);
+                    // axis perpendicular to plane
+                    let p = plane.perp();
+                    // axis in plane but not principal axis
+                    let o = plane ^ axis;
+
+                    geom.atoms
+                        .iter()
+                        .position(|a| {
+                            let v = [a.x, a.y, a.z];
+                            v[p as usize].abs() < TOL
+                                && v[o as usize].abs() > TOL
+                        })
+                        .unwrap()
+                }
+                D2h { axes, planes } => todo!(),
+            };
+
+            let mut egr = nalgebra::Matrix3::zeros();
+            let x = ret.geom.atoms[iatl].x;
+            let y = ret.geom.atoms[iatl].y;
+            let z = ret.geom.atoms[iatl].z;
+            egr[(0, 0)] = x / (f64::sqrt(x * x + y * y));
+            egr[(1, 0)] = y / (f64::sqrt(x * x + y * y));
+            egr[(0, 1)] = -y / (f64::sqrt(x * x + y * y));
+            egr[(1, 1)] = x / (f64::sqrt(x * x + y * y));
+            egr[(2, 2)] = 1.0;
+
+            ret.geom = ret.geom.transform(egr.transpose());
+
+            let eg = egr.transpose() * ret.axes * egr;
+            ret.axes = eg;
+        }
+
         ret.natom = ret.natoms();
         let n3n = 3 * ret.natoms();
         ret.n3n = n3n;

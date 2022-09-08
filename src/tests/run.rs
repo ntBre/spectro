@@ -334,7 +334,7 @@ fn sym() {
     let mut tests = [
         Test::new("nh3", true),
         Test::new("ph3", true),
-        // Test::new("bipy", true),
+        Test::new("bipy", true),
     ];
     for (i, test) in tests.iter_mut().enumerate() {
         for j in 0..test.want.rots.len() {
