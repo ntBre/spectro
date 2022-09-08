@@ -944,7 +944,7 @@ impl Spectro {
                         for ia in 0..self.natom {
                             let vmass = 1.0 / w[ia].sqrt();
                             for ix in 0..3 {
-                                let ii = 3 * ia;
+                                let ii = 3 * ia + ix;
                                 lx[(ii, ijj)] = lxm[(ii, ijj)] * vmass;
                             }
                         }
