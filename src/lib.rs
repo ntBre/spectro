@@ -1,16 +1,17 @@
 #![feature(test)]
+#![allow(unused)]
 
 use std::{
     cmp::{max, min},
     collections::{HashMap, HashSet},
     fmt::Debug,
     fs::File,
-    io::{BufRead, BufReader, Result},
+    io::{BufRead, Result},
     path::Path,
 };
 
 use consts::{ALPHA_CONST, FACT2};
-use dummy::{Dummy, DummyVal};
+use dummy::Dummy;
 use f3qcm::F3qcm;
 use f4qcm::F4qcm;
 use ifrm1::Ifrm1;
@@ -35,6 +36,7 @@ mod f3qcm;
 mod f4qcm;
 mod ifrm1;
 mod ifrm2;
+mod load;
 mod quartic;
 mod resonance;
 mod rot;
@@ -413,188 +415,6 @@ impl Spectro {
         self.rotor == Rotor::Linear
     }
 
-    pub fn load<P>(filename: P) -> Self
-    where
-        P: AsRef<Path> + Debug + Clone,
-    {
-        let f = match File::open(filename.clone()) {
-            Ok(f) => f,
-            Err(_) => {
-                eprintln!("failed to open infile '{:?}'", filename);
-                std::process::exit(1);
-            }
-        };
-        let reader = BufReader::new(f);
-        enum State {
-            Header,
-            Geom,
-            Weight,
-            Curvil,
-            Degmode,
-            None,
-        }
-        // map of string coordinates to their atom number
-        let mut coord_map = HashMap::new();
-        let mut state = State::None;
-        let mut skip = 0;
-        let mut ret = Spectro::default();
-        for line in reader.lines().flatten() {
-            if skip > 0 {
-                skip -= 1;
-            } else if line.contains("SPECTRO") {
-                state = State::Header;
-            } else if line.contains("GEOM") {
-                skip = 1;
-                state = State::Geom;
-            } else if line.contains("WEIGHT") {
-                skip = 1;
-                state = State::Weight;
-            } else if line.contains("CURVIL") {
-                state = State::Curvil;
-            } else if line.contains("DEGMODE") {
-                state = State::Degmode;
-            } else {
-                match state {
-                    State::Header => {
-                        ret.header.extend(
-                            line.split_whitespace()
-                                .map(|s| s.parse::<usize>().unwrap()),
-                        );
-                    }
-                    State::Geom => {
-                        let mut fields = line.split_whitespace();
-                        let atomic_number =
-                            fields.next().unwrap().parse::<f64>().unwrap()
-                                as usize;
-                        // collect after nexting off the first value
-                        let fields: Vec<_> = fields.collect();
-                        match atomic_number {
-                            0 => {
-                                let mut dummy_coords = Vec::new();
-                                for coord in fields {
-                                    dummy_coords.push(
-                                        if let Some(idx) = coord_map.get(coord)
-                                        {
-                                            DummyVal::Atom(*idx)
-                                        } else {
-                                            DummyVal::Value(
-                                                coord.parse().unwrap(),
-                                            )
-                                        },
-                                    );
-                                }
-                                ret.dummies.push(Dummy::from(dummy_coords));
-                            }
-                            _ => {
-                                let atom_index = ret.geom.atoms.len();
-                                for coord in &fields {
-                                    // don't mind overwriting another atom
-                                    // because that means their coordinates are
-                                    // the same
-                                    coord_map
-                                        .insert(coord.to_string(), atom_index);
-                                }
-                                ret.geom.atoms.push(Atom {
-                                    atomic_number,
-                                    x: fields[0].parse().unwrap(),
-                                    y: fields[1].parse().unwrap(),
-                                    z: fields[2].parse().unwrap(),
-                                });
-                            }
-                        }
-                    }
-                    State::Weight => {
-                        let fields =
-                            line.split_whitespace().collect::<Vec<_>>();
-                        ret.weights.push((
-                            fields[0].parse::<usize>().unwrap(),
-                            fields[1].parse::<f64>().unwrap(),
-                        ));
-                    }
-                    State::Curvil => {
-                        use crate::Curvil::*;
-                        let v = parse_line(&line);
-                        // TODO differentiate between other curvils with 4
-                        // coordinates. probably by requiring them to be written
-                        // out like in intder so they don't have to be specified
-                        // at the top too
-                        match v.len() {
-                            2 => ret.curvils.push(Bond(v[0], v[1])),
-                            3 => ret.curvils.push(Bend(v[0], v[1], v[2])),
-                            4 => ret.curvils.push(Tors(v[0], v[1], v[2], v[3])),
-                            0 => (),
-                            _ => todo!("unrecognized number of curvils"),
-                        }
-                    }
-                    State::Degmode => {
-                        let v = parse_line(&line);
-                        if !v.is_empty() {
-                            ret.degmodes.push(v);
-                        }
-                    }
-                    State::None => (),
-                }
-            }
-        }
-        // assumes input geometry in bohr
-        ret.geom.to_angstrom();
-        let (pr, axes) = ret.geom.normalize();
-        ret.primat = Vec::from(pr.as_slice());
-        ret.rotcon = pr.iter().map(|m| CONST / m).collect();
-        ret.axes = axes;
-        ret.rotor = ret.rotor_type();
-        // reorient everything s.t. unique moment of inertia is along the x
-        // axis. rotcon and primat are already sorted, so only move axes and the
-        // geometry
-        if ret.rotor.is_sym_top() {
-            // look at unsorted moments
-            let m = ret.geom.principal_moments();
-            // value from dist.f:310
-            const TOL: f64 = 1e-5;
-            let [a, b, c] = [m[0], m[1], m[2]];
-            // TODO you actually want the unique moment of inertia along the z
-            // axis like the comment said. I'm not sure why this code works for
-            // oblate tops, but for prolate tops you need to swap differently,
-            // at least for the one I have. I think so at least
-            if close(a, b, TOL) {
-                // c is unique. -> swap x and z
-                for atom in ret.geom.atoms.iter_mut() {
-                    (atom.x, atom.z) = (atom.z, atom.x);
-                }
-                ret.axes = nalgebra::Matrix3::from_columns(&[
-                    ret.axes.column(2),
-                    ret.axes.column(1),
-                    ret.axes.column(0),
-                ]);
-            } else if close(a, c, TOL) {
-                // b is unique. -> swap x and y
-                for atom in ret.geom.atoms.iter_mut() {
-                    (atom.x, atom.y) = (atom.y, atom.x);
-                }
-                ret.axes = nalgebra::Matrix3::from_columns(&[
-                    ret.axes.column(1),
-                    ret.axes.column(0),
-                    ret.axes.column(2),
-                ]);
-            } else if close(b, c, TOL) {
-                // a is unique and already in the right position
-            } else {
-                panic!("not a symmetric top")
-            }
-        }
-        ret.natom = ret.natoms();
-        let n3n = 3 * ret.natoms();
-        ret.n3n = n3n;
-        ret.i3n3n = n3n * (n3n + 1) * (n3n + 2) / 6;
-        ret.i4n3n = n3n * (n3n + 1) * (n3n + 2) * (n3n + 3) / 24;
-        let nvib = n3n - 6 + if ret.is_linear() { 1 } else { 0 };
-        ret.nvib = nvib;
-        ret.i2vib = ioff(nvib + 1);
-        ret.i3vib = nvib * (nvib + 1) * (nvib + 2) / 6;
-        ret.i4vib = nvib * (nvib + 1) * (nvib + 2) * (nvib + 3) / 24;
-        ret
-    }
-
     /// Note that `ifrm1` and `ifrm2` are deduplicated because of the Hash, but
     /// `ifrmchk` includes all of the resonances. This is the desired behavior
     /// from the Fortran version. I think this deduplication is a mistake, but
@@ -832,12 +652,11 @@ impl Spectro {
     /// already been normalized and reordered. These tests are taken from the
     /// [Crawford Programming
     /// Projects](https://github.com/CrawfordGroup/ProgrammingProjects/blob/master/Project%2301/hints/step7-solution.md)
-    fn rotor_type(&self) -> Rotor {
+    fn rotor_type(&self, moms: &nalgebra::Vector3<f64>) -> Rotor {
         if self.geom.atoms.len() == 2 {
             return Rotor::Diatomic;
         }
         let close = |a, b| f64::abs(a - b) < ROTOR_EPS;
-        let moms = &self.primat;
         if moms[0] < ROTOR_EPS {
             Rotor::Linear
         } else if close(moms[0], moms[1]) && close(moms[1], moms[2]) {
@@ -907,10 +726,6 @@ impl Spectro {
                 .xcalc(&f4qcm, &freq, &f3qcm, &zmat, &modes, &fermi1, &fermi2);
             (x, None, e)
         };
-
-        println!("{:.6}", xcnst);
-        println!("{:.8}", gcnst.as_ref().unwrap());
-        println!("{:.8}", e0);
 
         let (harms, funds) = if self.rotor.is_sym_top() {
             make_sym_funds(&modes, &freq, &xcnst, &gcnst)

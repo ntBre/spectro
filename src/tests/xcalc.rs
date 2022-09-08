@@ -91,7 +91,7 @@ fn xcalc_asym() {
 }
 
 #[test]
-fn xcalc_sym() {
+fn sym() {
     let tests = [
         Test::new("nh3", 6, 24.716378286389887),
         Test::new("ph3", 6, 20.748849036017717),
@@ -133,7 +133,7 @@ fn xcalc_sym() {
         if !abs_diff_eq!(xcnst, test.xcnst, epsilon = 1.54e-5) {
             println!("got\n{:.12}", xcnst);
             println!("want\n{:.12}", test.xcnst);
-            println!("diff\n={:.12}", xcnst.clone() - test.xcnst.clone());
+            // println!("diff\n={:.12}", xcnst.clone() - test.xcnst.clone());
             println!(
                 "xcnst diff = {:.2e}",
                 (xcnst.clone() - test.xcnst.clone()).abs().max()

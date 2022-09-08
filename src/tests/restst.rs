@@ -25,8 +25,51 @@ impl Test {
     }
 }
 
+fn inner(tests: &[Test]) {
+    for test in tests {
+        let s = Spectro::load(&test.infile);
+        let fc2 = load_fc2(&test.fort15, s.n3n);
+        let fc2 = s.rot2nd(fc2);
+        let fc2 = FACT2 * fc2;
+        let w = s.geom.weights();
+        let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
+        let fxm = s.form_sec(fc2, &sqm);
+        let (harms, lxm) = symm_eigen_decomp(fxm);
+        let freq = to_wavenumbers(&harms);
+        let lx = s.make_lx(&sqm, &lxm);
+        let (zmat, _wila) = s.zeta(&lxm, &w);
+        let f3x = load_fc3(&test.fort30, s.n3n);
+        let mut f3x = s.rot3rd(f3x, s.axes);
+        let f3qcm = force3(s.n3n, &mut f3x, &lx, s.nvib, &freq);
+        let got = Restst::new(&s, &zmat, &f3qcm, &freq);
+        assert_eq!(got.coriolis, test.want.coriolis);
+        assert_eq!(got.fermi1, test.want.fermi1);
+        assert_eq!(got.fermi2, test.want.fermi2);
+        assert_eq!(got.darling, test.want.darling);
+        assert_eq!(got.states.len(), test.want.states.len());
+        let (i1sts, i2sts, i3sts) = State::partition(&got.states);
+        let (want_i1, want_i2, want_i3) = State::partition(&test.want.states);
+        assert_eq!(i1sts.len(), want_i1.len());
+        assert_eq!(
+            i1sts,
+            want_i1,
+            "got\n{}\n\nwant{}",
+            States(i1sts.clone()),
+            States(want_i1.clone())
+        );
+        assert_eq!(i2sts, want_i2);
+        assert_eq!(i3sts, want_i3);
+        assert_eq!(got.states, test.want.states);
+        assert_eq!(got.modes, test.want.modes);
+        assert_eq!(got.ifunda, test.want.ifunda);
+        assert_eq!(got.iovrtn, test.want.iovrtn);
+        assert_eq!(got.icombn, test.want.icombn);
+        assert_eq!(got, test.want);
+    }
+}
+
 #[test]
-fn restst_asym() {
+fn asym() {
     use state::State::*;
     use Mode::*;
     let tests = [
@@ -319,7 +362,7 @@ fn restst_asym() {
 }
 
 #[test]
-fn restst_sym() {
+fn sym() {
     use state::State::*;
     use Mode::*;
     // NOTE just pasted the states in for now
@@ -490,47 +533,4 @@ fn restst_sym() {
         ),
     ];
     inner(&tests);
-}
-
-fn inner(tests: &[Test]) {
-    for test in tests {
-        let s = Spectro::load(&test.infile);
-        let fc2 = load_fc2(&test.fort15, s.n3n);
-        let fc2 = s.rot2nd(fc2);
-        let fc2 = FACT2 * fc2;
-        let w = s.geom.weights();
-        let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
-        let fxm = s.form_sec(fc2, &sqm);
-        let (harms, lxm) = symm_eigen_decomp(fxm);
-        let freq = to_wavenumbers(&harms);
-        let lx = s.make_lx(&sqm, &lxm);
-        let (zmat, _wila) = s.zeta(&lxm, &w);
-        let f3x = load_fc3(&test.fort30, s.n3n);
-        let mut f3x = s.rot3rd(f3x, s.axes);
-        let f3qcm = force3(s.n3n, &mut f3x, &lx, s.nvib, &freq);
-        let got = Restst::new(&s, &zmat, &f3qcm, &freq);
-        assert_eq!(got.coriolis, test.want.coriolis);
-        assert_eq!(got.fermi1, test.want.fermi1);
-        assert_eq!(got.fermi2, test.want.fermi2);
-        assert_eq!(got.darling, test.want.darling);
-        assert_eq!(got.states.len(), test.want.states.len());
-        let (i1sts, i2sts, i3sts) = State::partition(&got.states);
-        let (want_i1, want_i2, want_i3) = State::partition(&test.want.states);
-        assert_eq!(i1sts.len(), want_i1.len());
-        assert_eq!(
-            i1sts,
-            want_i1,
-            "got\n{}\n\nwant{}",
-            States(i1sts.clone()),
-            States(want_i1.clone())
-        );
-        assert_eq!(i2sts, want_i2);
-        assert_eq!(i3sts, want_i3);
-        assert_eq!(got.states, test.want.states);
-        assert_eq!(got.modes, test.want.modes);
-        assert_eq!(got.ifunda, test.want.ifunda);
-        assert_eq!(got.iovrtn, test.want.iovrtn);
-        assert_eq!(got.icombn, test.want.icombn);
-        assert_eq!(got, test.want);
-    }
 }

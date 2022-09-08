@@ -1,4 +1,4 @@
-use approx::assert_abs_diff_eq;
+use approx::abs_diff_eq;
 
 use crate::*;
 
@@ -30,15 +30,7 @@ impl Test {
     }
 }
 
-#[test]
-pub(crate) fn test_force3() {
-    let tests = [
-        Test::new("h2o", 4e-6),
-        Test::new("h2co", 3e-6),
-        Test::new("c3h2", 7e-6),
-        Test::new("c3hf", 5e-6),
-        Test::new("c3hcn", 5e-6),
-    ];
+fn inner(tests: &[Test]) {
     for test in tests {
         let s = Spectro::load(&test.infile);
         let fc2 = load_fc2(&test.fort15, s.n3n);
@@ -54,8 +46,52 @@ pub(crate) fn test_force3() {
         let mut f3x = s.rot3rd(f3x, s.axes);
         let got = force3(s.n3n, &mut f3x, &lx, s.nvib, &freq);
         let got = Dvec::from(got).abs();
-        let want = Dvec::from(test.want).abs();
-        // println!("\ndiff = {:.2e}", (got.clone() - want.clone()).max());
-        assert_abs_diff_eq!(got, want, epsilon = test.eps);
+        let want = Dvec::from(test.want.clone()).abs();
+        if !abs_diff_eq!(got, want, epsilon = test.eps) {
+            assert_eq!(got.len(), want.len());
+            println!(
+                "\n{:>5}{:>20.12}{:>20.12}{:>20.12}",
+                "Iter", "Got", "Want", "Diff",
+            );
+            for i in 0..got.len() {
+                if (got[i].abs() - want[i].abs()).abs() > test.eps {
+                    println!(
+                        "{:5}{:20.12}{:20.12}{:20.12}",
+                        i,
+                        got[i],
+                        want[i],
+                        got[i] - want[i]
+                    );
+                }
+            }
+            assert!(
+                false,
+                "differs by {:.2e} on {}",
+                (got.clone() - want.clone()).max(),
+                test.infile
+            );
+        }
     }
+}
+
+#[test]
+pub(crate) fn asym() {
+    let tests = [
+        Test::new("h2o", 4e-6),
+        Test::new("h2co", 3e-6),
+        Test::new("c3h2", 7e-6),
+        Test::new("c3hf", 5e-6),
+        Test::new("c3hcn", 5e-6),
+    ];
+    inner(&tests);
+}
+
+#[test]
+pub(crate) fn sym() {
+    let tests = [
+        Test::new("nh3", 5e-6),
+        Test::new("ph3", 3e-6),
+        Test::new("bipy", 3e-6),
+    ];
+    inner(&tests);
 }

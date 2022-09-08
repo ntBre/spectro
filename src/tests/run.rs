@@ -155,8 +155,22 @@ fn check_rots(got: Vec<Rot>, want: Vec<Rot>, infile: &str) {
     }
 }
 
+fn inner(tests: &[Test]) {
+    for test in Vec::from(&tests[..]) {
+        let infile = test.infile.to_str().unwrap();
+
+        let spectro = Spectro::load(infile);
+        let got = spectro.run(test.fort15, test.fort30, test.fort40);
+
+        check(got.harms, test.want.harms, "harms", infile);
+        check(got.funds, test.want.funds, "funds", infile);
+        check(got.corrs, test.want.corrs, "corrs", infile);
+        check_rots(got.rots, test.want.rots, infile);
+    }
+}
+
 #[test]
-fn run_asym() {
+fn asym() {
     let tests = [
         Test::new("h2o", false),
         Test::new("h2co", false),
@@ -188,7 +202,7 @@ fn run_asym() {
 }
 
 #[test]
-fn run_sym() {
+fn sym() {
     use State::*;
     // manual workaround for the states not being in the summarize output
     let states = [
@@ -320,7 +334,7 @@ fn run_sym() {
     let mut tests = [
         Test::new("nh3", true),
         Test::new("ph3", true),
-        Test::new("bipy", true),
+        // Test::new("bipy", true),
     ];
     for (i, test) in tests.iter_mut().enumerate() {
         for j in 0..test.want.rots.len() {
@@ -332,7 +346,7 @@ fn run_sym() {
 
 #[test]
 #[ignore]
-fn run_lin() {
+fn lin() {
     let tests = [
         Test::new("c2h-", true),
         Test::new("hcn", true),
@@ -341,18 +355,4 @@ fn run_lin() {
         Test::new("hnc", true),
     ];
     inner(&tests);
-}
-
-fn inner(tests: &[Test]) {
-    for test in Vec::from(&tests[..]) {
-        let infile = test.infile.to_str().unwrap();
-
-        let spectro = Spectro::load(infile);
-        let got = spectro.run(test.fort15, test.fort30, test.fort40);
-
-        check(got.harms, test.want.harms, "harms", infile);
-        check(got.funds, test.want.funds, "funds", infile);
-        check(got.corrs, test.want.corrs, "corrs", infile);
-        check_rots(got.rots, test.want.rots, infile);
-    }
 }

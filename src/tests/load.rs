@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+use crate::dummy::DummyVal;
 use crate::Curvil::*;
 use crate::*;
 
@@ -139,12 +140,12 @@ He     1.76798258  0.00000000  0.00000000
         0.0, 0.0, 1.0;
         1.0, 0.0, 0.0;
         ],
+        primat: vec![0.0, 19.422657990598942, 19.422657990598942],
         rotcon: vec![
             std::f64::INFINITY,
             0.8679363261189563,
             0.8679363261189563,
         ],
-        primat: vec![0.0, 19.422657990598942, 19.422657990598942],
     };
     assert_eq!(got.axes, want.axes);
     assert_eq!(got, want);
