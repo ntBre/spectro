@@ -1,4 +1,4 @@
-use approx::assert_abs_diff_eq;
+use approx::{abs_diff_eq, assert_abs_diff_eq};
 
 use crate::*;
 
@@ -95,6 +95,7 @@ fn xcalc_sym() {
     let tests = [
         Test::new("nh3", 6, 24.716378286389887),
         Test::new("ph3", 6, 20.748849036017717),
+        Test::new("bipy", 15, 32.906770783666872),
     ];
     for test in Vec::from(&tests[..]) {
         let s = Spectro::load(&test.infile);
@@ -129,15 +130,17 @@ fn xcalc_sym() {
         let (xcnst, _, e0) = s.xcals(
             &f4qcm, &freq, &f3qcm, &zmat, &fermi1, &fermi2, &modes, &wila,
         );
-        // println!("\n{}", test.infile);
-        // println!("got\n{:.12}", xcnst);
-        // println!("want\n{:.12}", test.xcnst);
-        println!(
-            "xcnst diff = {:.2e}",
-            (xcnst.clone() - test.xcnst.clone()).abs().max()
-        );
+        if !abs_diff_eq!(xcnst, test.xcnst, epsilon = 1.54e-5) {
+            println!("got\n{:.12}", xcnst);
+            println!("want\n{:.12}", test.xcnst);
+            println!("diff\n={:.12}", xcnst.clone() - test.xcnst.clone());
+            println!(
+                "xcnst diff = {:.2e}",
+                (xcnst.clone() - test.xcnst.clone()).abs().max()
+            );
+            assert!(false, "xcnst differs on {}", test.infile);
+        }
         // println!("e0 diff = {:.2e}", (e0 - test.e0).abs());
-        assert_abs_diff_eq!(xcnst, test.xcnst, epsilon = 1.54e-5);
         // NOTE 6e-8 works for everything but c3hcn, might want to investigate
         assert_abs_diff_eq!(e0, test.e0, epsilon = 1.4e-7);
     }
