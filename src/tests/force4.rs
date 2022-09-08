@@ -1,5 +1,3 @@
-use approx::assert_abs_diff_eq;
-
 use crate::*;
 
 use super::check_vec;

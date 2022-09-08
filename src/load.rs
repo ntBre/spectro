@@ -1,34 +1,18 @@
 use std::{
-    cmp::{max, min},
-    collections::{HashMap, HashSet},
+    collections::HashMap,
     fmt::Debug,
     fs::File,
-    io::{BufRead, BufReader, Result},
+    io::{BufRead, BufReader},
     path::Path,
 };
 
-use crate::f3qcm::F3qcm;
-use crate::f4qcm::F4qcm;
-use crate::ifrm1::Ifrm1;
-use crate::ifrm2::Ifrm2;
-use crate::quartic::Quartic;
-use crate::resonance::{Coriolis, Fermi1, Fermi2, Restst};
-use crate::rot::Rot;
-use crate::rotor::{Rotor, ROTOR_EPS};
-use crate::sextic::Sextic;
-use crate::state::State;
 use crate::utils::*;
+use crate::Spectro;
 use crate::{
     consts::CONST,
     dummy::{Dummy, DummyVal},
 };
-use crate::{
-    consts::{ALPHA_CONST, FACT2},
-    Spectro,
-};
-use nalgebra::DMatrix;
-use symm::{Atom, Molecule};
-use tensor::Tensor4;
+use symm::Atom;
 
 impl Spectro {
     pub fn load<P>(filename: P) -> Self
@@ -216,9 +200,9 @@ impl Spectro {
             use symm::PointGroup::*;
             let iatl = match pg {
                 C1 => todo!(),
-                C2 { axis } => todo!(),
-                Cs { plane } => todo!(),
-                C2v { axis, planes } => todo!(),
+                C2 { axis: _ } => todo!(),
+                Cs { plane: _ } => todo!(),
+                C2v { axis: _, planes: _ } => todo!(),
                 C3v { axis, plane } => {
                     // axis perpendicular to plane
                     let p = plane.perp();
@@ -235,13 +219,12 @@ impl Spectro {
                         })
                         .unwrap()
                 }
-                D2h { axes, planes } => todo!(),
+                D2h { axes: _, planes: _ } => todo!(),
             };
 
             let mut egr = nalgebra::Matrix3::zeros();
             let x = ret.geom.atoms[iatl].x;
             let y = ret.geom.atoms[iatl].y;
-            let z = ret.geom.atoms[iatl].z;
             egr[(0, 0)] = x / (f64::sqrt(x * x + y * y));
             egr[(1, 0)] = y / (f64::sqrt(x * x + y * y));
             egr[(0, 1)] = -y / (f64::sqrt(x * x + y * y));

@@ -627,7 +627,6 @@ impl Spectro {
     }
 
     /// calculate the anharmonic constants and E_0 for a symmetric top
-    #[allow(unused)]
     pub fn xcals(
         &self,
         f4qcm: &F4qcm,

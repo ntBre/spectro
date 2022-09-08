@@ -1,5 +1,4 @@
 #![feature(test)]
-#![allow(unused)]
 
 use std::{
     cmp::{max, min},
@@ -7,7 +6,7 @@ use std::{
     f64::consts::PI,
     fmt::Debug,
     fs::File,
-    io::{BufRead, Result},
+    io::Result,
     path::Path,
 };
 
@@ -24,11 +23,9 @@ use rot::Rot;
 use rotor::{Rotor, ROTOR_EPS};
 use sextic::Sextic;
 use state::State;
-use symm::{Atom, Molecule};
+use symm::Molecule;
 use tensor::Tensor4;
 use utils::*;
-
-use crate::consts::CONST;
 
 mod alphas;
 mod consts;
@@ -791,8 +788,6 @@ impl Spectro {
                 if (freq[ii] - freq[jj]).abs() < TOL {
                     /// size of the expected errors in lxm
                     const TOLER: f64 = 1e-5;
-                    /// square of the largest error in the geometry
-                    const TOLER2: f64 = 0.1;
 
                     let ncomp1 = 3 * self.iatom;
                     let imode1 = ii;
@@ -842,7 +837,7 @@ impl Spectro {
                         if self.rotor.is_linear() {
                             todo!("says increment iatom and go back to start");
                         }
-                        let ncomp3 = ncomp1 + 2;
+                        // let ncomp3 = ncomp1 + 2;
                         todo!("bdegnl.f:106")
                     };
 
@@ -884,7 +879,7 @@ impl Spectro {
                     let mut s = 0.0;
                     let ncomp21 = 3 * iatom2;
                     let ncomp22 = 3 * iatom2 + 1;
-                    let ncomp23 = 3 * iatom2 + 2;
+                    // let ncomp23 = 3 * iatom2 + 2;
                     let mut iflag = false;
                     for is in 0..5 {
                         let is2 = (is + is) as f64;
@@ -896,7 +891,7 @@ impl Spectro {
                             continue;
                         }
                         if izero != 4 {
-                            let (test, mut test2, test3) =
+                            let (test, test2, test3) =
                                 if f64::abs(f64::cos(alpha)) > TOLER {
                                     let test = f64::cos(alpha)
                                         * lxm[(ncomp1, imode1)]
@@ -927,7 +922,6 @@ impl Spectro {
                                         lxm[(ii, imode2)] =
                                             -1.0 * lxm[(ii, imode2)];
                                     }
-                                    test2 *= -1.0;
                                 }
                             }
                         } else {
