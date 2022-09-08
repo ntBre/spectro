@@ -154,13 +154,45 @@ impl Spectro {
                 }
             }
         }
+
         // assumes input geometry in bohr
         ret.geom.to_angstrom();
-        let (pr, axes) = ret.geom.normalize();
+        let com = ret.geom.com();
+        ret.geom.translate(-com);
+        let pr = ret.geom.principal_moments();
+        let axes = ret.geom.principal_axes();
+        let (pr, axes) = symm::eigen_sort(pr, axes);
         ret.primat = Vec::from(pr.as_slice());
         ret.rotcon = pr.iter().map(|m| CONST / m).collect();
-        ret.axes = axes;
         ret.rotor = ret.rotor_type(&pr);
+
+        if ret.rotor.is_sym_top() {
+            const TOL: f64 = 1e-5;
+            let iaxis = if close(pr[0], pr[1], TOL) {
+                3
+            } else if close(pr[0], pr[2], TOL) {
+                2
+            } else if close(pr[1], pr[2], TOL) {
+                1
+            } else {
+                panic!("not a symmetric top");
+            };
+
+            if iaxis == 1 {
+                todo!("dist.f:380");
+            } else if iaxis == 2 {
+                todo!("dist.f:419");
+            }
+        }
+
+        // rotate to principal axes
+        ret.geom = ret.geom.transform(axes.transpose());
+        ret.axes = axes;
+
+        // center of mass again
+        let com = ret.geom.com();
+        ret.geom.translate(-com);
+
         ret.natom = ret.natoms();
         let n3n = 3 * ret.natoms();
         ret.n3n = n3n;
