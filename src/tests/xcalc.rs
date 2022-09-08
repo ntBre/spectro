@@ -37,7 +37,7 @@ impl Test {
 }
 
 #[test]
-fn xcalc_asym() {
+fn asym() {
     let tests = [
         Test::new("h2o", 3, 20.057563725859055),
         Test::new("h2co", 6, 11.49172492996696),
