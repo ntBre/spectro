@@ -39,5 +39,14 @@ while (<>) {
   # square
   s/\*\*2/.powi(2)/g;
 
+  # abs and trig
+  s/dabs/f64::abs/g;
+  s/dcos/f64::cos/g;
+  s/dsin/f64::sin/g;
+
+  s/abs\[\(([^)]+)\)\]/abs($1)/g;
+  s/cos\[\(([^)]+)\)\]/cos($1)/g;
+  s/sin\[\(([^)]+)\)\]/sin($1)/g;
+
   print;
 }
