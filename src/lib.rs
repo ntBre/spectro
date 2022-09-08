@@ -4,6 +4,7 @@
 use std::{
     cmp::{max, min},
     collections::{HashMap, HashSet},
+    f64::consts::PI,
     fmt::Debug,
     fs::File,
     io::{BufRead, Result},
@@ -650,11 +651,15 @@ impl Spectro {
         let w = self.geom.weights();
         let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
         let fxm = self.form_sec(fc2, &sqm);
-        let (harms, lxm) = symm_eigen_decomp(fxm);
+        let (harms, mut lxm) = symm_eigen_decomp(fxm);
         let freq = to_wavenumbers(&harms);
 
         // form the LX matrix
-        let lx = self.make_lx(&sqm, &lxm);
+        let mut lx = self.make_lx(&sqm, &lxm);
+
+        if self.rotor.is_sym_top() {
+            self.bdegnl(&freq, &mut lxm, &w, &mut lx);
+        }
 
         // start of cubic analysis
         let f3x = load_fc3(fort30, self.n3n);
@@ -766,6 +771,186 @@ impl Spectro {
             funds,
             rots,
             corrs,
+        }
+    }
+
+    /// automatic alignment of the degenerate modes of symmetric tops, according
+    /// to the convention given at the beginning of Papousek and Aliev. most
+    /// vibrations are aligned so that the first component is symmetric under a
+    /// mirror plane through atom number iatom (and the second component is
+    /// antisymmetric) however, for planar molecules the out-of-plane degenerate
+    /// modes are aligned using the c2 rotation instead of the mirror plane.
+    /// also aligns linear molecule modes, assuming molecule is already aligned
+    /// on the z axis. for linear molecules, IATOM will obviously be on the z
+    /// axis.
+    fn bdegnl(&self, freq: &Dvec, lxm: &mut Dmat, w: &Vec<f64>, lx: &mut Dmat) {
+        /// cutoff for considering two modes degenerate
+        const TOL: f64 = 0.05;
+        for ii in 0..self.nvib - 1 {
+            for jj in ii + 1..self.nvib {
+                if (freq[ii] - freq[jj]).abs() < TOL {
+                    /// size of the expected errors in lxm
+                    const TOLER: f64 = 1e-5;
+                    /// square of the largest error in the geometry
+                    const TOLER2: f64 = 0.1;
+
+                    let ncomp1 = 3 * self.iatom;
+                    let imode1 = ii;
+                    let imode2 = jj;
+                    let mut izero = 0;
+                    let mut iz1x = 0;
+                    let mut iz2x = 0;
+                    let mut iz2y = 0;
+                    if lxm[(ncomp1, imode1)].abs() < TOLER {
+                        izero += 1;
+                        iz1x = 1;
+                    }
+                    if lxm[(ncomp1, imode2)].abs() < TOLER {
+                        izero += 1;
+                        iz2x = 1;
+                    }
+                    let ncomp2 = ncomp1 + 1;
+                    if lxm[(ncomp2, imode1)].abs() < TOLER {
+                        izero += 1;
+                    }
+                    if lxm[(ncomp2, imode2)].abs() < TOLER {
+                        iz2y = 1;
+                        izero += 1;
+                    }
+
+                    // deg modes of interest have components in the xy plane
+                    let theta = if izero != 4 {
+                        if iz1x == 0 {
+                            f64::atan(
+                                lxm[(ncomp1, imode2)] / lxm[(ncomp1, imode1)],
+                            )
+                        } else {
+                            if iz2x == 0 {
+                                0.5 * PI
+                            } else {
+                                if iz2y == 0 {
+                                    f64::atan(
+                                        -1.0 * lxm[(ncomp2, imode1)]
+                                            / lxm[(ncomp1, imode2)],
+                                    )
+                                } else {
+                                    0.5 * PI
+                                }
+                            }
+                        }
+                    } else {
+                        if self.rotor.is_linear() {
+                            todo!("says increment iatom and go back to start");
+                        }
+                        let ncomp3 = ncomp1 + 2;
+                        todo!("bdegnl.f:106")
+                    };
+
+                    let c = theta.cos();
+                    let s = theta.sin();
+                    for i in 0..self.n3n {
+                        let temp = c * lxm[(i, imode1)] + s * lxm[(i, imode2)];
+                        lxm[(i, imode2)] =
+                            c * lxm[(i, imode2)] - s * lxm[(i, imode1)];
+                        lxm[(i, imode1)] = temp;
+                    }
+
+                    // so now the modes are in the xz and yz planes
+                    // respectively now we need to check their relative
+                    // signs, so that they will transform properly (i think
+                    // this means have positive angular momentum for l=+1
+                    // wavefunctions???) first do linear molecules:
+
+                    if self.rotor.is_linear() {
+                        todo!("bdegnl.f:136");
+                    }
+
+                    // usize so already abs
+                    let nabs = self.axis_order as f64;
+
+                    // the minus sign is Papousek's definition of the
+                    // symmetry operation Cn (??!)
+                    let other = self.geom.rotate(-360.0 / nabs, &symm::Axis::Z);
+                    let buddies = self.geom.detect_buddies(&other, 1e-6);
+
+                    // might be the wrong axis or wrong point group
+                    let iatom2 = buddies[self.iatom].expect(&format!(
+                        "can't find symmetry related atom to atom {}",
+                        self.iatom
+                    ));
+
+                    let alpha = (-2.0 * PI) / (nabs);
+
+                    let mut s = 0.0;
+                    let ncomp21 = 3 * iatom2;
+                    let ncomp22 = 3 * iatom2 + 1;
+                    let ncomp23 = 3 * iatom2 + 2;
+                    let mut iflag = false;
+                    for is in 0..5 {
+                        let is2 = (is + is) as f64;
+                        s += 1.0;
+                        if is2 >= nabs {
+                            continue;
+                        }
+                        if iflag {
+                            continue;
+                        }
+                        if izero != 4 {
+                            let (test, mut test2, test3) =
+                                if f64::abs(f64::cos(alpha)) > TOLER {
+                                    let test = f64::cos(alpha)
+                                        * lxm[(ncomp1, imode1)]
+                                        - f64::cos(alpha * s)
+                                            * lxm[(ncomp21, imode1)];
+                                    let test2 = lxm[(ncomp21, imode2)]
+                                        * f64::sin(-alpha * s);
+                                    let test3 = (f64::abs(test)
+                                        - f64::abs(test2))
+                                        / lxm[(ncomp1, imode1)];
+                                    (test, test2, test3)
+                                } else {
+                                    let test = f64::sin(alpha)
+                                        * lxm[(ncomp1, imode1)]
+                                        - f64::cos(alpha * s)
+                                            * lxm[(ncomp22, imode1)];
+                                    let test2 = lxm[(ncomp22, imode2)]
+                                        * f64::sin(-alpha * s);
+                                    let test3 = (f64::abs(test)
+                                        - f64::abs(test2))
+                                        / lxm[(ncomp1, imode1)];
+                                    (test, test2, test3)
+                                };
+                            if f64::abs(test3) < 0.001 {
+                                iflag = true;
+                                if test * test2 < 0.0 {
+                                    for ii in 0..self.n3n {
+                                        lxm[(ii, imode2)] =
+                                            -1.0 * lxm[(ii, imode2)];
+                                    }
+                                    test2 *= -1.0;
+                                }
+                            }
+                        } else {
+                            todo!("bdegnl.f:218");
+                            // let test = lxm[(ncomp3, imode2)];
+                        }
+                    }
+
+                    for ij in 0..2 {
+                        let mut ijj = imode1;
+                        if ij == 1 {
+                            ijj = imode2;
+                        }
+                        for ia in 0..self.natom {
+                            let vmass = 1.0 / w[ia].sqrt();
+                            for ix in 0..3 {
+                                let ii = 3 * ia;
+                                lx[(ii, ijj)] = lxm[(ii, ijj)] * vmass;
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -1001,6 +1186,7 @@ fn make_sym_funds(
         harms.push(freq[i]);
         funds.push(val);
     }
+
     for ii in 0..n2dm {
         let i = i2mode[ii].0;
         let mut val =

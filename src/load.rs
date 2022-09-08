@@ -220,12 +220,12 @@ impl Spectro {
                 Cs { plane } => todo!(),
                 C2v { axis, planes } => todo!(),
                 C3v { axis, plane } => {
-                    println!("{:.8}", geom);
                     // axis perpendicular to plane
                     let p = plane.perp();
                     // axis in plane but not principal axis
                     let o = plane ^ axis;
 
+                    ret.axis_order = 3;
                     geom.atoms
                         .iter()
                         .position(|a| {
@@ -252,6 +252,7 @@ impl Spectro {
 
             let eg = egr.transpose() * ret.axes * egr;
             ret.axes = eg;
+            ret.iatom = iatl;
         }
 
         ret.natom = ret.natoms();
