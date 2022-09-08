@@ -11,6 +11,7 @@ struct Test {
     fort30: String,
     fort40: String,
     xcnst: Dmat,
+    gcnst: Dmat,
     e0: f64,
 }
 
@@ -31,19 +32,18 @@ impl Test {
                 start.join(dir).join("fort.40").to_str().unwrap(),
             ),
             xcnst: load_dmat(start.join(dir).join("xcnst"), nvib, nvib),
+            gcnst: load_dmat(start.join(dir).join("gcnst"), nvib, nvib),
             e0,
         }
     }
 }
 
 #[test]
-fn asym() {
+fn sym() {
     let tests = [
-        Test::new("h2o", 3, 20.057563725859055),
-        Test::new("h2co", 6, 11.49172492996696),
-        Test::new("c3h2", 9, 4.2142433303609623),
-        Test::new("c3hf", 9, -2.5183180568351426),
-        Test::new("c3hcn", 12, -5.6448536013927253),
+        Test::new("nh3", 6, 24.716378286389887),
+        // Test::new("ph3", 6, 20.748849036017717),
+        // Test::new("bipy", 15, 32.906770783666872),
     ];
     for test in Vec::from(&tests[..]) {
         let s = Spectro::load(&test.infile);
@@ -53,9 +53,12 @@ fn asym() {
         let w = s.geom.weights();
         let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
         let fxm = s.form_sec(fc2, &sqm);
-        let (harms, lxm) = symm_eigen_decomp(fxm);
+        let (harms, mut lxm) = symm_eigen_decomp(fxm);
         let freq = to_wavenumbers(&harms);
-        let lx = s.make_lx(&sqm, &lxm);
+        let mut lx = s.make_lx(&sqm, &lxm);
+        if s.rotor.is_sym_top() {
+            s.bdegnl(&freq, &mut lxm, &w, &mut lx);
+        }
         let (zmat, _) = s.zeta(&lxm, &w);
         let f3x = load_fc3(test.fort30, s.n3n);
         let mut f3x = s.rot3rd(f3x, s.axes);
@@ -74,18 +77,26 @@ fn asym() {
             iovrtn: _,
             icombn: _,
         } = Restst::new(&s, &zmat, &f3qcm, &freq);
-        let (xcnst, e0) =
-            s.xcalc(&f4qcm, &freq, &f3qcm, &zmat, &modes, &fermi1, &fermi2);
-        // println!("\n{}", test.infile);
-        // println!("got\n{:.12}", xcnst);
-        // println!("want\n{:.12}", test.xcnst);
-        // println!(
-        //     "xcnst diff = {:.2e}",
-        //     (xcnst.clone() - test.xcnst.clone()).abs().max()
-        // );
+        let (zmat, wila) = s.zeta(&lxm, &w);
+        let (xcnst, gcnst, e0) = s.xcals(
+            &f4qcm, &freq, &f3qcm, &zmat, &fermi1, &fermi2, &modes, &wila,
+        );
+        check(&xcnst, &test.xcnst, "xcnst", &test.infile);
+        check(&gcnst, &test.gcnst, "gcnst", &test.infile);
         // println!("e0 diff = {:.2e}", (e0 - test.e0).abs());
-        assert_abs_diff_eq!(xcnst, test.xcnst, epsilon = 1.54e-5);
-        // NOTE 6e-8 works for everything but c3hcn, might want to investigate
         assert_abs_diff_eq!(e0, test.e0, epsilon = 1.4e-7);
+    }
+}
+
+fn check(got: &Dmat, want: &Dmat, label: &'static str, infile: &str) {
+    if !abs_diff_eq!(got, want, epsilon = 1.54e-5) {
+        println!("got\n{:.6}", got);
+        println!("want\n{:.6}", want);
+        println!("diff\n={:.6}", got.clone() - want.clone());
+        println!(
+            "max diff = {:.2e}",
+            (got.clone() - want.clone()).abs().max()
+        );
+        assert!(false, "{} differs on {}", label, infile);
     }
 }

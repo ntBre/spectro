@@ -20,10 +20,16 @@ mod run;
 mod secular;
 mod sextic;
 mod xcalc;
+mod xcals;
 mod zeta;
 
-fn load_dmat<P: AsRef<Path>>(filename: P, rows: usize, cols: usize) -> Dmat {
-    let data = read_to_string(filename).unwrap();
+fn load_dmat<P: AsRef<Path> + Debug + Clone>(
+    filename: P,
+    rows: usize,
+    cols: usize,
+) -> Dmat {
+    let data = read_to_string(filename.clone())
+        .expect(&format!("failed to read {:?}", filename));
     Dmat::from_iterator(
         cols,
         rows,

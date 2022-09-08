@@ -6,13 +6,13 @@ use super::*;
 struct Test {
     infile: String,
     fort15: String,
-    nvib: usize,
     lxm: Dmat,
+    lx: Dmat,
     harm: Vec<f64>,
 }
 
 impl Test {
-    fn new(dir: &'static str, nvib: usize, harm: Vec<f64>) -> Self {
+    fn new(dir: &'static str, lxm: (usize, usize), harm: Vec<f64>) -> Self {
         let start = Path::new("testfiles");
         Self {
             infile: String::from(
@@ -21,11 +21,15 @@ impl Test {
             fort15: String::from(
                 start.join(dir).join("fort.15").to_str().unwrap(),
             ),
-            nvib,
             lxm: load_dmat(
                 start.join(dir).join("lxm").to_str().unwrap(),
-                nvib,
-                nvib,
+                lxm.0,
+                lxm.1,
+            ),
+            lx: load_dmat(
+                start.join(dir).join("lx").to_str().unwrap(),
+                lxm.0,
+                lxm.0,
             ),
             harm,
         }
@@ -33,11 +37,11 @@ impl Test {
 }
 
 #[test]
-fn test_lxm() {
+fn asym() {
     let tests = [
         Test::new(
             "h2o",
-            9,
+            (9, 9),
             vec![
                 3943.6903070625431,
                 3833.7018985135023,
@@ -53,7 +57,7 @@ fn test_lxm() {
         ),
         Test::new(
             "h2co",
-            12,
+            (12, 12),
             vec![
                 3004.5902666751244,
                 2932.5963462190625,
@@ -72,7 +76,7 @@ fn test_lxm() {
         ),
         Test::new(
             "c3h2",
-            15,
+            (15, 15),
             vec![
                 3281.2437096923395,
                 3247.5423614827209,
@@ -94,7 +98,7 @@ fn test_lxm() {
         ),
         Test::new(
             "c3hf",
-            15,
+            (15, 15),
             vec![
                 3271.2239104039636,
                 1820.6004435804787,
@@ -116,7 +120,7 @@ fn test_lxm() {
         ),
         Test::new(
             "c3hcn",
-            18,
+            (18, 18),
             vec![
                 3271.5881522343207,
                 2280.1997504340388,
@@ -140,7 +144,7 @@ fn test_lxm() {
         ),
         Test::new(
             "c3hcn010",
-            18,
+            (18, 18),
             vec![
                 3271.1795755233238,
                 2280.0924448154542,
@@ -165,7 +169,7 @@ fn test_lxm() {
     ];
     for test in Vec::from(&tests[..]) {
         let s = Spectro::load(&test.infile);
-        let fc2 = load_fc2(&test.fort15, test.nvib);
+        let fc2 = load_fc2(&test.fort15, s.n3n);
         let fc2 = s.rot2nd(fc2);
         let fc2 = FACT2 * fc2;
         let w = s.geom.weights();
@@ -173,6 +177,7 @@ fn test_lxm() {
         let fxm = s.form_sec(fc2, &sqm);
 
         let (harms, lxm) = symm_eigen_decomp(fxm);
+        let lx = s.make_lx(&sqm, &lxm);
 
         assert_abs_diff_eq!(
             to_wavenumbers(&harms),
@@ -187,27 +192,65 @@ fn test_lxm() {
 
         // println!("{:.2e}", (got.clone() - want.clone()).max());
         assert_abs_diff_eq!(got, want, epsilon = 2e-9);
+
+        let got = lx.slice((0, 0), (s.n3n, s.nvib)).abs();
+        let want = test.lx.slice((0, 0), (s.n3n, s.nvib)).abs();
+        // println!("{:.2e}", (got.clone() - want.clone()).max());
+        // a little looser, but I guess that's from mass differences since these
+        // are multiplied by 1/√w
+        assert_abs_diff_eq!(got, want, epsilon = 5e-9);
     }
 }
 
 #[test]
-fn test_lx() {
-    // just test a hard one here for now
-    let s = Spectro::load("testfiles/c3hf/spectro.in");
-    let fc2 = load_fc2("testfiles/c3hf/fort.15", 15);
-    let fc2 = s.rot2nd(fc2);
-    let fc2 = FACT2 * fc2;
-    let w = s.geom.weights();
-    let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
-    let fxm = s.form_sec(fc2, &sqm);
+fn sym() {
+    let tests = [Test::new(
+        "nh3",
+        (12, 6),
+        vec![
+            3618.9584054868574,
+            3618.9565844170111,
+            3487.9020754259795,
+            1681.2164596133898,
+            1681.1997702967317,
+            1057.8051269080293,
+            0.048197047771905074,
+            0.023958156728552085,
+            0.017239762764372803,
+            2.2798375405355122e-05,
+            -0.015265776652198524,
+            -0.023206083873501725,
+        ],
+    )];
+    for test in Vec::from(&tests[..]) {
+        let s = Spectro::load(&test.infile);
+        let fc2 = load_fc2(&test.fort15, s.n3n);
+        let fc2 = s.rot2nd(fc2);
+        let fc2 = FACT2 * fc2;
+        let w = s.geom.weights();
+        let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
+        let fxm = s.form_sec(fc2, &sqm);
+        let (harms, mut lxm) = symm_eigen_decomp(fxm);
+        let freq = to_wavenumbers(&harms);
+        let mut lx = s.make_lx(&sqm, &lxm);
+        s.bdegnl(&freq, &mut lxm, &w, &mut lx);
 
-    let (_harms, lxm) = symm_eigen_decomp(fxm);
-    let lx = s.make_lx(&sqm, &lxm);
+        assert_abs_diff_eq!(
+            to_wavenumbers(&harms),
+            Dvec::from(test.harm),
+            epsilon = 6e-6
+        );
 
-    let got = lx.slice((0, 0), (s.nvib, s.nvib)).abs();
-    let want = load_dmat("testfiles/c3hf/lx", 15, 15);
-    let want = want.slice((0, 0), (s.nvib, s.nvib)).abs();
+        // only really care about the part with frequencies. there is more noise
+        // in the rotations and translations, so this allows tightening epsilon
+        let got = lxm.slice((0, 0), (s.n3n, s.nvib)).abs();
+        let want = test.lxm.slice((0, 0), (s.n3n, s.nvib)).abs();
 
-    // println!("{:.2e}", (got.clone() - want.clone()).max());
-    assert_abs_diff_eq!(got, want, epsilon = 5e-9);
+        // println!("{:.2e}", (got.clone() - want.clone()).max());
+        assert_abs_diff_eq!(got, want, epsilon = 2e-9);
+
+        let got = lx.slice((0, 0), (s.n3n, s.nvib)).abs();
+        let want = test.lx.slice((0, 0), (s.n3n, s.nvib)).abs();
+        assert_abs_diff_eq!(got, want, epsilon = 2e-9);
+    }
 }

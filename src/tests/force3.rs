@@ -91,7 +91,7 @@ pub(crate) fn sym() {
     let tests = [
         Test::new("nh3", 5e-6),
         Test::new("ph3", 3e-6),
-        Test::new("bipy", 3e-6),
+        // Test::new("bipy", 3e-6),
     ];
     inner(&tests);
 }
