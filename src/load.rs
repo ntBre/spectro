@@ -145,7 +145,7 @@ impl Spectro {
         ret.geom.translate(-com);
         let pr = ret.geom.principal_moments();
         let axes = ret.geom.principal_axes();
-        let (pr, axes) = symm::eigen_sort(pr, axes);
+        let (pr, mut axes) = symm::eigen_sort(pr, axes);
         ret.primat = Vec::from(pr.as_slice());
         ret.rotcon = pr.iter().map(|m| CONST / m).collect();
         ret.rotor = ret.rotor_type(&pr);
@@ -163,7 +163,22 @@ impl Spectro {
             };
 
             if iaxis == 1 {
-                todo!("dist.f:380");
+                let egr = nalgebra::matrix![
+                0.0, 0.0, -1.0;
+                0.0, 1.0,  0.0;
+                1.0, 0.0,  0.0;
+                ];
+                let atemp = axes * egr;
+                axes = atemp;
+                let pb1 = CONST / pr[(2)];
+                let pb2 = CONST / pr[(1)];
+                let pb3 = CONST / pr[(0)];
+                ret.primat[(0)] = pr[(2)];
+                ret.primat[(1)] = pr[(1)];
+                ret.primat[(2)] = pr[(0)];
+                ret.rotcon[(0)] = pb1;
+                ret.rotcon[(1)] = pb2;
+                ret.rotcon[(2)] = pb3;
             } else if iaxis == 2 {
                 todo!("dist.f:419");
             }
