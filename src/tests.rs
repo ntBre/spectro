@@ -2,7 +2,7 @@
 
 use std::fs::read_to_string;
 
-use approx::{abs_diff_eq, assert_abs_diff_eq};
+use approx::{abs_diff_eq, abs_diff_ne, assert_abs_diff_eq};
 
 use crate::*;
 
@@ -48,7 +48,7 @@ fn check_vec(got: Dvec, want: Dvec, eps: f64, infile: &str) {
             "Iter", "Got", "Want", "Diff",
         );
         for i in 0..got.len() {
-            if (got[i].abs() - want[i].abs()).abs() > eps {
+            if (got[i] - want[i]).abs() > eps {
                 println!(
                     "{:5}{:20.12}{:20.12}{:20.12}",
                     i,
@@ -61,9 +61,40 @@ fn check_vec(got: Dvec, want: Dvec, eps: f64, infile: &str) {
         assert!(
             false,
             "differs by {:.2e} on {}",
-            (got.clone() - want.clone()).max(),
+            (got.clone() - want.clone()).abs().max(),
             infile
         );
+    }
+}
+
+// These sure look similar, but I couldn't figure out the Trait bounds to make
+// it generic
+fn check_tens(
+    got: &Tensor3,
+    want: &Tensor3,
+    eps: f64,
+    label: &str,
+    infile: &str,
+) {
+    if abs_diff_ne!(got, want, epsilon = eps) {
+        println!("got\n{:.8}", got);
+        println!("want\n{:.8}", want);
+        println!(
+            "max diff = {:.2e}",
+            (got.clone() - want.clone()).abs().max()
+        );
+        assert!(false, "{} failed on {}", label, infile);
+    }
+}
+
+fn check_mat(got: &Dmat, want: &Dmat, eps: f64, label: &str, infile: &str) {
+    if abs_diff_ne!(got, want, epsilon = eps) {
+        println!("got\n{:.8}", got);
+        println!("want\n{:.8}", want);
+        let diff = got.clone() - want.clone();
+        println!("diff\n{:.8}", diff);
+        println!("max diff = {:.2e}", diff.abs().max());
+        assert!(false, "{} failed on {}", label, infile);
     }
 }
 

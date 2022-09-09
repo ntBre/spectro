@@ -1051,7 +1051,7 @@ impl Spectro {
         (xcnst, e0)
     }
 
-    /// Calculate the zeta, big A and Wilson A and J matrices. Zeta is for the
+    /// Calculate the zeta matrices and Wilson A matrix. Zeta is for the
     /// coriolis coupling constants
     fn zeta(&self, lxm: &Dmat, w: &[f64]) -> (Tensor3, Dmat) {
         let zmat = make_zmat(self.nvib, self.natom, lxm);

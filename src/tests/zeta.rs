@@ -1,5 +1,3 @@
-use approx::abs_diff_ne;
-
 use super::*;
 
 #[derive(Clone)]
@@ -41,7 +39,7 @@ impl Test {
 }
 
 #[test]
-fn test_zeta() {
+fn asym() {
     let tests = [
         // eps increases with mass, which I guess is from mass dependence of lxm
         // and also wila itself
@@ -64,24 +62,54 @@ fn test_zeta() {
 
         let (zmat, wila) = s.zeta(&lxm, &w);
 
-        if abs_diff_ne!(zmat.abs(), test.zmat.abs(), epsilon = test.zmat_eps) {
-            println!("got\n{:.8}", zmat);
-            println!("want\n{:.8}", test.zmat);
-            println!(
-                "max diff = {:.2e}",
-                (zmat.clone().abs() - test.zmat.clone().abs()).abs().max()
-            );
-            assert!(false, "zmat failed on {}", test.infile);
-        }
+        check_tens(
+            &zmat.abs(),
+            &test.zmat.abs(),
+            test.zmat_eps,
+            "zmat",
+            &test.infile,
+        );
+        check_mat(
+            &wila.abs(),
+            &test.wila.abs(),
+            test.wila_eps,
+            "wila",
+            &test.infile,
+        );
+    }
+}
 
-        if abs_diff_ne!(wila.abs(), test.wila.abs(), epsilon = test.wila_eps) {
-            println!("got\n{:.8}", wila);
-            println!("want\n{:.8}", test.wila);
-            println!(
-                "max diff = {:.2e}",
-                (wila.clone().abs() - test.wila.clone().abs()).abs().max()
-            );
-            assert!(false, "wila failed on {}", test.infile);
-        }
+#[test]
+fn sym() {
+    let tests = [Test::new("nh3", 6, 6, 3.52e-10, 8.73e-7)];
+    for test in Vec::from(&tests[..]) {
+        let s = Spectro::load(&test.infile);
+        let fc2 = load_fc2(&test.fort15, s.n3n);
+        let fc2 = s.rot2nd(fc2);
+        let fc2 = FACT2 * fc2;
+        let w = s.geom.weights();
+        let sqm: Vec<_> = w.iter().map(|w: &f64| 1.0 / w.sqrt()).collect();
+        let fxm = s.form_sec(fc2, &sqm);
+        let (harms, mut lxm) = symm_eigen_decomp(fxm);
+        let freq = to_wavenumbers(&harms);
+        let mut lx = s.make_lx(&sqm, &lxm);
+        s.bdegnl(&freq, &mut lxm, &w, &mut lx);
+
+        let (zmat, wila) = s.zeta(&lxm, &w);
+
+        check_tens(
+            &zmat.abs(),
+            &test.zmat.abs(),
+            test.zmat_eps,
+            "zmat",
+            &test.infile,
+        );
+        check_mat(
+            &wila.abs(),
+            &test.wila.abs(),
+            test.wila_eps,
+            "wila",
+            &test.infile,
+        );
     }
 }

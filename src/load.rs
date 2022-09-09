@@ -233,8 +233,8 @@ impl Spectro {
 
             ret.geom = ret.geom.transform(egr.transpose());
 
-            let eg = egr.transpose() * ret.axes * egr;
-            ret.axes = eg;
+            let btemp = egr * ret.axes.transpose();
+            ret.axes = btemp.transpose();
             ret.iatom = iatl;
         }
 
