@@ -81,7 +81,10 @@ fn asym() {
 
 #[test]
 fn sym() {
-    let tests = [Test::new("nh3", 6, 6, 3.52e-10, 8.73e-7)];
+    let tests = [
+        Test::new("nh3", 6, 6, 3.52e-10, 8.73e-7),
+        Test::new("ph3", 6, 6, 3.52e-10, 8.73e-7),
+    ];
     for test in Vec::from(&tests[..]) {
         let s = Spectro::load(&test.infile);
         let fc2 = load_fc2(&test.fort15, s.n3n);

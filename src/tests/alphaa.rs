@@ -29,7 +29,7 @@ impl Test {
 }
 
 #[test]
-fn test_alpha() {
+fn alpha() {
     let tests = [
         Test::new("h2o", "alpha", 3),
         Test::new("h2co", "alpha", 6),
