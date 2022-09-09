@@ -242,6 +242,7 @@ fn sym() {
             ],
         ),
     ];
+
     for test in Vec::from(&tests[..]) {
         let s = Spectro::load(&test.infile);
         let fc2 = load_fc2(&test.fort15, s.n3n);
@@ -265,14 +266,65 @@ fn sym() {
 
         // only really care about the part with frequencies. there is more noise
         // in the rotations and translations, so this allows tightening epsilon
-        let got = lxm.slice((0, 0), (s.n3n, s.nvib)).abs();
-        let want = test.lxm.slice((0, 0), (s.n3n, s.nvib)).abs();
+        let got = lxm.slice((0, 0), (s.n3n, s.nvib));
+        let want = test.lxm.slice((0, 0), (s.n3n, s.nvib));
 
         // println!("{:.2e}", (got.clone() - want.clone()).max());
-        check_mat(&got, &want, 2e-9, "lxm", &test.infile);
+        check_mat(&got.abs(), &want.abs(), 2e-9, "lxm", &test.infile);
 
         let got = lx.slice((0, 0), (s.n3n, s.nvib)).abs();
         let want = test.lx.slice((0, 0), (s.n3n, s.nvib)).abs();
         check_mat(&got, &want, 2e-9, "lx", &test.infile);
     }
+}
+
+/// this is testing that `bdegnl` is working properly with values input from the
+/// Fortran version
+#[test]
+fn bdegnl() {
+    // ph3 values from vibfx.f:169
+    let mut lxm = load_dmat("testfiles/ph3/pre_bdegnl_lxm", 12, 12);
+    let mut lx = load_dmat("testfiles/ph3/pre_bdegnl_lx", 12, 12);
+    let freq = na::dvector![
+        2437.0024382429601,
+        2437.0020300169222,
+        2428.1546959531433,
+        1145.7614713948005,
+        1145.7567008646774,
+        1015.4828482214278,
+        0.046516934814435321,
+        0.025278773879589642,
+        0.015292949295790762,
+        0.0077266799336841666,
+        0.011089653435072953,
+        0.014380890514910207
+    ];
+    use std::str::FromStr;
+    let s = Spectro {
+        nvib: 6,
+        axis_order: 3,
+        geom: Molecule::from_str(
+            "
+H  1.18656578  0.00000000  0.69757310
+P  0.00000000 -0.00000000 -0.06809295
+H -0.59328292  1.02759614  0.69757310
+H -0.59328292 -1.02759614  0.69757310
+",
+        )
+        .unwrap(),
+        ..Spectro::default()
+    };
+    let w = s.geom.weights();
+
+    s.bdegnl(&freq, &mut lxm, &w, &mut lx);
+
+    let got = lxm.slice((0, 0), (12, 6)).abs();
+    let want = load_dmat("testfiles/ph3/lxm", 12, 6).abs();
+    // println!("{:.2e}", (got.clone() - want.clone()).max());
+    assert_abs_diff_eq!(got, want, epsilon = 1e-10);
+
+    let got = lx.slice((0, 0), (12, 6)).abs();
+    let want = load_dmat("testfiles/ph3/lx", 12, 6).abs();
+    // println!("{:.2e}", (got.clone() - want.clone()).max());
+    assert_abs_diff_eq!(got, want, epsilon = 1e-10);
 }
