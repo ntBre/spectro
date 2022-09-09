@@ -1,5 +1,7 @@
 //! compute the vibrationally-averaged rotational constants for symmetric tops
 
+use std::collections::HashMap;
+
 use crate::consts::ALPHA_CONST;
 use crate::f3qcm::F3qcm;
 use crate::resonance::Coriolis;
@@ -66,7 +68,8 @@ impl Spectro {
         rotnst
     }
 
-    fn make_alpha(
+    /// make the alpha matrix for a symmetric top
+    pub(crate) fn make_alpha(
         &self,
         n1dm: usize,
         i1mode: &Vec<usize>,
@@ -74,7 +77,7 @@ impl Spectro {
         freq: &Dvec,
         wila: &Dmat,
         iaia: usize,
-        icorol: std::collections::HashMap<(usize, usize), usize>,
+        icorol: HashMap<(usize, usize), usize>,
         zmat: &tensor::Tensor3<f64>,
         f3qcm: &F3qcm,
         n2dm: usize,
@@ -190,6 +193,7 @@ impl Spectro {
             }
             alpha[(k, ib)] = valu0 * (valu1 + valu2 + ALPHA_CONST * valu4);
         }
+
         for kk in 0..n2dm {
             let (k, _) = i2mode[kk];
             let valu0 = 2.0 * self.rotcon[ib].powi(2) / freq[k];

@@ -10,6 +10,7 @@ use na::dmatrix;
 use nalgebra as na;
 
 mod alphaa;
+mod alphas;
 mod bench;
 mod force3;
 mod force4;

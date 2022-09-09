@@ -13,6 +13,10 @@ impl F3qcm {
     pub(crate) fn push(&mut self, val: f64) {
         self.0.push(val)
     }
+
+    pub fn new(v: Vec<f64>) -> Self {
+        Self(v)
+    }
 }
 
 impl Index<(usize, usize, usize)> for F3qcm {
