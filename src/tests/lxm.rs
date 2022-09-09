@@ -278,6 +278,34 @@ fn sym() {
     }
 }
 
+/// test that the lxm and lx matrices going into bdegnl are correct, at least as
+/// correct as the other lxm tests, to within signs. this part is really tested
+/// by every asym test, but I'm trying to debug ph3
+#[test]
+fn pre_bdegnl() {
+    let s = Spectro::load("testfiles/ph3/spectro.in");
+    let fc2 = load_fc2("testfiles/ph3/fort.15", s.n3n);
+    let fc2 = s.rot2nd(fc2);
+    let fc2 = FACT2 * fc2;
+    let w = s.geom.weights();
+    let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
+    let fxm = s.form_sec(fc2, &sqm);
+    let (_, lxm) = symm_eigen_decomp(fxm);
+    let lx = s.make_lx(&sqm, &lxm);
+
+    let got = lxm.slice((0, 0), (s.n3n, s.nvib));
+    let want = load_dmat("testfiles/ph3/pre_bdegnl_lxm", 12, 12);
+    let want = want.slice((0, 0), (s.n3n, s.nvib));
+
+    // println!("{:.2e}", (got.clone() - want.clone()).max());
+    check_mat(&got.abs(), &want.abs(), 2e-9, "lxm", "ph3");
+
+    let got = lx.slice((0, 0), (s.n3n, s.nvib)).abs();
+    let want = load_dmat("testfiles/ph3/pre_bdegnl_lx", 12, 12);
+    let want = want.slice((0, 0), (s.n3n, s.nvib));
+    check_mat(&got.abs(), &want.abs(), 2e-9, "lx", "ph3");
+}
+
 /// this is testing that `bdegnl` is working properly with values input from the
 /// Fortran version
 #[test]
