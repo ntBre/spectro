@@ -60,7 +60,7 @@ fn test_sextic() {
         let lx = s.make_lx(&sqm, &lxm);
         let (zmat, wila) = s.zeta(&lxm, &w);
         let f3x = load_fc3(test.fort30, s.n3n);
-        let mut f3x = s.rot3rd(f3x, s.axes);
+        let mut f3x = s.rot3rd(f3x);
         let f3qcm = force3(s.n3n, &mut f3x, &lx, s.nvib, &freq);
         let got = Sextic::new(&s, &wila, &zmat, &freq, &f3qcm);
         // println!("\n{}", test.infile);

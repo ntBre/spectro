@@ -464,7 +464,7 @@ impl Spectro {
 
     /// rotate the cubic force constants in `f3x` to align with the principal
     /// axes in `eg` used to align the geometry
-    pub fn rot3rd(&self, f3x: Tensor3, eg: Mat3) -> Tensor3 {
+    pub fn rot3rd(&self, f3x: Tensor3) -> Tensor3 {
         let (a, b, c) = f3x.shape();
         let mut ret = Tensor3::zeros(a, b, c);
         // TODO could try slice impl like in rot2nd, but it will be harder with
@@ -480,7 +480,7 @@ impl Spectro {
                             a[(jj, kk)] = f3x[(ib + jj, ic + kk, i)];
                         }
                     }
-                    let temp2 = eg.transpose() * a * eg;
+                    let temp2 = self.axes.transpose() * a * self.axes;
                     for jj in 0..3 {
                         for kk in 0..3 {
                             ret[(ib + jj, ic + kk, i)] = temp2[(jj, kk)];
@@ -496,9 +496,9 @@ impl Spectro {
                     let ia = i * 3;
                     let mut val = [0.0; 3];
                     for ii in 0..3 {
-                        val[ii] = ret[(j, k, ia)] * eg[(0, ii)]
-                            + ret[(j, k, ia + 1)] * eg[(1, ii)]
-                            + ret[(j, k, ia + 2)] * eg[(2, ii)];
+                        val[ii] = ret[(j, k, ia)] * self.axes[(0, ii)]
+                            + ret[(j, k, ia + 1)] * self.axes[(1, ii)]
+                            + ret[(j, k, ia + 2)] * self.axes[(2, ii)];
                     }
 
                     for ii in 0..3 {

@@ -45,7 +45,7 @@ fn inner(tests: &[Test]) {
         let freq = to_wavenumbers(&harms);
         let lx = s.make_lx(&sqm, &lxm);
         let f3x = load_fc3(&test.fort30, s.n3n);
-        let mut f3x = s.rot3rd(f3x, s.axes);
+        let mut f3x = s.rot3rd(f3x);
         let got = force3(s.n3n, &mut f3x, &lx, s.nvib, &freq);
         let got = Dvec::from(got).abs();
         let want = Dvec::from(test.want.clone()).abs();
