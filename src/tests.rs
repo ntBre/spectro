@@ -1,13 +1,11 @@
 //! uncategorized tests and utilities shared by the other modules
 
-use std::fs::read_to_string;
-
-use approx::{abs_diff_eq, abs_diff_ne, assert_abs_diff_eq};
-
 use crate::*;
-
+use approx::{abs_diff_eq, abs_diff_ne, assert_abs_diff_eq};
 use na::dmatrix;
 use nalgebra as na;
+use std::fs::read_to_string;
+use std::io::{BufRead, BufReader};
 
 mod alphaa;
 mod alphas;
@@ -39,6 +37,21 @@ fn load_dmat<P: AsRef<Path> + Debug + Clone>(
         data.split_whitespace().map(|s| s.parse().unwrap()),
     )
     .transpose()
+}
+
+/// load a symmetric, square, lower triangular matrix of `size` from `filename`
+fn load_lower_triangle(filename: &str, size: usize) -> Dmat {
+    let f = std::fs::File::open(filename).unwrap();
+    let lines = BufReader::new(f).lines();
+    let mut ret = Dmat::zeros(size, size);
+    for (i, line) in lines.flatten().enumerate() {
+        let sp = line.split_whitespace().map(|s| s.parse::<f64>().unwrap());
+        for (j, v) in sp.enumerate() {
+            ret[(i, j)] = v;
+            ret[(j, i)] = v;
+        }
+    }
+    ret
 }
 
 fn check_vec(got: Dvec, want: Dvec, eps: f64, infile: &str) {

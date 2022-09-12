@@ -356,3 +356,40 @@ H -0.59328292 -1.02759614  0.69757310
     // println!("{:.2e}", (got.clone() - want.clone()).max());
     assert_abs_diff_eq!(got, want, epsilon = 1e-10);
 }
+
+/// check if I can get the same FXM without absolute value using the same
+/// geometry as the fortran code
+#[test]
+fn fxm() {
+    use std::str::FromStr;
+    let s = Spectro {
+        n3n: 12,
+        geom: Molecule::from_str(
+            "
+H  1.18656578  0.00000000  0.69757313
+P  0.00000000 -0.00000000 -0.06809295
+H -0.59328292  1.02759614  0.69757310
+H -0.59328292 -1.02759614  0.69757310
+",
+        )
+        .unwrap(),
+        axes: nalgebra::matrix![
+        0.999999986417,0.000000000000,0.000164823265;
+        -0.000164823265,0.000000000000,0.999999986417;
+        0.000000000000,1.000000000000,0.000000000000;
+        ],
+        ..Spectro::default()
+    };
+    let fort15 = "testfiles/ph3/fort.15";
+    let fc2 = load_fc2(fort15, s.n3n);
+    let fc2 = s.rot2nd(fc2);
+    let fc2 = FACT2 * fc2;
+    let w = s.geom.weights();
+    let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
+    let got = s.form_sec(fc2, &sqm);
+
+    let want = load_lower_triangle("testfiles/ph3/fxm", 12);
+
+    // println!("{:.2e}", (got.clone() - want.clone()).max());
+    check_mat(&got, &want, 1e-7, "fxm", "ph3");
+}
