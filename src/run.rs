@@ -1,29 +1,13 @@
-use super::Output;
-
-use std::path::Path;
-
-use crate::consts::FACT2;
+use super::{make_sym_funds, resona, Output, Spectro};
+use crate::utils::{
+    force3, force4, load_fc2, load_fc3, load_fc4, make_funds,
+    symm_eigen_decomp, to_wavenumbers,
+};
 use crate::Mode;
-
-use crate::resonance::Restst;
-use crate::utils::force3;
-use crate::utils::force4;
-use crate::utils::load_fc2;
-use crate::utils::load_fc3;
-use crate::utils::load_fc4;
-use crate::utils::make_funds;
-use crate::utils::symm_eigen_decomp;
-use crate::utils::to_wavenumbers;
-
-use super::make_sym_funds;
-
-use super::resona;
-
-use crate::quartic::Quartic;
-
-use crate::sextic::Sextic;
-
-use super::Spectro;
+use crate::{
+    consts::FACT2, quartic::Quartic, resonance::Restst, sextic::Sextic,
+};
+use std::path::Path;
 
 impl Spectro {
     pub fn run<P>(self, fort15: P, fort30: P, fort40: P) -> Output
