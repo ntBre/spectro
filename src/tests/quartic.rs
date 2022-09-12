@@ -5,7 +5,7 @@ use approx::assert_abs_diff_eq;
 use crate::{
     consts::FACT2,
     quartic::Quartic,
-    utils::{load_fc2, symm_eigen_decomp, to_wavenumbers},
+    utils::{linalg::symm_eigen_decomp, load_fc2, to_wavenumbers},
     Spectro,
 };
 

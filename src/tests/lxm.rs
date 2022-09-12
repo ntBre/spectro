@@ -2,7 +2,7 @@ use std::path::Path;
 
 use approx::assert_abs_diff_eq;
 
-use crate::consts::FACT2;
+use crate::{consts::FACT2, utils::linalg::symm_eigen_decomp};
 
 use super::*;
 
@@ -400,7 +400,8 @@ H -0.59328292 -1.02759614  0.69757310
 
 /// check if I can get the same LXM without absolute value using the same
 /// geometry as the fortran code. this is a copy-paste of fxm but with the
-/// additional line of the eigendecomposition
+/// additional line of the eigendecomposition. this is basically a test of
+/// `symm_eigen_decomp`
 #[test]
 fn lxm() {
     use std::str::FromStr;
@@ -428,10 +429,12 @@ H -0.59328292 -1.02759614  0.69757310
     let fc2 = FACT2 * fc2;
     let w = s.geom.weights();
     let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
-    let got = s.form_sec(fc2, &sqm);
+    let fxm = s.form_sec(fc2, &sqm);
 
-    let want = load_lower_triangle("testfiles/ph3/fxm", 12);
+    let (_harms, got) = utils::linalg::symm_eigen_decomp(fxm);
+
+    let want = load_dmat("testfiles/ph3/pre_bdegnl_lxm", 12, 12);
 
     // println!("{:.2e}", (got.clone() - want.clone()).max());
-    check_mat(&got, &want, 1e-7, "fxm", "ph3");
+    check_mat(&got, &want, 1e-7, "lxm", "ph3");
 }

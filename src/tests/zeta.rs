@@ -62,7 +62,7 @@ fn asym() {
         let w = s.geom.weights();
         let sqm: Vec<_> = w.iter().map(|w: &f64| 1.0 / w.sqrt()).collect();
         let fxm = s.form_sec(fc2, &sqm);
-        let (_harms, lxm) = symm_eigen_decomp(fxm);
+        let (_harms, lxm) = utils::linalg::symm_eigen_decomp(fxm);
 
         let (zmat, wila) = s.zeta(&lxm, &w);
 
@@ -97,7 +97,7 @@ fn sym() {
         let w = s.geom.weights();
         let sqm: Vec<_> = w.iter().map(|w: &f64| 1.0 / w.sqrt()).collect();
         let fxm = s.form_sec(fc2, &sqm);
-        let (harms, mut lxm) = symm_eigen_decomp(fxm);
+        let (harms, mut lxm) = utils::linalg::symm_eigen_decomp(fxm);
         let freq = to_wavenumbers(&harms);
         let mut lx = s.make_lx(&sqm, &lxm);
         s.bdegnl(&freq, &mut lxm, &w, &mut lx);

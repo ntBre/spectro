@@ -46,7 +46,7 @@ fn alpha() {
         let w = s.geom.weights();
         let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
         let fxm = s.form_sec(fc2, &sqm);
-        let (harms, lxm) = symm_eigen_decomp(fxm);
+        let (harms, lxm) = utils::linalg::symm_eigen_decomp(fxm);
         let freq = to_wavenumbers(&harms);
         let lx = s.make_lx(&sqm, &lxm);
         let (zmat, wila) = s.zeta(&lxm, &w);
@@ -76,7 +76,7 @@ fn test_alphaa() {
     let w = s.geom.weights();
     let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
     let fxm = s.form_sec(fc2, &sqm);
-    let (harms, lxm) = symm_eigen_decomp(fxm);
+    let (harms, lxm) = utils::linalg::symm_eigen_decomp(fxm);
     let freq = to_wavenumbers(&harms);
     let lx = s.make_lx(&sqm, &lxm);
     let (zmat, wila) = s.zeta(&lxm, &w);

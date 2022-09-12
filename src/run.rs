@@ -1,7 +1,7 @@
 use super::{make_sym_funds, resona, Output, Spectro};
 use crate::utils::{
-    force3, force4, load_fc2, load_fc3, load_fc4, make_funds,
-    symm_eigen_decomp, to_wavenumbers,
+    force3, force4, linalg::symm_eigen_decomp, load_fc2, load_fc3, load_fc4,
+    make_funds, to_wavenumbers,
 };
 use crate::Mode;
 use crate::{

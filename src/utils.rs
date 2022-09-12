@@ -7,7 +7,7 @@ use std::{
     str::FromStr,
 };
 
-use nalgebra::{dmatrix, SymmetricEigen};
+use nalgebra::dmatrix;
 use tensor::Tensor4;
 type Tensor3 = tensor::tensor3::Tensor3<f64>;
 
@@ -137,26 +137,7 @@ pub fn to_wavenumbers(freqs: &Dvec) -> Dvec {
     )
 }
 
-/// compute the eigen decomposition of the symmetric matrix `mat` and return
-/// both the sorted eigenvalues and the corresponding eigenvectors in descending
-/// order
-pub fn symm_eigen_decomp(mat: Dmat) -> (Dvec, Dmat) {
-    let SymmetricEigen {
-        eigenvectors: vecs,
-        eigenvalues: vals,
-    } = SymmetricEigen::new(mat);
-    let mut pairs: Vec<_> = vals.iter().enumerate().collect();
-    pairs.sort_by(|(_, a), (_, b)| b.partial_cmp(&a).unwrap());
-    let (rows, cols) = vecs.shape();
-    let mut ret = Dmat::zeros(rows, cols);
-    for i in 0..cols {
-        ret.set_column(i, &vecs.column(pairs[i].0));
-    }
-    (
-        Dvec::from_iterator(vals.len(), pairs.iter().map(|a| a.1.clone())),
-        ret,
-    )
-}
+pub mod linalg;
 
 pub fn load_fc2<P>(infile: P, n3n: usize) -> Dmat
 where
@@ -478,7 +459,7 @@ pub(crate) fn rsfrm2(
     val, eng[kst] - eng[0];
     ];
     // TODO left out error measures
-    let (eigval, eigvec) = symm_eigen_decomp(eres);
+    let (eigval, eigvec) = linalg::symm_eigen_decomp(eres);
     let a = eigvec[(0, 0)];
     let b = eigvec[(1, 0)];
     if a.abs() > b.abs() {
@@ -514,7 +495,7 @@ pub(crate) fn rsfrm1(
     eres[0], val;
     val, eres[2];
     ];
-    let (eigval, eigvec) = symm_eigen_decomp(eres);
+    let (eigval, eigvec) = linalg::symm_eigen_decomp(eres);
     let a = eigvec[(0, 0)];
     let b = eigvec[(1, 0)];
     if a.abs() > b.abs() {
@@ -608,7 +589,7 @@ mod tests {
         let w = s.geom.weights();
         let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
         let fxm = s.form_sec(fc2, &sqm);
-        let (harms, lxm) = symm_eigen_decomp(fxm);
+        let (harms, lxm) = linalg::symm_eigen_decomp(fxm);
         let freq = to_wavenumbers(&harms);
         let (_zmat, wila) = s.zeta(&lxm, &w);
         let tau = make_tau(3, 3, &freq, &s.primat, &wila);

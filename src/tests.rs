@@ -1,6 +1,7 @@
 //! uncategorized tests and utilities shared by the other modules
 
 use crate::consts::FACT2;
+use crate::utils::linalg::symm_eigen_decomp;
 use crate::*;
 use approx::{abs_diff_eq, abs_diff_ne, assert_abs_diff_eq};
 use na::dmatrix;
