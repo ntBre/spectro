@@ -97,27 +97,9 @@ impl Spectro {
         };
 
         let rotnst = if self.rotor.is_sym_top() {
-            self.alphas(
-                &self.rotcon,
-                &freq,
-                &wila,
-                &zmat,
-                &f3qcm,
-                &modes,
-                &states,
-                &coriolis,
-            )
+            self.alphas(&freq, &wila, &zmat, &f3qcm, &modes, &states, &coriolis)
         } else {
-            self.alphaa(
-                &self.rotcon,
-                &freq,
-                &wila,
-                &zmat,
-                &f3qcm,
-                &modes,
-                &states,
-                &coriolis,
-            )
+            self.alphaa(&freq, &wila, &zmat, &f3qcm, &modes, &states, &coriolis)
         };
 
         // this is worked on by resona and then enrgy so keep it out here

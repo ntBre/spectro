@@ -94,9 +94,7 @@ fn test_alphaa() {
         iovrtn: _,
         icombn: _,
     } = Restst::new(&s, &zmat, &f3qcm, &freq);
-    let got = s.alphaa(
-        &s.rotcon, &freq, &wila, &zmat, &f3qcm, &modes, &states, &coriolis,
-    );
+    let got = s.alphaa(&freq, &wila, &zmat, &f3qcm, &modes, &states, &coriolis);
     let want = dmatrix![
     27.657417987118755, 14.498766626639174, 9.2673038449583238;
      26.500953159400968, 14.400078799009306, 9.1243290132344157;

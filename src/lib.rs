@@ -155,7 +155,6 @@ impl Spectro {
     /// tops
     fn alphaa(
         &self,
-        rotcon: &[f64],
         freq: &Dvec,
         wila: &Dmat,
         zmat: &Tensor3,
@@ -187,7 +186,7 @@ impl Spectro {
                         State::I12st { i1st: _, i2st: _ } => todo!(),
                     }
                 }
-                let bva = rotcon[axis] + suma;
+                let bva = self.rotcon[axis] + suma;
                 rotnst[(ist, axis)] = bva;
             }
         }

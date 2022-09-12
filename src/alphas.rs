@@ -12,7 +12,6 @@ use crate::{make_icorol, mode::Mode, Dmat, Dvec, Spectro, Tensor3};
 impl Spectro {
     pub(crate) fn alphas(
         &self,
-        rotcon: &[f64],
         freq: &Dvec,
         wila: &Dmat,
         zmat: &Tensor3,
@@ -62,7 +61,7 @@ impl Spectro {
                     let i = i2mode[ii].0;
                     suma += alpha[(i, ax)] * (i2sts[ist][ii].0 as f64 + 1.0);
                 }
-                rotnst[(ist, ax)] = rotcon[ax] + suma;
+                rotnst[(ist, ax)] = self.rotcon[ax] + suma;
             }
         }
         rotnst
