@@ -1,11 +1,13 @@
 //! uncategorized tests and utilities shared by the other modules
 
+use crate::consts::FACT2;
 use crate::*;
 use approx::{abs_diff_eq, abs_diff_ne, assert_abs_diff_eq};
 use na::dmatrix;
 use nalgebra as na;
 use std::fs::read_to_string;
 use std::io::{BufRead, BufReader};
+use std::path::Path;
 
 mod alphaa;
 mod alphas;

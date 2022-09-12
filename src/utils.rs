@@ -590,7 +590,7 @@ mod tests {
     use approx::assert_abs_diff_eq;
     use nalgebra::dmatrix;
 
-    use crate::FACT2;
+    use crate::consts::FACT2;
 
     #[test]
     fn test_find3r() {

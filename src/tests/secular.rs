@@ -1,6 +1,8 @@
+use std::path::Path;
+
 use approx::abs_diff_ne;
 
-use crate::*;
+use crate::{consts::FACT2, *};
 
 #[derive(Clone)]
 struct Test {

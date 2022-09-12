@@ -1,3 +1,5 @@
+use crate::consts::FACT2;
+
 use super::*;
 
 extern crate test;

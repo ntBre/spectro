@@ -1,9 +1,9 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use approx::{abs_diff_ne, assert_abs_diff_eq};
 use nalgebra::dmatrix;
 
-use crate::*;
+use crate::{consts::FACT2, *};
 
 use super::load_dmat;
 

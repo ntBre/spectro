@@ -1,6 +1,8 @@
+use std::path::Path;
+
 use approx::assert_abs_diff_eq;
 
-use crate::*;
+use crate::{consts::FACT2, *};
 
 use super::load_dmat;
 

@@ -1,6 +1,6 @@
-use std::fmt::Display;
+use std::{fmt::Display, path::Path};
 
-use crate::{sextic::Sextic, *};
+use crate::{consts::FACT2, sextic::Sextic, *};
 
 use super::*;
 
