@@ -58,7 +58,7 @@ impl Spectro {
 
         // start of quartic analysis
         let f4x = load_fc4(fort40, self.n3n);
-        let f4x = self.rot4th(f4x, self.axes);
+        let f4x = self.rot4th(f4x);
         let f4qcm = force4(self.n3n, &f4x, &lx, self.nvib, &freq);
 
         let (zmat, wila) = self.zeta(&lxm, &w);

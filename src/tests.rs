@@ -219,7 +219,7 @@ fn test_funds_and_e0() {
         let mut f3x = s.rot3rd(f3x);
         let f3qcm = force3(s.n3n, &mut f3x, &lx, s.nvib, &freq);
         let f4x = load_fc4(test.fort40, s.n3n);
-        let f4x = s.rot4th(f4x, s.axes);
+        let f4x = s.rot4th(f4x);
         let f4qcm = force4(s.n3n, &f4x, &lx, s.nvib, &freq);
         let Restst {
             coriolis: _,
@@ -262,7 +262,7 @@ fn test_enrgy() {
     let mut f3x = s.rot3rd(f3x);
     let f3qcm = force3(s.n3n, &mut f3x, &lx, s.nvib, &freq);
     let f4x = load_fc4("testfiles/fort.40", s.n3n);
-    let f4x = s.rot4th(f4x, s.axes);
+    let f4x = s.rot4th(f4x);
     let f4qcm = force4(s.n3n, &f4x, &lx, s.nvib, &freq);
     let restst = Restst::new(&s, &zmat, &f3qcm, &freq);
     let Restst {

@@ -53,7 +53,7 @@ fn asym() {
         let freq = to_wavenumbers(&harms);
         let lx = s.make_lx(&sqm, &lxm);
         let f4x = load_fc4(test.fort40, s.n3n);
-        let f4x = s.rot4th(f4x, s.axes);
+        let f4x = s.rot4th(f4x);
         let got = force4(s.n3n, &f4x, &lx, s.nvib, &freq);
         let got = Dvec::from(got).abs();
         let want = Dvec::from(test.want).abs();
@@ -77,7 +77,7 @@ fn sym() {
         let mut lx = s.make_lx(&sqm, &lxm);
         s.bdegnl(&freq, &mut lxm, &w, &mut lx);
         let f4x = load_fc4(test.fort40, s.n3n);
-        let f4x = s.rot4th(f4x, s.axes);
+        let f4x = s.rot4th(f4x);
         let got = force4(s.n3n, &f4x, &lx, s.nvib, &freq);
         let got = Dvec::from(got).abs();
         let want = Dvec::from(test.want).abs();

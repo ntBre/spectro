@@ -512,8 +512,8 @@ impl Spectro {
 
     /// rotate the quartic force constants in `f4x` to align with the principal
     /// axes in `eg` used to align the geometry
-    pub fn rot4th(&self, f4x: Tensor4, eg: Mat3) -> Tensor4 {
-        let egt = eg.transpose();
+    pub fn rot4th(&self, f4x: Tensor4) -> Tensor4 {
+        let egt = self.axes.transpose();
         let (a, b, c, d) = f4x.shape();
         let mut ret = Tensor4::zeros(a, b, c, d);
         for i in 0..self.n3n {
@@ -528,7 +528,7 @@ impl Spectro {
                                 a[(kk, ll)] = f4x[(i, j, ic + kk, id + ll)];
                             }
                         }
-                        let temp2 = egt * a * eg;
+                        let temp2 = egt * a * self.axes;
                         for kk in 0..3 {
                             for ll in 0..3 {
                                 ret[(i, j, ic + kk, id + ll)] = temp2[(kk, ll)];
@@ -551,7 +551,7 @@ impl Spectro {
                                 a[(ii, jj)] = ret[(ia + ii, ib + jj, k, l)];
                             }
                         }
-                        let temp2 = egt * a * eg;
+                        let temp2 = egt * a * self.axes;
                         for ii in 0..3 {
                             for jj in 0..3 {
                                 ret[(ia + ii, ib + jj, k, l)] = temp2[(ii, jj)];
