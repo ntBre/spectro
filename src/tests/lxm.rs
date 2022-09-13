@@ -52,6 +52,10 @@ macro_rules! check_eigen {
     };
 }
 
+/// check that two matrices, `got` and `want`, differ by at most `eps`, but
+/// allowing the sign of whole columns to differ in line with non-unique
+/// eigendecompositions. Really, columns could be allowed to differ by any
+/// factor, not just -1, but I haven't encountered that situation yet.
 fn check_eigen(got: &Dmat, want: &Dmat, eps: f64, label: &str, infile: &str) {
     assert_eq!(got.shape(), want.shape());
     let (_, cols) = got.shape();
@@ -133,6 +137,8 @@ fn asym() {
     }
 }
 
+/// testing symm_eigen_decomp LXM against LXM printed in spectro2.out, using the
+/// spectro2.out FXM as input
 #[test]
 fn c3hf_lxm() {
     let fxm = load_dmat("testfiles/c3hf/fort_fxm", 15, 15);
@@ -143,6 +149,18 @@ fn c3hf_lxm() {
     let want = want.slice((0, 0), (15, 9));
     // all the precision I got from spectro2.out
     check_eigen(&Dmat::from(got), &Dmat::from(want), 2.4e-7, "lxm", "c3hf");
+}
+
+#[test]
+fn c3hcn_lxm() {
+    let fxm = load_lower_triangle("testfiles/c3hcn/fort_fxm", 18);
+    let want = load_dmat("testfiles/c3hcn/fort_lxm", 18, 18);
+    let (_, got) = symm_eigen_decomp(fxm);
+
+    let got = got.slice((0, 0), (18, 12));
+    let want = want.slice((0, 0), (18, 12));
+    // all the precision I got from spectro2.out
+    check_eigen!(&Dmat::from(got), &Dmat::from(want), 1.32e-6, "lxm", "c3hcn");
 }
 
 #[test]
@@ -266,7 +284,7 @@ H -0.59328292 -1.02759614  0.69757310
 /// check if I can get the same FXM without absolute value using the same
 /// geometry as the fortran code.
 #[test]
-fn fxm() {
+fn ph3_fxm() {
     use std::str::FromStr;
     let s = Spectro {
         n3n: 12,
@@ -298,6 +316,44 @@ H -0.59328292 -1.02759614  0.69757310
 
     // println!("{:.2e}", (got.clone() - want.clone()).max());
     check_mat(&got, &want, 1e-7, "fxm", "ph3");
+}
+
+/// all of these values are from spectro2.out
+#[test]
+fn c3hcn_fxm() {
+    use std::str::FromStr;
+    let s = Spectro {
+        n3n: 18,
+        geom: Molecule::from_str(
+            "
+H      2.0345490     -1.5884146      0.0000000
+C      1.5163524     -0.6441862      0.0000000
+C      1.5721454      0.7755306      0.0000000
+C      0.3627860      0.0129312      0.0000000
+C     -1.0464358      0.0002536      0.0000000
+N     -2.2072758     -0.0095340      0.0000000
+",
+        )
+        .unwrap(),
+        axes: nalgebra::matrix![
+        0.00000000,0.00000000,1.00000000;
+        0.00005289,-1.00000000,0.00000000;
+        1.00000000,0.00005289,0.00000000;
+                ],
+        ..Spectro::default()
+    };
+    let fort15 = "testfiles/c3hcn/fort.15";
+    let fc2 = load_fc2(fort15, s.n3n);
+    let fc2 = s.rot2nd(fc2);
+    let fc2 = FACT2 * fc2;
+    let w = s.geom.weights();
+    let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
+    let got = s.form_sec(fc2, &sqm);
+
+    let want = load_lower_triangle("testfiles/c3hcn/fort_fxm", 18);
+
+    // println!("{:.2e}", (got.clone() - want.clone()).max());
+    check_mat(&got, &want, 7e-8, "fxm", "c3hcn");
 }
 
 /// check if I can get the same LXM without absolute value using the same
