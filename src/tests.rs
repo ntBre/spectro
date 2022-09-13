@@ -59,7 +59,7 @@ fn load_lower_triangle(filename: &str, size: usize) -> Dmat {
     ret
 }
 
-fn check_vec(got: Dvec, want: Dvec, eps: f64, infile: &str) {
+pub(crate) fn check_vec(got: Dvec, want: Dvec, eps: f64, infile: &str) {
     if !abs_diff_eq!(got, want, epsilon = eps) {
         assert_eq!(got.len(), want.len());
         println!(
@@ -86,6 +86,18 @@ fn check_vec(got: Dvec, want: Dvec, eps: f64, infile: &str) {
     }
 }
 
+#[macro_export]
+macro_rules! check_vec {
+    ($got: expr, $want: expr, $eps: expr, $infile: expr) => {
+        $crate::tests::check_vec(
+            $got,
+            $want,
+            $eps,
+            &format!("'{}', {}:{}:{}", $infile, file!(), line!(), column!()),
+        )
+    };
+}
+
 // These sure look similar, but I couldn't figure out the Trait bounds to make
 // it generic
 fn check_tens(
@@ -106,7 +118,7 @@ fn check_tens(
     }
 }
 
-fn check_mat<
+pub(crate) fn check_mat<
     'a,
     R: nalgebra::Dim,
     C: nalgebra::Dim,
@@ -135,7 +147,7 @@ fn check_mat<
 #[macro_export]
 macro_rules! check_mat {
     ($got: expr, $want: expr, $eps: expr, $label: expr, $infile: expr) => {
-        check_mat(
+        $crate::tests::check_mat(
             $got,
             $want,
             $eps,

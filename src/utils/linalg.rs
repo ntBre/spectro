@@ -59,8 +59,105 @@ pub fn symm_eigen_decomp3(mat: Mat3, reverse: bool) -> (Vector3<f64>, Mat3) {
     )
 }
 
+/// THIS SUBROUTINE IS A TRANSLATION OF THE ALGOL PROCEDURE TRED3, NUM. MATH.
+/// 11, 181-195(1968) BY MARTIN, REINSCH, AND WILKINSON. HANDBOOK FOR AUTO.
+/// COMP., VOL.II-LINEAR ALGEBRA, 212-226(1971), by way of the fortran version
+/// in spectro
+///
+/// THIS SUBROUTINE REDUCES A REAL SYMMETRIC MATRIX, `mat` ARRAY, TO A SYMMETRIC
+/// TRIDIAGONAL MATRIX, represented as two vectors, USING ORTHOGONAL SIMILARITY
+/// TRANSFORMATIONS.
+#[allow(unused)]
+fn tred3(mat: Dmat) -> (usize, usize, Vec<f64>, Vec<f64>, Vec<f64>) {
+    let (n, _) = mat.shape();
+    // a contains the lower triangle of mat row-wise
+    let mut a = vec![0.0; n * (n / 2 + 1)];
+    let mut ij = 0;
+    for i in 0..n {
+        for j in 0..=i {
+            a[ij] = mat[(i, j)];
+            ij += 1;
+        }
+    }
+    let mut d = vec![0.0; n];
+    let mut e = vec![0.0; n];
+    let mut e2 = vec![0.0; n];
+    for i in (0..n).rev() {
+        if i >= 1 {
+            let l = i - 1;
+            let mut iz = (i * i) / 2;
+            let mut h = 0.0;
+            let mut scale = 0.0;
+            // todo check if l < 1, something about close to end
+            for k in 0..i {
+                iz += 1;
+                d[k] = a[iz];
+                scale += d[k].abs();
+            }
+
+            if scale != 0.0 {
+                for k in 0..i {
+                    d[k] /= scale;
+                    h += d[k] * d[k];
+                }
+            }
+
+            e2[i] = scale * scale * h;
+            let f = d[l];
+            let g = -h.sqrt().copysign(f);
+            e[i] = scale * g;
+            h -= f * g;
+            d[l] = f - g;
+            a[iz] = scale * d[l];
+            if l != 0 {
+                let mut f = 0.0;
+                for j in 0..i {
+                    let mut g = 0.0;
+                    let mut jk = (j * (j + 1)) / 2;
+                    for k in 0..i {
+                        if k > j {
+                            jk = jk + k - 1;
+                        }
+                        g += a[jk] * d[k];
+                        jk += 1;
+                    }
+                    e[j] = g / h;
+                    f += e[j] * d[j];
+                }
+
+                let hh = f / (h + h);
+                let mut jk = 0;
+
+                for j in 0..i {
+                    let f = d[j];
+                    let g = e[j] - hh * f;
+                    e[j] = g;
+
+                    for k in 0..i {
+                        jk += 1;
+                        a[jk] = a[jk] - f * e[k] - g * d[k];
+                    }
+                }
+            }
+            // this is 290
+            d[i] = a[iz + 1];
+            a[iz + 1] = scale * h.sqrt();
+        } else {
+            e[i] = 0.0;
+            e2[i] = 0.0;
+
+            // copy of 290
+            d[i] = a[0];
+            a[0] = 0.0;
+        }
+    }
+    (n, n, a, d, e)
+}
+
 #[cfg(test)]
 mod tests {
+    use crate::check_vec;
+
     use super::*;
     use approx::assert_abs_diff_eq;
     use nalgebra::{dmatrix, dvector};
@@ -68,30 +165,37 @@ mod tests {
     #[test]
     fn test_tred3() {
         let inp = dmatrix![
-            3.7432958001669672, 0.0, 0.0;
-            8.4648439005796661e-05, 4.2568667187161822, 0.0;
-            0.0, 0.0, 3.7432957395278987;
-        ];
+        159.1101420,0.0,0.0;
+        0.0000000,144.3669747,0.0;
+        0.0000000,-0.0068560,14.7431673;
+                ];
 
         let (n, m, a, d, e) = tred3(inp);
         assert_eq!(n, 3);
         assert_eq!(m, 3);
-        assert_abs_diff_eq!(
-            a,
-            dmatrix![
-            0.0, 0.0, 0.0;
-            0.00016929687801159332, 0.00011971097047570936, 0.0;
-            0.0, 0.0, 0.0;
-            ]
+        check_vec!(
+            Dvec::from(a),
+            dvector![
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                -0.013711901310795693,
+                0.0096957783998243459
+            ],
+            1e-7,
+            "tred3"
         );
 
-        assert_abs_diff_eq!(
+        check_vec!(
             Dvec::from(d),
             dvector![
                 3.7432958001669672,
                 4.2568667187161822,
                 3.7432957395278987
             ],
+            1e-7,
+            "tred3 d"
         );
 
         assert_abs_diff_eq!(
@@ -260,104 +364,4 @@ fn tql2(n: usize, mut e: Vec<f64>, d: &mut Vec<f64>, m: usize, z: &mut Dmat) {
             z[(j, k)] = p;
         }
     }
-}
-
-/// THIS SUBROUTINE IS A TRANSLATION OF THE ALGOL PROCEDURE TRED3, NUM. MATH.
-/// 11, 181-195(1968) BY MARTIN, REINSCH, AND WILKINSON. HANDBOOK FOR AUTO.
-/// COMP., VOL.II-LINEAR ALGEBRA, 212-226(1971), by way of the fortran version
-/// in spectro
-///
-/// THIS SUBROUTINE REDUCES A REAL SYMMETRIC MATRIX, `mat` ARRAY, TO A SYMMETRIC
-/// TRIDIAGONAL MATRIX, represented as two vectors, USING ORTHOGONAL SIMILARITY
-/// TRANSFORMATIONS.
-#[allow(unused)]
-fn tred3(mat: Dmat) -> (usize, usize, Dmat, Vec<f64>, Vec<f64>) {
-    // N is the order of the matrix
-    let (n, m) = mat.shape();
-    assert_eq!(n, m, "non-square matrix passed to symm_eigen_decomp");
-    // A contains the lower triangle of the real symmetric input matrix, stored
-    // row-wise
-    let mut a = mat.lower_triangle();
-    // on output, w contains the eigenvalues in ascending order and z contains
-    // the eigenvectors
-    // D contains the diagonal elements of the tridiagonal matrix
-    let mut d = vec![0.0; n];
-    // E contains the subdiagonal elements of the tridiagonal matrix in its last
-    // n-1 positions. E(1) is set to zero
-    let mut e = vec![0.0; n];
-    // E2 contains the squares of the corresponding elements of E
-    let mut e2 = vec![0.0; n];
-
-    // using fortran indexing so the math works out
-    for ii in 1..=n {
-        // I think this +1 is fortran only
-        let i = n + 1 - ii;
-        let l = i - 1;
-        let mut iz = (i * l) / 2;
-        let mut h = 0.0;
-        let mut scale = 0.0;
-        if l < 1 {
-            e[i] = 0.0;
-            e2[i] = 0.0;
-        } else {
-            for k in 0..l {
-                iz += 1;
-                d[k] = a[iz];
-                scale += d[k].abs();
-            }
-
-            if scale != 0.0 {
-                for k in 0..=l {
-                    d[k] /= scale;
-                    h += d[k] * d[k];
-                }
-                e2[i - 1] = scale * scale * h;
-                let f = d[l];
-                let g = -(h.sqrt().copysign(f));
-                e[i - 1] = scale * g;
-                h -= f * g;
-                a[iz] = scale * d[l];
-                // goto 290 if l == 0
-                if l != 0 {
-                    let mut f = 0.0;
-                    for j in 0..=l {
-                        let mut g = 0.0;
-                        let mut jk = if j >= 1 { (j * (j - 1)) / 2 } else { 0 };
-                        // form element of A*U
-                        for k in 0..=l {
-                            if k > j {
-                                jk = jk + k - 2;
-                            }
-                            g += a[jk] * d[k];
-                            jk += 1;
-                        }
-                        // form element of P
-                        e[j] = g / h;
-                        f += e[j] * d[j];
-                    }
-
-                    let hh = f / (h + h);
-                    let mut jk = 0;
-                    // form reduced A
-                    for j in 0..=l {
-                        let f = d[j];
-                        let g = e[j] - hh * f;
-                        e[j] = g;
-
-                        for k in 0..=j {
-                            a[jk] -= f * e[k] + g * d[k];
-                            jk += 1;
-                        }
-                    }
-                }
-            } else {
-                e[i] = 0.0;
-                e2[i] = 0.0;
-            }
-        }
-        // this is 290
-        d[i - 1] = a[iz + 1];
-        a[iz + 1] = scale * h.sqrt();
-    }
-    (n, m, a, d, e)
 }
