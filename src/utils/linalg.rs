@@ -83,12 +83,12 @@ fn tred3(mat: Dmat) -> (usize, usize, Vec<f64>, Vec<f64>, Vec<f64>) {
     let mut e = vec![0.0; n];
     let mut e2 = vec![0.0; n];
     for i in (0..n).rev() {
+        // this covers l < 1, so else is goto 130
         if i >= 1 {
             let l = i - 1;
             let mut iz = (i * i) / 2;
             let mut h = 0.0;
             let mut scale = 0.0;
-            // todo check if l < 1, something about close to end
             for k in 0..i {
                 iz += 1;
                 d[k] = a[iz];
@@ -100,44 +100,47 @@ fn tred3(mat: Dmat) -> (usize, usize, Vec<f64>, Vec<f64>, Vec<f64>) {
                     d[k] /= scale;
                     h += d[k] * d[k];
                 }
-            }
 
-            e2[i] = scale * scale * h;
-            let f = d[l];
-            let g = -h.sqrt().copysign(f);
-            e[i] = scale * g;
-            h -= f * g;
-            d[l] = f - g;
-            a[iz] = scale * d[l];
-            if l != 0 {
-                let mut f = 0.0;
-                for j in 0..i {
-                    let mut g = 0.0;
-                    let mut jk = (j * (j + 1)) / 2;
-                    for k in 0..i {
-                        if k > j {
-                            jk = jk + k - 1;
+                e2[i] = scale * scale * h;
+                let f = d[l];
+                let g = -h.sqrt().copysign(f);
+                e[i] = scale * g;
+                h -= f * g;
+                d[l] = f - g;
+                a[iz] = scale * d[l];
+                if l != 0 {
+                    let mut f = 0.0;
+                    for j in 0..i {
+                        let mut g = 0.0;
+                        let mut jk = (j * (j + 1)) / 2;
+                        for k in 0..i {
+                            if k > j {
+                                jk = jk + k - 1;
+                            }
+                            g += a[jk] * d[k];
+                            jk += 1;
                         }
-                        g += a[jk] * d[k];
-                        jk += 1;
+                        e[j] = g / h;
+                        f += e[j] * d[j];
                     }
-                    e[j] = g / h;
-                    f += e[j] * d[j];
-                }
 
-                let hh = f / (h + h);
-                let mut jk = 0;
+                    let hh = f / (h + h);
+                    let mut jk = 0;
 
-                for j in 0..i {
-                    let f = d[j];
-                    let g = e[j] - hh * f;
-                    e[j] = g;
+                    for j in 0..i {
+                        let f = d[j];
+                        let g = e[j] - hh * f;
+                        e[j] = g;
 
-                    for k in 0..i {
-                        jk += 1;
-                        a[jk] = a[jk] - f * e[k] - g * d[k];
+                        for k in 0..i {
+                            jk += 1;
+                            a[jk] = a[jk] - f * e[k] - g * d[k];
+                        }
                     }
                 }
+            } else {
+                e[i] = 0.0;
+                e2[i] = 0.0;
             }
             // this is 290
             d[i] = a[iz + 1];
@@ -145,8 +148,7 @@ fn tred3(mat: Dmat) -> (usize, usize, Vec<f64>, Vec<f64>, Vec<f64>) {
         } else {
             e[i] = 0.0;
             e2[i] = 0.0;
-
-            // copy of 290
+            // copy of 290 with iz = 0
             d[i] = a[0];
             a[0] = 0.0;
         }
@@ -159,7 +161,6 @@ mod tests {
     use crate::check_vec;
 
     use super::*;
-    use approx::assert_abs_diff_eq;
     use nalgebra::{dmatrix, dvector};
 
     #[test]
@@ -184,23 +185,21 @@ mod tests {
                 0.0096957783998243459
             ],
             1e-7,
-            "tred3"
+            "tred3 a"
         );
 
         check_vec!(
             Dvec::from(d),
-            dvector![
-                3.7432958001669672,
-                4.2568667187161822,
-                3.7432957395278987
-            ],
+            dvector![159.1101420375779, 144.36697474228089, 14.743167295296997],
             1e-7,
             "tred3 d"
         );
 
-        assert_abs_diff_eq!(
+        check_vec!(
             Dvec::from(e),
-            dvector![0.0, -8.4648439005796661e-05, 0.0],
+            dvector![0.0, 0.0, 0.0068559506553978466],
+            1e-7,
+            "tred3 e"
         );
     }
 }
