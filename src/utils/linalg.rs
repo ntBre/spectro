@@ -3,8 +3,8 @@ use crate::Dvec;
 use crate::Dmat;
 use crate::Mat3;
 
+use nalgebra::SymmetricEigen;
 use nalgebra::Vector3;
-use nalgebra_lapack::SymmetricEigen;
 
 /// compute the eigen decomposition of the symmetric matrix `mat` and return
 /// both the sorted eigenvalues and the corresponding eigenvectors in descending
@@ -36,12 +36,13 @@ pub fn symm_eigen_decomp(mat: Dmat) -> (Dvec, Dmat) {
 
 /// copy of the above with constant-size matrices because I can't figure out how
 /// to make it generic
-#[allow(unused)]
 pub fn symm_eigen_decomp3(mat: Mat3, reverse: bool) -> (Vector3<f64>, Mat3) {
     let SymmetricEigen {
         eigenvectors: vecs,
         eigenvalues: vals,
     } = SymmetricEigen::new(mat);
+    println!("vecs={:.8}", vecs);
+    println!("vals={:.8}", vals);
     let mut pairs: Vec<_> = vals.iter().enumerate().collect();
     pairs.sort_by(|(_, a), (_, b)| b.partial_cmp(&a).unwrap());
     if reverse {
@@ -65,7 +66,6 @@ mod tests {
     use nalgebra::{dmatrix, dvector};
 
     #[test]
-    #[ignore]
     fn test_tred3() {
         let inp = dmatrix![
             3.7432958001669672, 0.0, 0.0;

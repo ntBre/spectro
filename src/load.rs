@@ -27,12 +27,13 @@ impl Spectro {
 
 /// perform the geometry manipulations from dist.f on ret.geom and set the
 /// corresponding fields in `ret`
-fn process_geom(ret: &mut Spectro) {
+pub(crate) fn process_geom(ret: &mut Spectro) {
     // assumes input geometry in bohr
     ret.geom.to_angstrom();
     let com = ret.geom.com();
     ret.geom.translate(-com);
     let moi = ret.geom.moi();
+    println!("moi={:.8}", moi);
     let (pr, mut axes) = symm_eigen_decomp3(moi, true);
     ret.primat = Vec::from(pr.as_slice());
     ret.rotcon = pr.iter().map(|m| CONST / m).collect();

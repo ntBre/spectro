@@ -23,6 +23,8 @@ use crate::{
 // separate for macro
 use crate::f4qcm;
 
+use self::linalg::symm_eigen_decomp;
+
 impl Display for Spectro {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use crate::Curvil::*;
@@ -459,7 +461,7 @@ pub(crate) fn rsfrm2(
     val, eng[kst] - eng[0];
     ];
     // TODO left out error measures
-    let (eigval, eigvec) = linalg::symm_eigen_decomp(eres);
+    let (eigval, eigvec) = symm_eigen_decomp(eres);
     let a = eigvec[(0, 0)];
     let b = eigvec[(1, 0)];
     if a.abs() > b.abs() {

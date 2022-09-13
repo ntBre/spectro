@@ -4,10 +4,12 @@ use crate::consts::FACT2;
 use crate::utils::linalg::symm_eigen_decomp;
 use crate::*;
 use approx::{abs_diff_eq, abs_diff_ne, assert_abs_diff_eq};
-use na::dmatrix;
+use na::allocator::Allocator;
+use na::{dmatrix, DefaultAllocator, Matrix, Storage};
 use nalgebra as na;
 use std::fs::read_to_string;
 use std::io::{BufRead, BufReader};
+use std::ops::Sub;
 use std::path::Path;
 
 mod alphaa;
@@ -104,7 +106,22 @@ fn check_tens(
     }
 }
 
-fn check_mat(got: &Dmat, want: &Dmat, eps: f64, label: &str, infile: &str) {
+fn check_mat<
+    'a,
+    R: nalgebra::Dim,
+    C: nalgebra::Dim,
+    S: nalgebra::RawStorage<f64, R, C>,
+>(
+    got: &'a Matrix<f64, R, C, S>,
+    want: &'a Matrix<f64, R, C, S>,
+    eps: f64,
+    label: &str,
+    infile: &str,
+) where
+    &'a Matrix<f64, R, C, S>: Sub<Output = Matrix<f64, R, C, S>>,
+    S: Storage<f64, R, C>,
+    DefaultAllocator: Allocator<f64, R, C>,
+{
     if abs_diff_ne!(got, want, epsilon = eps) {
         println!("got\n{:.8}", got);
         println!("want\n{:.8}", want);
@@ -113,6 +130,19 @@ fn check_mat(got: &Dmat, want: &Dmat, eps: f64, label: &str, infile: &str) {
         println!("max diff = {:.2e}", diff.abs().max());
         assert!(false, "{} failed on {}", label, infile);
     }
+}
+
+#[macro_export]
+macro_rules! check_mat {
+    ($got: expr, $want: expr, $eps: expr, $label: expr, $infile: expr) => {
+        check_mat(
+            $got,
+            $want,
+            $eps,
+            $label,
+            &format!("'{}', {}:{}:{}", $infile, file!(), line!(), column!()),
+        )
+    };
 }
 
 #[test]
