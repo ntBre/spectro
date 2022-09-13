@@ -296,5 +296,5 @@ fn test_enrgy() {
         9988.129295095654,
         9895.66935813587,
     ];
-    assert_eq!(got, want);
+    check_vec(Dvec::from(got), Dvec::from(want), 1e-11, "enrgy");
 }

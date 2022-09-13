@@ -1,18 +1,61 @@
 use crate::Dvec;
 
 use crate::Dmat;
+use crate::Mat3;
+
+use nalgebra::Vector3;
+use nalgebra_lapack::SymmetricEigen;
 
 /// compute the eigen decomposition of the symmetric matrix `mat` and return
 /// both the sorted eigenvalues and the corresponding eigenvectors in descending
 /// order. the implementation is taken from RSP and the subroutines called
 /// therein
 pub fn symm_eigen_decomp(mat: Dmat) -> (Dvec, Dmat) {
-    let (n, m, a, mut d, e) = tred3(mat);
-    let mut z = Dmat::identity(n, n);
-    tql2(n, e, &mut d, m, &mut z);
-    trbak3(n, a, m, &mut z);
-    let w = Dvec::from(d);
-    (w, z)
+    // let (n, m, a, mut d, e) = tred3(mat);
+    // let mut z = Dmat::identity(n, n);
+    // tql2(n, e, &mut d, m, &mut z);
+    // trbak3(n, a, m, &mut z);
+    // let w = Dvec::from(d);
+    // (w, z)
+    let SymmetricEigen {
+        eigenvectors: vecs,
+        eigenvalues: vals,
+    } = SymmetricEigen::new(mat);
+    let mut pairs: Vec<_> = vals.iter().enumerate().collect();
+    pairs.sort_by(|(_, a), (_, b)| b.partial_cmp(&a).unwrap());
+    let (rows, cols) = vecs.shape();
+    let mut ret = Dmat::zeros(rows, cols);
+    for i in 0..cols {
+        ret.set_column(i, &vecs.column(pairs[i].0));
+    }
+    (
+        Dvec::from_iterator(vals.len(), pairs.iter().map(|a| a.1.clone())),
+        ret,
+    )
+}
+
+/// copy of the above with constant-size matrices because I can't figure out how
+/// to make it generic
+#[allow(unused)]
+pub fn symm_eigen_decomp3(mat: Mat3, reverse: bool) -> (Vector3<f64>, Mat3) {
+    let SymmetricEigen {
+        eigenvectors: vecs,
+        eigenvalues: vals,
+    } = SymmetricEigen::new(mat);
+    let mut pairs: Vec<_> = vals.iter().enumerate().collect();
+    pairs.sort_by(|(_, a), (_, b)| b.partial_cmp(&a).unwrap());
+    if reverse {
+        pairs.reverse();
+    }
+    let (_, cols) = vecs.shape();
+    let mut ret = Mat3::zeros();
+    for i in 0..cols {
+        ret.set_column(i, &vecs.column(pairs[i].0));
+    }
+    (
+        Vector3::from_iterator(pairs.iter().map(|a| a.1.clone())),
+        ret,
+    )
 }
 
 #[cfg(test)]
@@ -22,6 +65,7 @@ mod tests {
     use nalgebra::{dmatrix, dvector};
 
     #[test]
+    #[ignore]
     fn test_tred3() {
         let inp = dmatrix![
             3.7432958001669672, 0.0, 0.0;
@@ -65,6 +109,7 @@ mod tests {
 /// THIS SUBROUTINE FORMS THE EIGENVECTORS OF A REAL SYMMETRIC MATRIX BY BACK
 /// TRANSFORMING THOSE OF THE CORRESPONDING SYMMETRIC TRIDIAGONAL MATRIX
 /// DETERMINED BY TRED3.
+#[allow(unused)]
 fn trbak3(n: usize, a: Dmat, m: usize, z: &mut Dmat) {
     for i in 1..n {
         let l = i - 1;
@@ -106,6 +151,7 @@ fn trbak3(n: usize, a: Dmat, m: usize, z: &mut Dmat) {
 /// TRIDIAGONAL MATRIX BY THE QL METHOD. THE EIGENVECTORS OF A FULL SYMMETRIC
 /// MATRIX CAN ALSO BE FOUND IF TRED2 HAS BEEN USED TO REDUCE THIS FULL MATRIX
 /// TO TRIDIAGONAL FORM.
+#[allow(unused)]
 fn tql2(n: usize, mut e: Vec<f64>, d: &mut Vec<f64>, m: usize, z: &mut Dmat) {
     // this is supposed to be a machine dependent parameter specifying the
     // precision of floats. in the fortran code it comes out to about 7.1e-15
@@ -224,6 +270,7 @@ fn tql2(n: usize, mut e: Vec<f64>, d: &mut Vec<f64>, m: usize, z: &mut Dmat) {
 /// THIS SUBROUTINE REDUCES A REAL SYMMETRIC MATRIX, `mat` ARRAY, TO A SYMMETRIC
 /// TRIDIAGONAL MATRIX, represented as two vectors, USING ORTHOGONAL SIMILARITY
 /// TRANSFORMATIONS.
+#[allow(unused)]
 fn tred3(mat: Dmat) -> (usize, usize, Dmat, Vec<f64>, Vec<f64>) {
     // N is the order of the matrix
     let (n, m) = mat.shape();
@@ -240,70 +287,76 @@ fn tred3(mat: Dmat) -> (usize, usize, Dmat, Vec<f64>, Vec<f64>) {
     let mut e = vec![0.0; n];
     // E2 contains the squares of the corresponding elements of E
     let mut e2 = vec![0.0; n];
-    // TODO this is really a reverse step from n..0 in i
-    for ii in 0..n {
+
+    // using fortran indexing so the math works out
+    for ii in 1..=n {
         // I think this +1 is fortran only
         let i = n + 1 - ii;
         let l = i - 1;
         let mut iz = (i * l) / 2;
         let mut h = 0.0;
         let mut scale = 0.0;
-        for k in 0..l {
-            iz += 1;
-            d[k] = a[iz];
-            scale += d[k].abs();
-        }
-
-        if scale != 0.0 {
-            for k in 0..=l {
-                d[k] /= scale;
-                h += d[k] * d[k];
-            }
-            e2[i] = scale * scale * h;
-            let f = d[l];
-            let g = -(h.sqrt().copysign(f));
-            e[i] = scale * g;
-            h -= f * g;
-            a[iz] = scale * d[l];
-            // goto 290 if l == 0
-            if l != 0 {
-                let mut f = 0.0;
-                for j in 0..=l {
-                    let mut g = 0.0;
-                    let mut jk = (j * (j - 1)) / 2;
-                    // form element of A*U
-                    for k in 0..=l {
-                        if k > j {
-                            jk = jk + k - 2;
-                        }
-                        g += a[jk] * d[k];
-                        jk += 1;
-                    }
-                    // form element of P
-                    e[j] = g / h;
-                    f += e[j] * d[j];
-                }
-
-                let hh = f / (h + h);
-                let mut jk = 0;
-                // form reduced A
-                for j in 0..=l {
-                    let f = d[j];
-                    let g = e[j] - hh * f;
-                    e[j] = g;
-
-                    for k in 0..=j {
-                        a[jk] -= f * e[k] + g * d[k];
-                        jk += 1;
-                    }
-                }
-            }
-        } else {
+        if l < 1 {
             e[i] = 0.0;
             e2[i] = 0.0;
+        } else {
+            for k in 0..l {
+                iz += 1;
+                d[k] = a[iz];
+                scale += d[k].abs();
+            }
+
+            if scale != 0.0 {
+                for k in 0..=l {
+                    d[k] /= scale;
+                    h += d[k] * d[k];
+                }
+                e2[i - 1] = scale * scale * h;
+                let f = d[l];
+                let g = -(h.sqrt().copysign(f));
+                e[i - 1] = scale * g;
+                h -= f * g;
+                a[iz] = scale * d[l];
+                // goto 290 if l == 0
+                if l != 0 {
+                    let mut f = 0.0;
+                    for j in 0..=l {
+                        let mut g = 0.0;
+                        let mut jk = if j >= 1 { (j * (j - 1)) / 2 } else { 0 };
+                        // form element of A*U
+                        for k in 0..=l {
+                            if k > j {
+                                jk = jk + k - 2;
+                            }
+                            g += a[jk] * d[k];
+                            jk += 1;
+                        }
+                        // form element of P
+                        e[j] = g / h;
+                        f += e[j] * d[j];
+                    }
+
+                    let hh = f / (h + h);
+                    let mut jk = 0;
+                    // form reduced A
+                    for j in 0..=l {
+                        let f = d[j];
+                        let g = e[j] - hh * f;
+                        e[j] = g;
+
+                        for k in 0..=j {
+                            a[jk] -= f * e[k] + g * d[k];
+                            jk += 1;
+                        }
+                    }
+                }
+            } else {
+                e[i] = 0.0;
+                e2[i] = 0.0;
+            }
         }
         // this is 290
-        d[i] = a[iz + 1];
+        d[i - 1] = a[iz + 1];
         a[iz + 1] = scale * h.sqrt();
     }
     (n, m, a, d, e)

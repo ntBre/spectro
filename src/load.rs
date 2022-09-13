@@ -6,7 +6,7 @@ use std::{
     path::Path,
 };
 
-use crate::utils::*;
+use crate::utils::{linalg::symm_eigen_decomp3, *};
 use crate::Spectro;
 use crate::{
     consts::CONST,
@@ -143,9 +143,8 @@ impl Spectro {
         ret.geom.to_angstrom();
         let com = ret.geom.com();
         ret.geom.translate(-com);
-        let pr = ret.geom.principal_moments();
-        let axes = ret.geom.principal_axes();
-        let (pr, mut axes) = symm::eigen_sort(pr, axes);
+        let moi = ret.geom.moi();
+        let (pr, mut axes) = symm_eigen_decomp3(moi, true);
         ret.primat = Vec::from(pr.as_slice());
         ret.rotcon = pr.iter().map(|m| CONST / m).collect();
         ret.rotor = ret.rotor_type(&pr);

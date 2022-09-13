@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use crate::consts::FACT2;
+use crate::{consts::FACT2, utils::linalg::symm_eigen_decomp};
 
 use super::*;
 
@@ -62,7 +62,7 @@ fn asym() {
         let w = s.geom.weights();
         let sqm: Vec<_> = w.iter().map(|w: &f64| 1.0 / w.sqrt()).collect();
         let fxm = s.form_sec(fc2, &sqm);
-        let (_harms, lxm) = utils::linalg::symm_eigen_decomp(fxm);
+        let (_harms, lxm) = symm_eigen_decomp(fxm);
 
         let (zmat, wila) = s.zeta(&lxm, &w);
 
@@ -97,7 +97,7 @@ fn sym() {
         let w = s.geom.weights();
         let sqm: Vec<_> = w.iter().map(|w: &f64| 1.0 / w.sqrt()).collect();
         let fxm = s.form_sec(fc2, &sqm);
-        let (harms, mut lxm) = utils::linalg::symm_eigen_decomp(fxm);
+        let (harms, mut lxm) = symm_eigen_decomp(fxm);
         let freq = to_wavenumbers(&harms);
         let mut lx = s.make_lx(&sqm, &lxm);
         s.bdegnl(&freq, &mut lxm, &w, &mut lx);
@@ -119,4 +119,41 @@ fn sym() {
             &test.infile,
         );
     }
+}
+
+/// run failing ph3 test using lxm eigendecomposition from Python to check for
+/// bugs in nalgebra
+#[test]
+fn py_ph3() {
+    let test = Test::new("ph3", 6, 6, 3.52e-10, 8.73e-7);
+    let s = Spectro::load(&test.infile);
+    println!("{:.8}", s.geom);
+    let fc2 = load_fc2(&test.fort15, s.n3n);
+    let fc2 = s.rot2nd(fc2);
+    let fc2 = FACT2 * fc2;
+    let w = s.geom.weights();
+    let sqm: Vec<_> = w.iter().map(|w: &f64| 1.0 / w.sqrt()).collect();
+    let fxm = s.form_sec(fc2, &sqm);
+    let (harms, _) = symm_eigen_decomp(fxm);
+    let mut lxm = load_dmat("testfiles/ph3/py_lxm.out", 12, 12);
+    let freq = to_wavenumbers(&harms);
+    let mut lx = s.make_lx(&sqm, &lxm);
+    s.bdegnl(&freq, &mut lxm, &w, &mut lx);
+
+    let (zmat, wila) = s.zeta(&lxm, &w);
+
+    check_tens(
+        &zmat.abs(),
+        &test.zmat.abs(),
+        test.zmat_eps,
+        "zmat",
+        &test.infile,
+    );
+    check_mat(
+        &wila.abs(),
+        &test.wila.abs(),
+        test.wila_eps,
+        "wila",
+        &test.infile,
+    );
 }
