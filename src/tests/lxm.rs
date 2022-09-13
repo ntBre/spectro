@@ -356,6 +356,46 @@ N     -2.2072758     -0.0095340      0.0000000
     check_mat(&got, &want, 7e-8, "fxm", "c3hcn");
 }
 
+/// build on c3hcn_fxm to see if I can take *that* fxm forward to get a good lxm
+#[test]
+fn c3hcn_fxm_lxm() {
+    use std::str::FromStr;
+    let s = Spectro {
+        n3n: 18,
+        geom: Molecule::from_str(
+            "
+H      2.0345490     -1.5884146      0.0000000
+C      1.5163524     -0.6441862      0.0000000
+C      1.5721454      0.7755306      0.0000000
+C      0.3627860      0.0129312      0.0000000
+C     -1.0464358      0.0002536      0.0000000
+N     -2.2072758     -0.0095340      0.0000000
+",
+        )
+        .unwrap(),
+        axes: nalgebra::matrix![
+        0.00000000,0.00000000,1.00000000;
+        0.00005289,-1.00000000,0.00000000;
+        1.00000000,0.00005289,0.00000000;
+                ],
+        ..Spectro::default()
+    };
+    let fort15 = "testfiles/c3hcn/fort.15";
+    let fc2 = load_fc2(fort15, s.n3n);
+    let fc2 = s.rot2nd(fc2);
+    let fc2 = FACT2 * fc2;
+    let w = s.geom.weights();
+    let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
+    let fxm = s.form_sec(fc2, &sqm);
+
+    let want = load_dmat("testfiles/c3hcn/fort_lxm", 18, 18);
+    let (_, got) = symm_eigen_decomp(fxm);
+
+    let got = got.slice((0, 0), (18, 12));
+    let want = want.slice((0, 0), (18, 12));
+    // all the precision I got from spectro2.out
+    check_eigen!(&Dmat::from(got), &Dmat::from(want), 5e-8, "lxm", "c3hcn");
+}
 /// check if I can get the same LXM without absolute value using the same
 /// geometry as the fortran code. this is a copy-paste of fxm but with the
 /// additional line of the eigendecomposition. this is basically a test of
