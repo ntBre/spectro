@@ -33,7 +33,6 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
     let com = ret.geom.com();
     ret.geom.translate(-com);
     let moi = ret.geom.moi();
-    println!("moi={:.8}", moi);
     let (pr, mut axes) = symm_eigen_decomp3(moi);
     ret.primat = Vec::from(pr.as_slice());
     ret.rotcon = pr.iter().map(|m| CONST / m).collect();
@@ -74,6 +73,7 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
     // rotate to principal axes
     ret.geom = ret.geom.transform(axes.transpose());
     ret.axes = axes;
+
     // center of mass again
     let com = ret.geom.com();
     ret.geom.translate(-com);
@@ -130,9 +130,19 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
         egr[(1, 1)] = x / (f64::sqrt(x * x + y * y));
         egr[(2, 2)] = 1.0;
 
-        ret.geom = ret.geom.transform(egr.transpose());
+        for i in 0..ret.natoms() {
+            let crot1 = ret.geom.atoms[i].x;
+            let crot2 = ret.geom.atoms[i].y;
+            let crot3 = ret.geom.atoms[i].z;
+            ret.geom.atoms[i].x =
+                egr[(0, 0)] * crot1 + egr[(1, 0)] * crot2 + egr[(2, 0)] * crot3;
+            ret.geom.atoms[i].y =
+                egr[(0, 1)] * crot1 + egr[(1, 1)] * crot2 + egr[(2, 1)] * crot3;
+            ret.geom.atoms[i].z =
+                egr[(0, 2)] * crot1 + egr[(1, 2)] * crot2 + egr[(2, 2)] * crot3;
+        }
 
-        let btemp = egr * ret.axes.transpose();
+        let btemp = egr.transpose() * ret.axes.transpose();
         ret.axes = btemp.transpose();
         ret.iatom = iatl;
     }

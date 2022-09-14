@@ -39,6 +39,7 @@ fn alpha() {
         Test::new("c3hcn010", "alpha", 12),
     ];
     for test in Vec::from(&tests[..]) {
+        dbg!(&test.infile);
         let s = Spectro::load(test.infile);
         let fc2 = load_fc2(test.fort15, s.n3n);
         let fc2 = s.rot2nd(fc2);

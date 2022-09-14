@@ -185,29 +185,35 @@ fn tql2<D: Dim, S: Storage<f64, D, D>>(
     let mut b = 0.0;
     e[n - 1] = 0.0;
 
+    // this is for skipping the top of the loop when we goto 130
+    let mut skip = false;
+
     'outer: for l in 0..n {
-        let h = machep * (d[l].abs() + e[l].abs());
-        if b < h {
-            b = h;
-        }
-        // look for small sub-diagonal element
-        for m in l..n {
-            if e[m].abs() <= b {
-                // goto 120
-                if m == l {
-                    // goto 220
-                    d[l] += f;
-                    continue 'outer;
+        if !skip {
+            let h = machep * (d[l].abs() + e[l].abs());
+            if b < h {
+                b = h;
+            }
+            // look for small sub-diagonal element
+            for m in l..n {
+                if e[m].abs() <= b {
+                    // goto 120
+                    if m == l {
+                        // goto 220
+                        d[l] += f;
+                        continue 'outer;
+                    }
+                    // else just break out of the m loop and keep moving
+                    break;
                 }
-                // else just break out of the m loop and keep moving
-                break;
+            }
+
+            if m == l {
+                d[l] += f;
+                continue 'outer;
             }
         }
-
-        if m == l {
-            d[l] += f;
-            continue 'outer;
-        }
+        skip = false;
 
         // form shift
         let l1 = l + 1;
@@ -259,7 +265,9 @@ fn tql2<D: Dim, S: Storage<f64, D, D>>(
         e[l] = s * p;
         d[l] = c * p;
         if e[l].abs() > b {
-            todo!("goto 130, after the m == l thing");
+            // goto 130
+            skip = true;
+            continue;
         }
         d[l] += f;
     }
