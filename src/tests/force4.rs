@@ -57,7 +57,7 @@ fn asym() {
         let got = force4(s.n3n, &f4x, &lx, s.nvib, &freq);
         let got = Dvec::from(got).abs();
         let want = Dvec::from(test.want).abs();
-        check_vec(got, want, test.eps, &test.infile);
+        check_vec!(got, want, test.eps, &test.infile);
     }
 }
 
@@ -81,6 +81,6 @@ fn sym() {
         let got = force4(s.n3n, &f4x, &lx, s.nvib, &freq);
         let got = Dvec::from(got).abs();
         let want = Dvec::from(test.want).abs();
-        check_vec(got, want, test.eps, &test.infile);
+        check_vec!(got, want, test.eps, &test.infile);
     }
 }

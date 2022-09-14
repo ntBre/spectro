@@ -49,7 +49,7 @@ fn inner(tests: &[Test]) {
         let got = force3(s.n3n, &mut f3x, &lx, s.nvib, &freq);
         let got = Dvec::from(got).abs();
         let want = Dvec::from(test.want.clone()).abs();
-        check_vec(got, want, test.eps, &test.infile);
+        check_vec!(got, want, test.eps, &test.infile);
     }
 }
 

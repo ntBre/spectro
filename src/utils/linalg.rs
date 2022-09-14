@@ -424,7 +424,7 @@ mod tests {
             },
         ];
 
-        for test in Vec::from(&tests[..]) {
+        for test in Vec::from(&tests[1..]) {
             let (n, m, a, d, e) = tred3(test.inp);
             assert_eq!(n, test.n);
             assert_eq!(m, test.m);
@@ -495,12 +495,13 @@ mod tests {
     #[test]
     fn test_trbak3() {
         struct Test {
+            label: &'static str,
             inp: Dmat,
             z: Dmat,
         }
         let tests = [
-            //
             Test {
+                label: "c3hcn",
                 inp: dmatrix![
                 159.1101420,0.0,0.0;
                 0.0000000,144.3669747,0.0;
@@ -512,13 +513,26 @@ mod tests {
                 0.999999998601,0.000052891138,0.000000000000;
                         ],
             },
+            Test {
+                label: "c3hf",
+                inp: dmatrix![
+                        66.259393886896206, 0.0, 0.0;
+                        0.0000000,81.314604235348298, 0.0;
+                        -0.0035385188367391684,0.0000000,15.055210348452093;
+                ],
+                z: dmatrix![
+                    0.000069106049,0.999999997612,0.000000000000;
+                    0.000000000000,0.000000000000,-1.000000000000;
+                    0.999999997612,-0.000069106049,0.000000000000;
+                ],
+            },
         ];
         for test in tests {
             let (n, m, a, mut d, e) = tred3(test.inp);
             let mut z = Dmat::identity(n, n);
             tql2(n, e, &mut d, m, &mut z);
             trbak3(n, a, m, &mut z);
-            check_mat!(&z, &test.z, 4e-10, "trbak3", "c3hcn");
+            check_mat!(&z, &test.z, 4e-10, "trbak3", test.label);
         }
     }
 }
