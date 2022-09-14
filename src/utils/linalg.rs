@@ -434,27 +434,31 @@ mod tests {
 
     #[test]
     fn test_trbak3() {
-        let inp = dmatrix![
-        159.1101420,0.0,0.0;
-        0.0000000,144.3669747,0.0;
-        0.0000000,-0.0068560,14.7431673;
-                ];
-        let (n, m, a, mut d, e) = tred3(inp);
-        let mut z = Dmat::identity(n, n);
-        tql2(n, e, &mut d, m, &mut z);
-        // on output z contains the eigenvectors
-        trbak3(n, a, m, &mut z);
-
-        check_mat!(
-            &z,
-            &dmatrix![
-            0.000000000000,0.000000000000,1.000000000000;
-            0.000052891138,-0.999999998601,0.000000000000;
-            0.999999998601,0.000052891138,0.000000000000;
-                    ],
-            4e-10,
-            "trbak3",
-            "c3hcn"
-        );
+        struct Test {
+            inp: Dmat,
+            z: Dmat,
+        }
+        let tests = [
+            //
+            Test {
+                inp: dmatrix![
+                159.1101420,0.0,0.0;
+                0.0000000,144.3669747,0.0;
+                0.0000000,-0.0068560,14.7431673;
+                        ],
+                z: dmatrix![
+                0.000000000000,0.000000000000,1.000000000000;
+                0.000052891138,-0.999999998601,0.000000000000;
+                0.999999998601,0.000052891138,0.000000000000;
+                        ],
+            },
+        ];
+        for test in tests {
+            let (n, m, a, mut d, e) = tred3(test.inp);
+            let mut z = Dmat::identity(n, n);
+            tql2(n, e, &mut d, m, &mut z);
+            trbak3(n, a, m, &mut z);
+            check_mat!(&z, &test.z, 4e-10, "trbak3", "c3hcn");
+        }
     }
 }
