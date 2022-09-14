@@ -347,42 +347,50 @@ mod tests {
 
     #[test]
     fn test_tred3() {
-        let inp = dmatrix![
-        159.1101420,0.0,0.0;
-        0.0000000,144.3669747,0.0;
-        0.0000000,-0.0068560,14.7431673;
-                ];
+        struct Test {
+            inp: Dmat,
+            n: usize,
+            m: usize,
+            a: Dvec,
+            d: Dvec,
+            e: Dvec,
+        }
 
-        let (n, m, a, d, e) = tred3(inp);
-        assert_eq!(n, 3);
-        assert_eq!(m, 3);
-        check_vec!(
-            Dvec::from(a),
-            dvector![
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                -0.013711901310795693,
-                0.0096957783998243459
-            ],
-            1e-7,
-            "tred3 a"
-        );
+        let tests = [
+            //
+            Test {
+                inp: dmatrix![
+                159.1101420,0.0,0.0;
+                0.0000000,144.3669747,0.0;
+                0.0000000,-0.0068560,14.7431673;
+                        ],
+                n: 3,
+                m: 3,
+                a: dvector![
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    -0.013711901310795693,
+                    0.0096957783998243459
+                ],
+                d: dvector![
+                    159.1101420375779,
+                    144.36697474228089,
+                    14.743167295296997
+                ],
+                e: dvector![0.0, 0.0, 0.0068559506553978466],
+            },
+        ];
 
-        check_vec!(
-            Dvec::from(d),
-            dvector![159.1101420375779, 144.36697474228089, 14.743167295296997],
-            1e-7,
-            "tred3 d"
-        );
-
-        check_vec!(
-            Dvec::from(e),
-            dvector![0.0, 0.0, 0.0068559506553978466],
-            1e-7,
-            "tred3 e"
-        );
+        for test in tests {
+            let (n, m, a, d, e) = tred3(test.inp);
+            assert_eq!(n, test.n);
+            assert_eq!(m, test.m);
+            check_vec!(Dvec::from(a), test.a, 1e-7, "tred3 a");
+            check_vec!(Dvec::from(d), test.d, 1e-7, "tred3 d");
+            check_vec!(Dvec::from(e), test.e, 1e-7, "tred3 e");
+        }
     }
 
     #[test]
