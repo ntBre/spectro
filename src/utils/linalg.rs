@@ -120,14 +120,14 @@ fn tred3<D: Dim, S: Storage<f64, D, D>>(
                     let hh = f / (h + h);
                     let mut jk = 0;
 
-                    for j in 0..i {
+                    for j in 0..=l {
                         let f = d[j];
                         let g = e[j] - hh * f;
                         e[j] = g;
 
-                        for k in 0..i {
-                            jk += 1;
+                        for k in 0..=j {
                             a[jk] = a[jk] - f * e[k] - g * d[k];
+                            jk += 1;
                         }
                     }
                 }
@@ -358,7 +358,9 @@ mod tests {
 
     #[test]
     fn test_tred3() {
+        #[derive(Clone)]
         struct Test {
+            label: &'static str,
             inp: Dmat,
             n: usize,
             m: usize,
@@ -368,8 +370,8 @@ mod tests {
         }
 
         let tests = [
-            //
             Test {
+                label: "c3hcn",
                 inp: dmatrix![
                 159.1101420,0.0,0.0;
                 0.0000000,144.3669747,0.0;
@@ -392,15 +394,43 @@ mod tests {
                 ],
                 e: dvector![0.0, 0.0, 0.0068559506553978466],
             },
+            Test {
+                label: "c3hf",
+                inp: dmatrix![
+                66.2593939, 0.0, 0.0;
+                0.0000000,81.3146042, 0.0;
+                -0.0035385,0.0000000,15.0552103;
+                                        ],
+                n: 3,
+                m: 3,
+                a: dvector![
+                    0.0,
+                    -2.8421709430404007e-14,
+                    2.0097183471152322e-14,
+                    -0.0035385188367391684,
+                    0.0035385188367391684,
+                    0.0035385188367391684
+                ],
+                d: dvector![
+                    81.314604235348312,
+                    66.25939388689622,
+                    15.055210348452093
+                ],
+                e: dvector![
+                    0.0,
+                    1.4210854715202004e-14,
+                    -0.0035385188367391684
+                ],
+            },
         ];
 
-        for test in tests {
+        for test in Vec::from(&tests[..]) {
             let (n, m, a, d, e) = tred3(test.inp);
             assert_eq!(n, test.n);
             assert_eq!(m, test.m);
-            check_vec!(Dvec::from(a), test.a, 1e-7, "tred3 a");
-            check_vec!(Dvec::from(d), test.d, 1e-7, "tred3 d");
-            check_vec!(Dvec::from(e), test.e, 1e-7, "tred3 e");
+            check_vec!(Dvec::from(a), test.a, 1e-7, test.label);
+            check_vec!(Dvec::from(d), test.d, 1e-7, test.label);
+            check_vec!(Dvec::from(e), test.e, 1e-7, test.label);
         }
     }
 
