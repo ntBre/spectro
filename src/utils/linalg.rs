@@ -67,7 +67,6 @@ pub fn symm_eigen_decomp3(mat: Mat3, reverse: bool) -> (Vector3<f64>, Mat3) {
 /// THIS SUBROUTINE REDUCES A REAL SYMMETRIC MATRIX, `mat` ARRAY, TO A SYMMETRIC
 /// TRIDIAGONAL MATRIX, represented as two vectors, USING ORTHOGONAL SIMILARITY
 /// TRANSFORMATIONS.
-#[allow(unused)]
 fn tred3(mat: Dmat) -> (usize, usize, Vec<f64>, Vec<f64>, Vec<f64>) {
     let (n, _) = mat.shape();
     // a contains the lower triangle of mat row-wise
@@ -287,7 +286,6 @@ fn trbak3(n: usize, a: Dmat, m: usize, z: &mut Dmat) {
 /// TRIDIAGONAL MATRIX BY THE QL METHOD. THE EIGENVECTORS OF A FULL SYMMETRIC
 /// MATRIX CAN ALSO BE FOUND IF TRED2 HAS BEEN USED TO REDUCE THIS FULL MATRIX
 /// TO TRIDIAGONAL FORM.
-#[allow(unused)]
 fn tql2(n: usize, mut e: Vec<f64>, d: &mut Vec<f64>, m: usize, z: &mut Dmat) {
     let machep = 2.0_f64.powf(-47.0);
 
@@ -305,7 +303,6 @@ fn tql2(n: usize, mut e: Vec<f64>, d: &mut Vec<f64>, m: usize, z: &mut Dmat) {
     e[n - 1] = 0.0;
 
     'outer: for l in 0..n {
-        let mut j = 0;
         let h = machep * (d[l].abs() + e[l].abs());
         if b < h {
             b = h;
@@ -323,7 +320,6 @@ fn tql2(n: usize, mut e: Vec<f64>, d: &mut Vec<f64>, m: usize, z: &mut Dmat) {
                 break;
             }
         }
-        j += 1;
 
         if m == l {
             d[l] += f;
