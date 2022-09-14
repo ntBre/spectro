@@ -155,128 +155,6 @@ fn tred3(mat: Dmat) -> (usize, usize, Vec<f64>, Vec<f64>, Vec<f64>) {
     (n, n, a, d, e)
 }
 
-#[cfg(test)]
-mod tests {
-    use crate::{check_mat, check_vec};
-
-    use super::*;
-    use nalgebra::{dmatrix, dvector};
-
-    #[test]
-    fn test_tred3() {
-        let inp = dmatrix![
-        159.1101420,0.0,0.0;
-        0.0000000,144.3669747,0.0;
-        0.0000000,-0.0068560,14.7431673;
-                ];
-
-        let (n, m, a, d, e) = tred3(inp);
-        assert_eq!(n, 3);
-        assert_eq!(m, 3);
-        check_vec!(
-            Dvec::from(a),
-            dvector![
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                -0.013711901310795693,
-                0.0096957783998243459
-            ],
-            1e-7,
-            "tred3 a"
-        );
-
-        check_vec!(
-            Dvec::from(d),
-            dvector![159.1101420375779, 144.36697474228089, 14.743167295296997],
-            1e-7,
-            "tred3 d"
-        );
-
-        check_vec!(
-            Dvec::from(e),
-            dvector![0.0, 0.0, 0.0068559506553978466],
-            1e-7,
-            "tred3 e"
-        );
-    }
-
-    #[test]
-    fn test_tql2() {
-        let inp = dmatrix![
-        159.1101420,0.0,0.0;
-        0.0000000,144.3669747,0.0;
-        0.0000000,-0.0068560,14.7431673;
-                ];
-        let (n, m, _a, mut d, e) = tred3(inp);
-        let mut z = Dmat::identity(n, n);
-        // on output, d contains the eigenvalues in ascending order and z
-        // contains the eigenvectors of the tridiagonal matrix build by tred3
-        tql2(n, e, &mut d, m, &mut z);
-
-        check_vec!(
-            Dvec::from(d),
-            dvector![14.743166932677951, 144.36697510489992, 159.1101420375779],
-            4.3e-8,
-            "tql2"
-        );
-
-        check_mat!(
-            &z,
-            &dmatrix![
-            0.000000000000,0.000000000000,1.000000000000;
-            -0.000052891138,0.999999998601,0.000000000000;
-            0.999999998601,0.000052891138,0.000000000000;
-                    ],
-            4e-10,
-            "tql2",
-            "tql2"
-        );
-    }
-}
-
-/// THIS SUBROUTINE IS A TRANSLATION OF THE ALGOL PROCEDURE TRBAK3, NUM. MATH.
-/// 11, 181-195(1968) BY MARTIN, REINSCH, AND WILKINSON. HANDBOOK FOR AUTO.
-/// COMP., VOL.II-LINEAR ALGEBRA, 212-226(1971), by way of the Fortran
-/// implementation in spectro.
-///
-/// THIS SUBROUTINE FORMS THE EIGENVECTORS OF A REAL SYMMETRIC MATRIX BY BACK
-/// TRANSFORMING THOSE OF THE CORRESPONDING SYMMETRIC TRIDIAGONAL MATRIX
-/// DETERMINED BY TRED3.
-#[allow(unused)]
-fn trbak3(n: usize, a: Dmat, m: usize, z: &mut Dmat) {
-    for i in 1..n {
-        let l = i - 1;
-        let iz = i * l / 2;
-        let ik = iz + 1;
-        let h = a[ik];
-        if h == 0.0 {
-            continue;
-        }
-
-        // m is the number of eigenvectors, so it should be set correctly from
-        // waaaaay above
-        for j in 0..m {
-            let mut s = 0.0;
-            let mut ik = iz;
-
-            for k in 0..=l {
-                s += a[ik] * z[(k, j)];
-                ik += 1;
-            }
-
-            // supposedly avoiding possible underflow
-            s = (s / h) / h;
-            ik = iz;
-            for k in 0..=l {
-                z[(k, j)] -= s * a[ik];
-                ik += 1;
-            }
-        }
-    }
-}
-
 /// THIS SUBROUTINE IS A TRANSLATION OF THE ALGOL PROCEDURE TQL2, NUM. MATH. 11,
 /// 293-306(1968) BY BOWDLER, MARTIN, REINSCH, AND WILKINSON. HANDBOOK FOR AUTO.
 /// COMP., VOL.II-LINEAR ALGEBRA, 227-240(1971), by way of the Fortran
@@ -406,5 +284,154 @@ fn tql2(n: usize, mut e: Vec<f64>, d: &mut Vec<f64>, m: usize, z: &mut Dmat) {
             z[(j, i)] = z[(j, k)];
             z[(j, k)] = p;
         }
+    }
+}
+
+/// THIS SUBROUTINE IS A TRANSLATION OF THE ALGOL PROCEDURE TRBAK3, NUM. MATH.
+/// 11, 181-195(1968) BY MARTIN, REINSCH, AND WILKINSON. HANDBOOK FOR AUTO.
+/// COMP., VOL.II-LINEAR ALGEBRA, 212-226(1971), by way of the Fortran
+/// implementation in spectro.
+///
+/// THIS SUBROUTINE FORMS THE EIGENVECTORS OF A REAL SYMMETRIC MATRIX BY BACK
+/// TRANSFORMING THOSE OF THE CORRESPONDING SYMMETRIC TRIDIAGONAL MATRIX
+/// DETERMINED BY TRED3.
+fn trbak3(n: usize, a: Vec<f64>, m: usize, z: &mut Dmat) {
+    if m == 0 || n == 1 {
+        return;
+    }
+
+    for i in 1..n {
+        let l = i - 1;
+        let iz = i * i / 2;
+        let ik = iz + i + 1;
+        let h = a[ik];
+        if h == 0.0 {
+            continue;
+        }
+
+        for j in 0..m {
+            let mut s = 0.0;
+            let mut ik = iz;
+
+            for k in 0..=l {
+                ik += 1;
+                s += a[ik] * z[(k, j)];
+            }
+
+            // supposedly avoiding possible underflow
+            s = (s / h) / h;
+            ik = iz;
+            for k in 0..=l {
+                ik += 1;
+                z[(k, j)] -= s * a[ik];
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{check_mat, check_vec};
+
+    use super::*;
+    use nalgebra::{dmatrix, dvector};
+
+    #[test]
+    fn test_tred3() {
+        let inp = dmatrix![
+        159.1101420,0.0,0.0;
+        0.0000000,144.3669747,0.0;
+        0.0000000,-0.0068560,14.7431673;
+                ];
+
+        let (n, m, a, d, e) = tred3(inp);
+        assert_eq!(n, 3);
+        assert_eq!(m, 3);
+        check_vec!(
+            Dvec::from(a),
+            dvector![
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                -0.013711901310795693,
+                0.0096957783998243459
+            ],
+            1e-7,
+            "tred3 a"
+        );
+
+        check_vec!(
+            Dvec::from(d),
+            dvector![159.1101420375779, 144.36697474228089, 14.743167295296997],
+            1e-7,
+            "tred3 d"
+        );
+
+        check_vec!(
+            Dvec::from(e),
+            dvector![0.0, 0.0, 0.0068559506553978466],
+            1e-7,
+            "tred3 e"
+        );
+    }
+
+    #[test]
+    fn test_tql2() {
+        let inp = dmatrix![
+        159.1101420,0.0,0.0;
+        0.0000000,144.3669747,0.0;
+        0.0000000,-0.0068560,14.7431673;
+                ];
+        let (n, m, _a, mut d, e) = tred3(inp);
+        let mut z = Dmat::identity(n, n);
+        // on output, d contains the eigenvalues in ascending order and z
+        // contains the eigenvectors of the tridiagonal matrix build by tred3
+        tql2(n, e, &mut d, m, &mut z);
+
+        check_vec!(
+            Dvec::from(d),
+            dvector![14.743166932677951, 144.36697510489992, 159.1101420375779],
+            4.3e-8,
+            "tql2"
+        );
+
+        check_mat!(
+            &z,
+            &dmatrix![
+            0.000000000000,0.000000000000,1.000000000000;
+            -0.000052891138,0.999999998601,0.000000000000;
+            0.999999998601,0.000052891138,0.000000000000;
+                    ],
+            4e-10,
+            "tql2",
+            "tql2"
+        );
+    }
+
+    #[test]
+    fn test_trbak3() {
+        let inp = dmatrix![
+        159.1101420,0.0,0.0;
+        0.0000000,144.3669747,0.0;
+        0.0000000,-0.0068560,14.7431673;
+                ];
+        let (n, m, a, mut d, e) = tred3(inp);
+        let mut z = Dmat::identity(n, n);
+        tql2(n, e, &mut d, m, &mut z);
+        // on output z contains the eigenvectors
+        trbak3(n, a, m, &mut z);
+
+        check_mat!(
+            &z,
+            &dmatrix![
+            0.000000000000,0.000000000000,1.000000000000;
+            0.000052891138,-0.999999998601,0.000000000000;
+            0.999999998601,0.000052891138,0.000000000000;
+                    ],
+            4e-10,
+            "trbak3",
+            "c3hcn"
+        );
     }
 }
