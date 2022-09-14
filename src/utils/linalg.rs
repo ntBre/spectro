@@ -158,7 +158,7 @@ fn tred3(mat: Dmat) -> (usize, usize, Vec<f64>, Vec<f64>, Vec<f64>) {
 
 #[cfg(test)]
 mod tests {
-    use crate::check_vec;
+    use crate::{check_mat, check_vec};
 
     use super::*;
     use nalgebra::{dmatrix, dvector};
@@ -200,6 +200,39 @@ mod tests {
             dvector![0.0, 0.0, 0.0068559506553978466],
             1e-7,
             "tred3 e"
+        );
+    }
+
+    #[test]
+    fn test_tql2() {
+        let inp = dmatrix![
+        159.1101420,0.0,0.0;
+        0.0000000,144.3669747,0.0;
+        0.0000000,-0.0068560,14.7431673;
+                ];
+        let (n, m, _a, mut d, e) = tred3(inp);
+        let mut z = Dmat::identity(n, n);
+        // on output, d contains the eigenvalues in ascending order and z
+        // contains the eigenvectors of the tridiagonal matrix build by tred3
+        tql2(n, e, &mut d, m, &mut z);
+
+        check_vec!(
+            Dvec::from(d),
+            dvector![14.743166932677951, 144.36697510489992, 159.1101420375779],
+            4.3e-8,
+            "tql2"
+        );
+
+        check_mat!(
+            &z,
+            &dmatrix![
+            0.000000000000,0.000000000000,1.000000000000;
+            -0.000052891138,0.999999998601,0.000000000000;
+            0.999999998601,0.000052891138,0.000000000000;
+                    ],
+            4e-10,
+            "tql2",
+            "tql2"
         );
     }
 }
@@ -256,17 +289,23 @@ fn trbak3(n: usize, a: Dmat, m: usize, z: &mut Dmat) {
 /// TO TRIDIAGONAL FORM.
 #[allow(unused)]
 fn tql2(n: usize, mut e: Vec<f64>, d: &mut Vec<f64>, m: usize, z: &mut Dmat) {
-    // this is supposed to be a machine dependent parameter specifying the
-    // precision of floats. in the fortran code it comes out to about 7.1e-15
     let machep = 2.0_f64.powf(-47.0);
+
+    if n == 1 {
+        return;
+    }
+
     // moving them all over one? lol
     for i in 1..n {
         e[i - 1] = e[i];
     }
+
     let mut f = 0.0;
     let mut b = 0.0;
-    e[n] = 0.0;
-    for l in 0..n {
+    e[n - 1] = 0.0;
+
+    'outer: for l in 0..n {
+        let mut j = 0;
         let h = machep * (d[l].abs() + e[l].abs());
         if b < h {
             b = h;
@@ -274,14 +313,23 @@ fn tql2(n: usize, mut e: Vec<f64>, d: &mut Vec<f64>, m: usize, z: &mut Dmat) {
         // look for small sub-diagonal element
         for m in l..n {
             if e[m].abs() <= b {
-                // goto 120, should break and keep m
+                // goto 120
+                if m == l {
+                    // goto 220
+                    d[l] += f;
+                    continue 'outer;
+                }
+                // else just break out of the m loop and keep moving
                 break;
             }
         }
+        j += 1;
 
         if m == l {
-            // goto 220
+            d[l] += f;
+            continue 'outer;
         }
+
         // form shift
         let l1 = l + 1;
         let g = d[l];
@@ -296,14 +344,13 @@ fn tql2(n: usize, mut e: Vec<f64>, d: &mut Vec<f64>, m: usize, z: &mut Dmat) {
 
         f += h;
         // QL transformation
-        let mut p = d[m];
+        let mut p = d[m - 1];
         let mut c = 1.0;
         let mut s = 0.0;
-        let mml = m - l;
+        let mml = m - l - 1;
 
-        // TODO another reverse step
         for ii in 0..mml {
-            let i = m - ii;
+            let i = m - ii - 2;
             let g = c * e[i];
             let h = c * p;
             if p.abs() < e[i].abs() {
@@ -337,6 +384,7 @@ fn tql2(n: usize, mut e: Vec<f64>, d: &mut Vec<f64>, m: usize, z: &mut Dmat) {
         }
         d[l] += f;
     }
+
     // order eigenvalues and eigenvectors
     for ii in 1..n {
         let i = ii - 1;
