@@ -397,10 +397,10 @@ mod tests {
             Test {
                 label: "c3hf",
                 inp: dmatrix![
-                66.2593939, 0.0, 0.0;
-                0.0000000,81.3146042, 0.0;
-                -0.0035385,0.0000000,15.0552103;
-                                        ],
+                        66.2593939, 0.0, 0.0;
+                        0.0000000,81.3146042, 0.0;
+                        -0.0035385,0.0000000,15.0552103;
+                ],
                 n: 3,
                 m: 3,
                 a: dvector![
@@ -437,13 +437,15 @@ mod tests {
     #[test]
     fn test_tql2() {
         struct Test {
+            label: &'static str,
             inp: Dmat,
             d: Dvec,
             z: Dmat,
+            eps: f64,
         }
         let tests = [
-            //
             Test {
+                label: "c3hcn",
                 inp: dmatrix![
                 159.1101420,0.0,0.0;
                 0.0000000,144.3669747,0.0;
@@ -459,14 +461,34 @@ mod tests {
                 -0.000052891138,0.999999998601,0.000000000000;
                 0.999999998601,0.000052891138,0.000000000000;
                         ],
+                eps: 4.3e-8,
+            },
+            Test {
+                label: "c3hf",
+                inp: dmatrix![
+                        66.2593939, 0.0, 0.0;
+                        0.0000000,81.3146042, 0.0;
+                        -0.0035385,0.0000000,15.0552103;
+                ],
+                d: dvector![
+                    15.055210103919038,
+                    66.259394131429275,
+                    81.314604235348312
+                ],
+                z: dmatrix![
+                    0.000000000000,0.000000000000,1.000000000000;
+                    0.000069106049,0.999999997612,0.000000000000;
+                    0.999999997612,-0.000069106049,0.000000000000;
+                ],
+                eps: 4.9e-8,
             },
         ];
         for test in tests {
             let (n, m, _a, mut d, e) = tred3(test.inp);
             let mut z = Dmat::identity(n, n);
             tql2(n, e, &mut d, m, &mut z);
-            check_vec!(Dvec::from(d), test.d, 4.3e-8, "tql2");
-            check_mat!(&z, &test.z, 4e-10, "tql2", "tql2");
+            check_vec!(Dvec::from(d), test.d, test.eps, test.label);
+            check_mat!(&z, &test.z, 4e-10, "tql2", test.label);
         }
     }
 
