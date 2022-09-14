@@ -34,7 +34,7 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
     ret.geom.translate(-com);
     let moi = ret.geom.moi();
     println!("moi={:.8}", moi);
-    let (pr, mut axes) = symm_eigen_decomp3(moi, true);
+    let (pr, mut axes) = symm_eigen_decomp3(moi);
     ret.primat = Vec::from(pr.as_slice());
     ret.rotcon = pr.iter().map(|m| CONST / m).collect();
     ret.rotor = ret.rotor_type(&pr);

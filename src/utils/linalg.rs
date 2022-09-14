@@ -1,8 +1,14 @@
+use std::ops::IndexMut;
+
 use crate::Dvec;
 
 use crate::Dmat;
 use crate::Mat3;
 
+use nalgebra::vector;
+use nalgebra::Dim;
+use nalgebra::Matrix;
+use nalgebra::Storage;
 use nalgebra::SymmetricEigen;
 use nalgebra::Vector3;
 
@@ -34,29 +40,15 @@ pub fn symm_eigen_decomp(mat: Dmat) -> (Dvec, Dmat) {
     )
 }
 
-/// copy of the above with constant-size matrices because I can't figure out how
-/// to make it generic
-pub fn symm_eigen_decomp3(mat: Mat3, reverse: bool) -> (Vector3<f64>, Mat3) {
-    let SymmetricEigen {
-        eigenvectors: vecs,
-        eigenvalues: vals,
-    } = SymmetricEigen::new(mat);
-    println!("vecs={:.8}", vecs);
-    println!("vals={:.8}", vals);
-    let mut pairs: Vec<_> = vals.iter().enumerate().collect();
-    pairs.sort_by(|(_, a), (_, b)| b.partial_cmp(&a).unwrap());
-    if reverse {
-        pairs.reverse();
-    }
-    let (_, cols) = vecs.shape();
-    let mut ret = Mat3::zeros();
-    for i in 0..cols {
-        ret.set_column(i, &vecs.column(pairs[i].0));
-    }
-    (
-        Vector3::from_iterator(pairs.iter().map(|a| a.1.clone())),
-        ret,
-    )
+/// compute the eigen decomposition of the symmetric 3x3 matrix `mat` and return
+/// the eigenvalues and eigenvectors sorted in ascending order
+pub fn symm_eigen_decomp3(mat: Mat3) -> (Vector3<f64>, Mat3) {
+    let (n, m, a, mut d, e) = tred3(mat);
+    let mut z = Mat3::identity();
+    tql2(n, e, &mut d, m, &mut z);
+    trbak3(n, a, m, &mut z);
+    let w = vector![d[0], d[1], d[2]];
+    (w, z)
 }
 
 /// THIS SUBROUTINE IS A TRANSLATION OF THE ALGOL PROCEDURE TRED3, NUM. MATH.
@@ -67,7 +59,9 @@ pub fn symm_eigen_decomp3(mat: Mat3, reverse: bool) -> (Vector3<f64>, Mat3) {
 /// THIS SUBROUTINE REDUCES A REAL SYMMETRIC MATRIX, `mat` ARRAY, TO A SYMMETRIC
 /// TRIDIAGONAL MATRIX, represented as two vectors, USING ORTHOGONAL SIMILARITY
 /// TRANSFORMATIONS.
-fn tred3(mat: Dmat) -> (usize, usize, Vec<f64>, Vec<f64>, Vec<f64>) {
+fn tred3<D: Dim, S: Storage<f64, D, D>>(
+    mat: Matrix<f64, D, D, S>,
+) -> (usize, usize, Vec<f64>, Vec<f64>, Vec<f64>) {
     let (n, _) = mat.shape();
     // a contains the lower triangle of mat row-wise
     let mut a = vec![0.0; n * (n / 2 + 1)];
@@ -164,7 +158,15 @@ fn tred3(mat: Dmat) -> (usize, usize, Vec<f64>, Vec<f64>, Vec<f64>) {
 /// TRIDIAGONAL MATRIX BY THE QL METHOD. THE EIGENVECTORS OF A FULL SYMMETRIC
 /// MATRIX CAN ALSO BE FOUND IF TRED2 HAS BEEN USED TO REDUCE THIS FULL MATRIX
 /// TO TRIDIAGONAL FORM.
-fn tql2(n: usize, mut e: Vec<f64>, d: &mut Vec<f64>, m: usize, z: &mut Dmat) {
+fn tql2<D: Dim, S: Storage<f64, D, D>>(
+    n: usize,
+    mut e: Vec<f64>,
+    d: &mut Vec<f64>,
+    m: usize,
+    z: &mut Matrix<f64, D, D, S>,
+) where
+    Matrix<f64, D, D, S>: IndexMut<(usize, usize), Output = f64>,
+{
     let machep = 2.0_f64.powf(-47.0);
 
     if n == 1 {
@@ -295,7 +297,14 @@ fn tql2(n: usize, mut e: Vec<f64>, d: &mut Vec<f64>, m: usize, z: &mut Dmat) {
 /// THIS SUBROUTINE FORMS THE EIGENVECTORS OF A REAL SYMMETRIC MATRIX BY BACK
 /// TRANSFORMING THOSE OF THE CORRESPONDING SYMMETRIC TRIDIAGONAL MATRIX
 /// DETERMINED BY TRED3.
-fn trbak3(n: usize, a: Vec<f64>, m: usize, z: &mut Dmat) {
+fn trbak3<D: Dim, S: Storage<f64, D, D>>(
+    n: usize,
+    a: Vec<f64>,
+    m: usize,
+    z: &mut Matrix<f64, D, D, S>,
+) where
+    Matrix<f64, D, D, S>: IndexMut<(usize, usize), Output = f64>,
+{
     if m == 0 || n == 1 {
         return;
     }
