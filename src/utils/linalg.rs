@@ -158,6 +158,9 @@ fn tred3<D: Dim, S: Storage<f64, D, D>>(
 /// TRIDIAGONAL MATRIX BY THE QL METHOD. THE EIGENVECTORS OF A FULL SYMMETRIC
 /// MATRIX CAN ALSO BE FOUND IF TRED2 HAS BEEN USED TO REDUCE THIS FULL MATRIX
 /// TO TRIDIAGONAL FORM.
+///
+/// on output, d contains the eigenvalues in ascending order and z contains the
+/// eigenvectors of the tridiagonal matrix build by tred3
 fn tql2<D: Dim, S: Storage<f64, D, D>>(
     n: usize,
     mut e: Vec<f64>,
@@ -395,35 +398,38 @@ mod tests {
 
     #[test]
     fn test_tql2() {
-        let inp = dmatrix![
-        159.1101420,0.0,0.0;
-        0.0000000,144.3669747,0.0;
-        0.0000000,-0.0068560,14.7431673;
-                ];
-        let (n, m, _a, mut d, e) = tred3(inp);
-        let mut z = Dmat::identity(n, n);
-        // on output, d contains the eigenvalues in ascending order and z
-        // contains the eigenvectors of the tridiagonal matrix build by tred3
-        tql2(n, e, &mut d, m, &mut z);
-
-        check_vec!(
-            Dvec::from(d),
-            dvector![14.743166932677951, 144.36697510489992, 159.1101420375779],
-            4.3e-8,
-            "tql2"
-        );
-
-        check_mat!(
-            &z,
-            &dmatrix![
-            0.000000000000,0.000000000000,1.000000000000;
-            -0.000052891138,0.999999998601,0.000000000000;
-            0.999999998601,0.000052891138,0.000000000000;
-                    ],
-            4e-10,
-            "tql2",
-            "tql2"
-        );
+        struct Test {
+            inp: Dmat,
+            d: Dvec,
+            z: Dmat,
+        }
+        let tests = [
+            //
+            Test {
+                inp: dmatrix![
+                159.1101420,0.0,0.0;
+                0.0000000,144.3669747,0.0;
+                0.0000000,-0.0068560,14.7431673;
+                        ],
+                d: dvector![
+                    14.743166932677951,
+                    144.36697510489992,
+                    159.1101420375779
+                ],
+                z: dmatrix![
+                0.000000000000,0.000000000000,1.000000000000;
+                -0.000052891138,0.999999998601,0.000000000000;
+                0.999999998601,0.000052891138,0.000000000000;
+                        ],
+            },
+        ];
+        for test in tests {
+            let (n, m, _a, mut d, e) = tred3(test.inp);
+            let mut z = Dmat::identity(n, n);
+            tql2(n, e, &mut d, m, &mut z);
+            check_vec!(Dvec::from(d), test.d, 4.3e-8, "tql2");
+            check_mat!(&z, &test.z, 4e-10, "tql2", "tql2");
+        }
     }
 
     #[test]
