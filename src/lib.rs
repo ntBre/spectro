@@ -697,8 +697,21 @@ impl Spectro {
                         if self.rotor.is_linear() {
                             todo!("says increment iatom and go back to start");
                         }
-                        // let ncomp3 = ncomp1 + 2;
-                        todo!("bdegnl.f:106")
+                        let ncomp3 = ncomp1 + 2;
+                        if lxm[(ncomp3, imode2)].abs() > TOLER {
+                            let theta = f64::atan(
+                                -1.0 * lxm[(ncomp3, imode1)]
+                                    / lxm[(ncomp3, imode2)],
+                            );
+                            theta
+                        } else {
+                            if lxm[(ncomp3, imode1)] > TOLER {
+                                let theta = 0.5 * PI;
+                                theta
+                            } else {
+                                panic!("cannot determine mode alignment")
+                            }
+                        }
                     };
 
                     let c = theta.cos();
@@ -739,7 +752,7 @@ impl Spectro {
                     let mut s = 0.0;
                     let ncomp21 = 3 * iatom2;
                     let ncomp22 = 3 * iatom2 + 1;
-                    // let ncomp23 = 3 * iatom2 + 2;
+                    let ncomp23 = 3 * iatom2 + 2;
                     let mut iflag = false;
                     for is in 0..5 {
                         let is2 = (is + is) as f64;
@@ -785,8 +798,26 @@ impl Spectro {
                                 }
                             }
                         } else {
-                            todo!("bdegnl.f:218");
-                            // let test = lxm[(ncomp3, imode2)];
+                            // assume it's the same as the other definition
+                            let ncomp3 = ncomp1 + 2;
+                            let mut test = lxm[(ncomp3, imode2)];
+                            // TODO improper rotations negate test here
+
+                            test -=
+                                f64::cos(alpha * s) * lxm[(ncomp23, imode2)];
+                            let test2 = -1.0
+                                * lxm[(ncomp23, imode1)]
+                                * f64::sin(-alpha * s);
+                            let test3 = (test.abs() - test2.abs())
+                                / lxm[(ncomp3, imode2)];
+                            if test3.abs() < 0.001 {
+                                if test * test2 < 0.0 {
+                                    for ii in 0..self.n3n {
+                                        lxm[(ii, imode2)] =
+                                            -1.0 * lxm[(ii, imode2)];
+                                    }
+                                }
+                            }
                         }
                     }
 
