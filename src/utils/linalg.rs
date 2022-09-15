@@ -8,7 +8,6 @@ use crate::Mat3;
 use nalgebra::vector;
 use nalgebra::Dim;
 use nalgebra::Matrix;
-use nalgebra::RawStorageMut;
 use nalgebra::Storage;
 use nalgebra::Vector3;
 
@@ -163,8 +162,6 @@ fn tql2<D: Dim, S: Storage<f64, D, D>>(
     z: &mut Matrix<f64, D, D, S>,
 ) where
     Matrix<f64, D, D, S>: IndexMut<(usize, usize), Output = f64>,
-    S: Clone,
-    S: RawStorageMut<f64, D, D>,
 {
     let machep = 2.0_f64.powf(-47.0);
 
@@ -267,22 +264,32 @@ fn tql2<D: Dim, S: Storage<f64, D, D>>(
         d[l] += f;
     }
 
-    // BUG z actually looks okay here
-    dbg!(&d);
+    // order eigenvalues and eigenvectors
+    for ii in 1..n {
+        let i = ii - 1;
+        let mut k = i;
+        let mut p = d[i];
 
-    // order eigenvalues and eigenvectors. the fortran version is wacky, so just
-    // sort into ascending order
-    let mut ds: Vec<_> = d.iter().enumerate().collect();
-    ds.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
+        for j in ii..n {
+            if d[j] >= p {
+                continue;
+            }
+            k = j;
+            p = d[j];
+        }
 
-    let vals: Vec<_> = ds.iter().map(|a| a.1.clone()).collect();
-    let ids = ds.iter().map(|a| a.0);
-    let mut zret = z.clone();
-    for (i, id) in ids.enumerate() {
-        zret.set_column(i, &z.column(id));
+        if k == i {
+            continue;
+        }
+        d[k] = d[i];
+        d[i] = p;
+
+        for j in 0..n {
+            let p = z[(j, i)];
+            z[(j, i)] = z[(j, k)];
+            z[(j, k)] = p;
+        }
     }
-    d.copy_from_slice(&vals);
-    *z = zret;
 }
 
 /// THIS SUBROUTINE IS A TRANSLATION OF THE ALGOL PROCEDURE TRBAK3, NUM. MATH.
