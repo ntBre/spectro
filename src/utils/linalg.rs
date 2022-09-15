@@ -9,7 +9,6 @@ use nalgebra::vector;
 use nalgebra::Dim;
 use nalgebra::Matrix;
 use nalgebra::Storage;
-use nalgebra::SymmetricEigen;
 use nalgebra::Vector3;
 
 /// compute the eigen decomposition of the symmetric matrix `mat` and return
@@ -17,27 +16,19 @@ use nalgebra::Vector3;
 /// order. the implementation is taken from RSP and the subroutines called
 /// therein
 pub fn symm_eigen_decomp(mat: Dmat) -> (Dvec, Dmat) {
-    // let (n, m, a, mut d, e) = tred3(mat);
-    // let mut z = Dmat::identity(n, n);
-    // tql2(n, e, &mut d, m, &mut z);
-    // trbak3(n, a, m, &mut z);
-    // let w = Dvec::from(d);
-    // (w, z)
-    let SymmetricEigen {
-        eigenvectors: vecs,
-        eigenvalues: vals,
-    } = SymmetricEigen::new(mat);
-    let mut pairs: Vec<_> = vals.iter().enumerate().collect();
-    pairs.sort_by(|(_, a), (_, b)| b.partial_cmp(&a).unwrap());
-    let (rows, cols) = vecs.shape();
-    let mut ret = Dmat::zeros(rows, cols);
-    for i in 0..cols {
-        ret.set_column(i, &vecs.column(pairs[i].0));
+    let (n, m, a, mut d, e) = tred3(mat);
+    let mut z = Dmat::identity(n, n);
+    tql2(n, e, &mut d, m, &mut z);
+    trbak3(n, a, m, &mut z);
+    // reverse the eigenvalues and eigenvectors
+    d.reverse();
+    let w = Dvec::from(d);
+    let (r, c) = z.shape();
+    let mut zret = Dmat::zeros(r, c);
+    for i in 0..c {
+        zret.set_column(i, &z.column(c - i - 1));
     }
-    (
-        Dvec::from_iterator(vals.len(), pairs.iter().map(|a| a.1.clone())),
-        ret,
-    )
+    (w, z)
 }
 
 /// compute the eigen decomposition of the symmetric 3x3 matrix `mat` and return
@@ -79,7 +70,7 @@ fn tred3<D: Dim, S: Storage<f64, D, D>>(
         // this covers l < 1, so else is goto 130
         if i >= 1 {
             let l = i - 1;
-            let mut iz = (i * i) / 2;
+            let mut iz = ((i + 1) * i) / 2 - 1;
             let mut h = 0.0;
             let mut scale = 0.0;
             for k in 0..i {
@@ -185,89 +176,90 @@ fn tql2<D: Dim, S: Storage<f64, D, D>>(
     let mut b = 0.0;
     e[n - 1] = 0.0;
 
-    // this is for skipping the top of the loop when we goto 130
-    let mut skip = false;
-
     'outer: for l in 0..n {
-        if !skip {
-            let h = machep * (d[l].abs() + e[l].abs());
-            if b < h {
-                b = h;
+        let h = machep * (d[l].abs() + e[l].abs());
+        if b < h {
+            b = h;
+        }
+        // look for small sub-diagonal element
+        for m in l..n {
+            if e[m].abs() <= b {
+                // goto 120
+                if m == l {
+                    // goto 220
+                    d[l] += f;
+                    continue 'outer;
+                }
+                // else just break out of the m loop and keep moving
+                break;
             }
-            // look for small sub-diagonal element
-            for m in l..n {
-                if e[m].abs() <= b {
-                    // goto 120
-                    if m == l {
-                        // goto 220
-                        d[l] += f;
-                        continue 'outer;
-                    }
-                    // else just break out of the m loop and keep moving
-                    break;
+        }
+
+        if m == l {
+            d[l] += f;
+            continue 'outer;
+        }
+
+        // for keeping track of convergence. better name would be iter
+        let mut j = 0;
+        loop {
+            if j == 30 {
+                panic!("too many iterations looking for eigenvalue");
+            }
+
+            // form shift
+            let l1 = l + 1;
+            let g = d[l];
+            let p = (d[l1] - g) / (2.0 * e[l]);
+            let r = (p * p + 1.0).sqrt();
+            d[l] = e[l] / (p + r.copysign(p));
+            let h = g - d[l];
+
+            for i in l1..n {
+                d[i] -= h;
+            }
+
+            f += h;
+            // QL transformation
+            let mut p = d[m - 1];
+            let mut c = 1.0;
+            let mut s = 0.0;
+            let mml = m - l - 1;
+
+            for ii in 0..mml {
+                let i = m - ii - 2;
+                let g = c * e[i];
+                let h = c * p;
+                if p.abs() < e[i].abs() {
+                    // goto 150:
+                    c = p / e[i];
+                    let r = (c * c + 1.0).sqrt();
+                    e[i + 1] = s * e[i] * r;
+                    s = 1.0 / r;
+                    c = c * s;
+                } else {
+                    c = e[i] / p;
+                    let r = (c * c + 1.0).sqrt();
+                    e[i + 1] = s * p * r;
+                    s = c / r;
+                    c = 1.0 / r;
+                };
+                // this is 160
+                p = c * d[i] - s * g;
+                d[i + 1] = h + s * (c * g + s * d[i]);
+                // form vector
+                for k in 0..n {
+                    let h = z[(k, i + 1)];
+                    z[(k, i + 1)] = s * z[(k, i)] + c * h;
+                    z[(k, i)] = c * z[(k, i)] - s * h;
                 }
             }
-
-            if m == l {
-                d[l] += f;
-                continue 'outer;
+            e[l] = s * p;
+            d[l] = c * p;
+            if e[l].abs() <= b {
+                break;
             }
-        }
-        skip = false;
-
-        // form shift
-        let l1 = l + 1;
-        let g = d[l];
-        let p = (d[l1] - g) / (2.0 * e[l]);
-        let r = (p * p + 1.0).sqrt();
-        d[l] = e[l] / (p + r.copysign(p));
-        let h = g - d[l];
-
-        for i in l1..n {
-            d[i] -= h;
-        }
-
-        f += h;
-        // QL transformation
-        let mut p = d[m - 1];
-        let mut c = 1.0;
-        let mut s = 0.0;
-        let mml = m - l - 1;
-
-        for ii in 0..mml {
-            let i = m - ii - 2;
-            let g = c * e[i];
-            let h = c * p;
-            if p.abs() < e[i].abs() {
-                // goto 150:
-                c = p / e[i];
-                let r = (c * c + 1.0).sqrt();
-                e[i + 1] = s * e[i] * r;
-                s = 1.0 / r;
-                c = c * s;
-            } else {
-                c = e[i] / p;
-                let r = (c * c + 1.0).sqrt();
-                e[i + 1] = s * p * r;
-                s = c / r;
-                c = 1.0 / r;
-            };
-            // this is 160
-            p = c * d[i] - s * g;
-            d[i + 1] = h + s * (c * g + s * d[i]);
-            // form vector
-            for k in 0..n {
-                let h = z[(k, i + 1)];
-                z[(k, i + 1)] = s * z[(k, i)] + c * h;
-                z[(k, i)] = c * z[(k, i)] - s * h;
-            }
-        }
-        e[l] = s * p;
-        d[l] = c * p;
-        if e[l].abs() > b {
-            // goto 130
-            skip = true;
-            continue;
+            j += 1;
         }
         d[l] += f;
     }
@@ -322,7 +314,7 @@ fn trbak3<D: Dim, S: Storage<f64, D, D>>(
 
     for i in 1..n {
         let l = i - 1;
-        let iz = i * i / 2;
+        let iz = ((i + 1) * i) / 2 - 1;
         let ik = iz + i + 1;
         let h = a[ik];
         if h == 0.0 {
@@ -351,7 +343,7 @@ fn trbak3<D: Dim, S: Storage<f64, D, D>>(
 
 #[cfg(test)]
 mod tests {
-    use crate::{check_mat, check_vec};
+    use crate::{check_mat, check_vec, tests::load_dmat};
 
     use super::*;
     use nalgebra::{dmatrix, dvector};
@@ -422,9 +414,84 @@ mod tests {
                     -0.0035385188367391684
                 ],
             },
+            Test {
+                label: "h2o lxm",
+                inp: load_dmat("testfiles/h2o/linalg_fxm", 9, 9),
+                n: 9,
+                m: 9,
+                a: dvector![
+                    0.0,
+                    4.3065526730660941e-14,
+                    3.0451925986620881e-14,
+                    1.4295421431353462e-09,
+                    -3.3955940063313309e-09,
+                    2.6051534882644881e-09,
+                    1.5216206566822212e-05,
+                    1.5572006273398162e-05,
+                    2.1772007754521747e-05,
+                    2.1772007754521747e-05,
+                    -0.002930178525032634,
+                    0.0038232348215916367,
+                    0.0,
+                    0.0057610737193432397,
+                    0.0053100395991602829,
+                    -1.1828054001956041,
+                    -0.70607522263440647,
+                    0.0,
+                    0.26832997253476026,
+                    1.5577485141694851,
+                    1.4825910161450215,
+                    0.330873857898902,
+                    -0.81541226344888862,
+                    0.0,
+                    0.010724693883152558,
+                    0.40079199810508132,
+                    -2.0243229916294818,
+                    1.5863491873587336,
+                    0.00017532098335837354,
+                    -6.5181328653962645e-05,
+                    0.0,
+                    -0.00037429641281150339,
+                    0.00032299402032887059,
+                    -0.0012215477795125551,
+                    0.0031874146338449591,
+                    0.0024424577806283218,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    -0.00011934970742648719,
+                    0.0,
+                    0.00011939297051202227,
+                    0.00011937134092920443
+                ],
+                d: dvector![
+                    0.00050077372048364988,
+                    2.9132788909123214e-09,
+                    -9.3649939394372522e-07,
+                    -0.00051262037947833003,
+                    8.5853525287625558,
+                    2.1079188794411872,
+                    8.7356648193059137,
+                    6.2442673095297607e-05,
+                    0.00050077372048364978
+                ],
+                e: dvector![
+                    0.0,
+                    -2.1532763365330471e-14,
+                    1.9987150067888276e-09,
+                    -2.1772007754521747e-05,
+                    -0.0048943169135257474,
+                    -1.411059680789253,
+                    1.2431335091481874,
+                    -0.0018716109121189426,
+                    -0.00011934971526486563
+                ],
+            },
         ];
 
-        for test in Vec::from(&tests[1..]) {
+        for test in Vec::from(&tests[..]) {
             let (n, m, a, d, e) = tred3(test.inp);
             assert_eq!(n, test.n);
             assert_eq!(m, test.m);
@@ -436,12 +503,14 @@ mod tests {
 
     #[test]
     fn test_tql2() {
+        #[derive(Clone)]
         struct Test {
             label: &'static str,
             inp: Dmat,
             d: Dvec,
             z: Dmat,
             eps: f64,
+            zeps: f64,
         }
         let tests = [
             Test {
@@ -462,6 +531,7 @@ mod tests {
                 0.999999998601,0.000052891138,0.000000000000;
                         ],
                 eps: 4.3e-8,
+                zeps: 4e-10,
             },
             Test {
                 label: "c3hf",
@@ -481,23 +551,54 @@ mod tests {
                     0.999999997612,-0.000069106049,0.000000000000;
                 ],
                 eps: 4.9e-8,
+                zeps: 4e-10,
+            },
+            Test {
+                label: "h2o lxm",
+                inp: load_dmat("testfiles/h2o/linalg_fxm", 9, 9),
+                d: dvector![
+                    -0.00051671009837685373,
+                    -1.7647455236096873e-08,
+                    3.1072289771789239e-09,
+                    3.1637048859384355e-05,
+                    0.00050077372048364988,
+                    0.00053113662711965816,
+                    1.605890850741277,
+                    8.659520126712037,
+                    9.1635288634469454
+                ],
+                z: dmatrix![
+                -0.000000000000,-0.000000000004,0.000000000043,0.000000000000,1.000000000000,-0.000000000000,-0.000000000000,0.000000000000,0.000000000000;
+                -0.000000163138,-0.096668929314,0.995316591897,0.000000009685,-0.000000000043,0.000000000005,0.000000000000,-0.000000000000,-0.000000000000;
+                0.042174761428,0.994430995516,0.096582923740,0.000153284915,-0.000000000000,0.000001216685,0.000000008068,-0.000000001078,-0.000000000789;
+                0.999109899868,-0.041977206332,-0.004076822018,-0.000229332711,0.000000000000,-0.000029733830,-0.000595126801,0.000428562791,0.000332171058;
+                0.000647250569,-0.000027200670,-0.000002641727,0.000024820361,0.000000000000,0.000006335594,0.195331396745,-0.758301488821,-0.621951828650;
+                0.000472870337,-0.000019898228,-0.000001932515,0.000151810154,0.000000000000,0.000038648591,0.966161055692,0.039856076388,0.254841242921;
+                -0.000067335863,0.000002865406,0.000000278290,-0.000229239800,-0.000000000000,-0.000058326531,-0.168457909239,-0.650684364175,0.740426721923;
+                -0.000222995357,0.000157655964,0.000015321541,-0.969130125139,-0.000000000000,-0.246549476846,0.000196339572,0.000140635592,-0.000151229968;
+                -0.000026157106,0.000037572921,0.000003651615,-0.246549484374,0.000000000000,0.969130202628,-0.000000014596,-0.000000001938,0.000000001970;
+                    ],
+                eps: 4.9e-8,
+                zeps: 4.1e-6,
             },
         ];
-        for test in tests {
+        for test in Vec::from(&tests[..]) {
             let (n, m, _a, mut d, e) = tred3(test.inp);
             let mut z = Dmat::identity(n, n);
             tql2(n, e, &mut d, m, &mut z);
             check_vec!(Dvec::from(d), test.d, test.eps, test.label);
-            check_mat!(&z, &test.z, 4e-10, "tql2", test.label);
+            check_mat!(&z, &test.z, test.zeps, "tql2", test.label);
         }
     }
 
     #[test]
     fn test_trbak3() {
+        #[derive(Clone)]
         struct Test {
             label: &'static str,
             inp: Dmat,
             z: Dmat,
+            eps: f64,
         }
         let tests = [
             Test {
@@ -512,6 +613,7 @@ mod tests {
                 0.000052891138,-0.999999998601,0.000000000000;
                 0.999999998601,0.000052891138,0.000000000000;
                         ],
+                eps: 4e-10,
             },
             Test {
                 label: "c3hf",
@@ -525,14 +627,31 @@ mod tests {
                     0.000000000000,0.000000000000,-1.000000000000;
                     0.999999997612,-0.000069106049,0.000000000000;
                 ],
+                eps: 4e-10,
+            },
+            Test {
+                label: "h2o lxm",
+                inp: load_dmat("testfiles/h2o/linalg_fxm", 9, 9),
+                z: dmatrix![
+                0.391765147275,-0.028354931660,0.237286768879,-0.000009203740,-0.000000000000,0.000008443776,0.411764606209,-0.574847751519,-0.537969356039;
+                -0.570848030508,-0.234465445908,-0.031565616764,-0.000006253137,0.000000000000,-0.000007797157,-0.541728040734,-0.388039715500,-0.417274491858;
+                0.000000000000,0.000000000000,0.000000000000,0.000000000000,1.000000000000,-0.000000000000,0.000000000000,0.000000000000,0.000000000000;
+                -0.203226417068,-0.111671354955,0.934498081252,0.000002267984,-0.000000000000,-0.000004100362,0.000000001056,0.000000011004,0.270077522209;
+                0.000007308365,-0.935727084847,-0.111816630276,-0.000075101645,0.000000000000,0.000017597819,0.271958272549,0.194809024088,-0.000000007121;
+                -0.000016104777,0.000072380197,0.000006417108,-0.969130200186,0.000000000000,-0.246549487018,0.000000004126,0.000000000548,0.000000000494;
+                0.391765158160,-0.028349166829,0.237287460159,-0.000009203545,-0.000000000000,0.000008433496,-0.411764595824,0.574847709621,-0.537969399741;
+                0.570851713413,-0.235292587604,-0.024569079748,-0.000031450272,0.000000000000,0.000016611437,-0.541728026388,-0.388039684370,0.417274522764;
+                -0.000026157106,0.000037572921,0.000003651615,-0.246549484374,0.000000000000,0.969130202628,-0.000000014596,-0.000000001938,0.000000001970;
+                            ],
+                eps: 1e-6,
             },
         ];
-        for test in tests {
+        for test in Vec::from(&tests[..]) {
             let (n, m, a, mut d, e) = tred3(test.inp);
             let mut z = Dmat::identity(n, n);
             tql2(n, e, &mut d, m, &mut z);
             trbak3(n, a, m, &mut z);
-            check_mat!(&z, &test.z, 4e-10, "trbak3", test.label);
+            check_mat!(&z, &test.z, test.eps, "trbak3", test.label);
         }
     }
 }

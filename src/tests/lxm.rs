@@ -107,10 +107,11 @@ fn asym() {
         let (harms, lxm) = symm_eigen_decomp(fxm);
         let lx = s.make_lx(&sqm, &lxm);
 
-        assert_abs_diff_eq!(
+        check_vec!(
             to_wavenumbers(&harms),
             Dvec::from(test.harm),
-            epsilon = 6e-6
+            6e-6,
+            test.infile
         );
 
         // only really care about the part with frequencies. there is more noise
@@ -148,7 +149,7 @@ fn c3hf_lxm() {
     let got = got.slice((0, 0), (15, 9));
     let want = want.slice((0, 0), (15, 9));
     // all the precision I got from spectro2.out
-    check_eigen(&Dmat::from(got), &Dmat::from(want), 2.4e-7, "lxm", "c3hf");
+    check_eigen!(&Dmat::from(got), &Dmat::from(want), 2.4e-7, "lxm", "c3hf");
 }
 
 #[test]

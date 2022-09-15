@@ -29,7 +29,7 @@ mod xcalc;
 mod xcals;
 mod zeta;
 
-fn load_dmat<P: AsRef<Path> + Debug + Clone>(
+pub(crate) fn load_dmat<P: AsRef<Path> + Debug + Clone>(
     filename: P,
     rows: usize,
     cols: usize,
