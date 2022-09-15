@@ -12,26 +12,18 @@
 //!
 //! 4. test `form_sec` to make sure these rotated force constants are converted
 //! to the correct secular equations
-//!
-//! 5. test that `symm_eigen_decomp` decomposes the fxm matrix from 4 into the
-//! correct lxm matrix and harmonic frequencies
 
+use crate::{
+    check_mat, consts::FACT2, tests::load_dmat, utils::load_fc2, Dmat, Mat3,
+    Spectro,
+};
+use approx::assert_abs_diff_eq;
+use nalgebra::matrix;
 use std::{
     path::{Path, PathBuf},
     str::FromStr,
 };
-
-use approx::assert_abs_diff_eq;
-use nalgebra::{dvector, matrix};
 use symm::Molecule;
-
-use crate::{
-    check_mat, check_vec,
-    consts::FACT2,
-    tests::load_dmat,
-    utils::{linalg::symm_eigen_decomp, load_fc2, to_wavenumbers},
-    Dmat, Dvec, Mat3, Spectro,
-};
 
 #[test]
 fn test_load() {
@@ -184,54 +176,5 @@ fn test_fxm() {
         let mut want = test.want.clone();
         want.fill_upper_triangle_with_lower_triangle();
         check_mat!(&got, &want, 4.4e-13, &test.infile.display());
-    }
-}
-
-// ignored because it's sensitive to very small numerical differences in the
-// eigen decomposition. other tests show that it's okay for the part of the LXM
-// that matters
-#[test]
-#[ignore]
-fn test_lxm() {
-    #[derive(Clone)]
-    struct Test {
-        infile: PathBuf,
-        fort15: PathBuf,
-        lxm: Dmat,
-        freq: Dvec,
-    }
-
-    impl Test {
-        fn new(dir: &'static str, freq: Dvec) -> Self {
-            let start = Path::new("testfiles");
-            let n3n = 3 * freq.len();
-            Self {
-                infile: start.join(dir).join("spectro.in"),
-                fort15: start.join(dir).join("fort.15"),
-                lxm: load_dmat(start.join(dir).join("step_lxm"), n3n, n3n),
-                freq,
-            }
-        }
-    }
-
-    let tests = [
-        //
-        Test::new("h2o_sic", dvector![3943.98, 3833.99, 1651.33]),
-    ];
-
-    for test in tests {
-        let s = Spectro::load(&test.infile);
-        let fc2 = load_fc2(test.fort15, s.n3n);
-        let fc2 = s.rot2nd(fc2);
-        let fc2 = FACT2 * fc2;
-        let w = s.geom.weights();
-        let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
-        let fxm = s.form_sec(fc2, &sqm);
-        println!("fmx={:.8}", fxm);
-        let (harms, lxm) = symm_eigen_decomp(fxm, true);
-        let freq = to_wavenumbers(&harms);
-
-        check_vec!(freq, test.freq, 1e-2, &test.infile.display());
-        check_mat!(&lxm, &test.lxm, 4.4e-13, &test.infile.display());
     }
 }

@@ -1,6 +1,7 @@
 use std::path::Path;
 
 use approx::assert_abs_diff_eq;
+use nalgebra::DefaultAllocator;
 
 use crate::{consts::FACT2, utils::linalg::symm_eigen_decomp};
 
@@ -40,9 +41,10 @@ impl Test {
     }
 }
 
+#[macro_export]
 macro_rules! check_eigen {
     ($got: expr, $want: expr, $eps: expr, $label: expr, $infile: expr) => {
-        check_eigen(
+        $crate::tests::lxm::check_eigen(
             $got,
             $want,
             $eps,
@@ -56,7 +58,23 @@ macro_rules! check_eigen {
 /// allowing the sign of whole columns to differ in line with non-unique
 /// eigendecompositions. Really, columns could be allowed to differ by any
 /// factor, not just -1, but I haven't encountered that situation yet.
-fn check_eigen(got: &Dmat, want: &Dmat, eps: f64, label: &str, infile: &str) {
+pub(crate) fn check_eigen<
+    'a,
+    R: nalgebra::Dim,
+    C: nalgebra::Dim,
+    S: nalgebra::RawStorage<f64, R, C>,
+>(
+    got: &'a Matrix<f64, R, C, S>,
+    want: &'a Matrix<f64, R, C, S>,
+    eps: f64,
+    label: &str,
+    infile: &str,
+) where
+    &'a Matrix<f64, R, C, S>: Sub<Output = Matrix<f64, R, C, S>>,
+    S: Storage<f64, R, C>,
+    DefaultAllocator: Allocator<f64, R, C>,
+    DefaultAllocator: nalgebra::allocator::Allocator<f64, R>,
+{
     assert_eq!(got.shape(), want.shape());
     let (_, cols) = got.shape();
     for col in 0..cols {
@@ -120,11 +138,10 @@ fn asym() {
         let want = test.lxm.slice((0, 0), (s.n3n, s.nvib));
 
         // println!("{:.2e}", (got.clone() - want.clone()).max());
-        check_eigen!(
-            &Dmat::from(got),
-            &Dmat::from(want),
+        check_mat!(
+            &Dmat::from(got).abs(),
+            &Dmat::from(want).abs(),
             2e-9,
-            "asym",
             &test.infile
         );
         // assert_abs_diff_eq!(got, want, epsilon = 2e-9);
@@ -186,7 +203,7 @@ fn sym() {
         check_vec!(
             to_wavenumbers(&harms),
             Dvec::from(test.harm),
-            4.7e-5,
+            4.2e-5,
             &test.infile
         );
 
