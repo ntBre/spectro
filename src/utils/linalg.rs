@@ -8,6 +8,7 @@ use crate::Mat3;
 use nalgebra::vector;
 use nalgebra::Dim;
 use nalgebra::Matrix;
+use nalgebra::RawStorageMut;
 use nalgebra::Storage;
 use nalgebra::Vector3;
 
@@ -15,19 +16,22 @@ use nalgebra::Vector3;
 /// both the sorted eigenvalues and the corresponding eigenvectors in descending
 /// order. the implementation is taken from RSP and the subroutines called
 /// therein
-pub fn symm_eigen_decomp(mat: Dmat) -> (Dvec, Dmat) {
+pub fn symm_eigen_decomp(mat: Dmat, reverse: bool) -> (Dvec, Dmat) {
     let (n, m, a, mut d, e) = tred3(mat);
     let mut z = Dmat::identity(n, n);
-    tql2(n, e, &mut d, m, &mut z);
+    tql2(n, e, &mut d, &mut z);
     trbak3(n, a, m, &mut z);
     // reverse the eigenvalues and eigenvectors
-    d.reverse();
-    let w = Dvec::from(d);
-    let (r, c) = z.shape();
-    let mut zret = Dmat::zeros(r, c);
-    for i in 0..c {
-        zret.set_column(i, &z.column(c - i - 1));
+    if reverse {
+        d.reverse();
+        let (r, c) = z.shape();
+        let mut zret = Dmat::zeros(r, c);
+        for i in 0..c {
+            zret.set_column(i, &z.column(c - i - 1));
+        }
+        z = zret;
     }
+    let w = Dvec::from(d);
     (w, z)
 }
 
@@ -36,7 +40,7 @@ pub fn symm_eigen_decomp(mat: Dmat) -> (Dvec, Dmat) {
 pub fn symm_eigen_decomp3(mat: Mat3) -> (Vector3<f64>, Mat3) {
     let (n, m, a, mut d, e) = tred3(mat);
     let mut z = Mat3::identity();
-    tql2(n, e, &mut d, m, &mut z);
+    tql2(n, e, &mut d, &mut z);
     trbak3(n, a, m, &mut z);
     let w = vector![d[0], d[1], d[2]];
     (w, z)
@@ -156,10 +160,11 @@ fn tql2<D: Dim, S: Storage<f64, D, D>>(
     n: usize,
     mut e: Vec<f64>,
     d: &mut Vec<f64>,
-    m: usize,
     z: &mut Matrix<f64, D, D, S>,
 ) where
     Matrix<f64, D, D, S>: IndexMut<(usize, usize), Output = f64>,
+    S: Clone,
+    S: RawStorageMut<f64, D, D>,
 {
     let machep = 2.0_f64.powf(-47.0);
 
@@ -182,22 +187,20 @@ fn tql2<D: Dim, S: Storage<f64, D, D>>(
             b = h;
         }
         // look for small sub-diagonal element
+        let mut m_outer = l;
         for m in l..n {
             if e[m].abs() <= b {
-                // goto 120
+                // this is 120, only applicable in this case, l will never be
+                // equal to the outer m
                 if m == l {
                     // goto 220
                     d[l] += f;
                     continue 'outer;
                 }
                 // else just break out of the m loop and keep moving
+                m_outer = m;
                 break;
             }
-        }
-
-        if m == l {
-            d[l] += f;
-            continue 'outer;
         }
 
         // for keeping track of convergence. better name would be iter
@@ -221,13 +224,13 @@ fn tql2<D: Dim, S: Storage<f64, D, D>>(
 
             f += h;
             // QL transformation
-            let mut p = d[m - 1];
+            let mut p = d[m_outer];
             let mut c = 1.0;
             let mut s = 0.0;
-            let mml = m - l - 1;
+            let mml = m_outer - l;
 
             for ii in 0..mml {
-                let i = m - ii - 2;
+                let i = m_outer - ii - 1;
                 let g = c * e[i];
                 let h = c * p;
                 if p.abs() < e[i].abs() {
@@ -243,7 +246,7 @@ fn tql2<D: Dim, S: Storage<f64, D, D>>(
                     e[i + 1] = s * p * r;
                     s = c / r;
                     c = 1.0 / r;
-                };
+                }
                 // this is 160
                 p = c * d[i] - s * g;
                 d[i + 1] = h + s * (c * g + s * d[i]);
@@ -264,32 +267,22 @@ fn tql2<D: Dim, S: Storage<f64, D, D>>(
         d[l] += f;
     }
 
-    // order eigenvalues and eigenvectors
-    for ii in 1..n {
-        let i = ii - 1;
-        let mut k = i;
-        let mut p = d[i];
+    // BUG z actually looks okay here
+    dbg!(&d);
 
-        for j in ii..n {
-            if d[j] >= p {
-                continue;
-            }
-            k = j;
-            p = d[j];
-        }
+    // order eigenvalues and eigenvectors. the fortran version is wacky, so just
+    // sort into ascending order
+    let mut ds: Vec<_> = d.iter().enumerate().collect();
+    ds.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
 
-        if k == i {
-            continue;
-        }
-        d[k] = d[i];
-        d[i] = p;
-
-        for j in 0..n {
-            let p = z[(j, i)];
-            z[(j, i)] = z[(j, k)];
-            z[(j, k)] = p;
-        }
+    let vals: Vec<_> = ds.iter().map(|a| a.1.clone()).collect();
+    let ids = ds.iter().map(|a| a.0);
+    let mut zret = z.clone();
+    for (i, id) in ids.enumerate() {
+        zret.set_column(i, &z.column(id));
     }
+    d.copy_from_slice(&vals);
+    *z = zret;
 }
 
 /// THIS SUBROUTINE IS A TRANSLATION OF THE ALGOL PROCEDURE TRBAK3, NUM. MATH.
@@ -489,6 +482,81 @@ mod tests {
                     -0.00011934971526486563
                 ],
             },
+            Test {
+                label: "h2o sic lxm",
+                inp: load_dmat("testfiles/h2o_sic/step_fxm", 9, 9),
+                n: 9,
+                m: 9,
+                a: dvector![
+                    0.0,
+                    3.9020265119658704e-28,
+                    2.7591494069807582e-28,
+                    3.4741052077794205e-16,
+                    -7.6798841469843432e-16,
+                    5.9602863817865969e-16,
+                    1.1130160404598044e-10,
+                    1.266054456407815e-10,
+                    1.6857338440308153e-10,
+                    1.6857338440308153e-10,
+                    -1.2013012806733059e-10,
+                    -9.8065067177799392e-10,
+                    0.0,
+                    7.0599047913935285e-09,
+                    5.0407520595278938e-09,
+                    1.5291033414991011,
+                    0.66895654399501081,
+                    0.0,
+                    -0.35292945347880272,
+                    -1.76914041708843,
+                    1.7378257825866976,
+                    0.48362393184458341,
+                    -1.0936377710178804,
+                    0.0,
+                    -0.085855445529061658,
+                    0.61563836115016435,
+                    1.3477082143017551,
+                    1.3477082143017551,
+                    -0.48379971112584819,
+                    0.17984706055957517,
+                    0.0,
+                    1.0328643143238818,
+                    -0.89146837038721116,
+                    0.0,
+                    -7.5439383920567007,
+                    5.4331822229715891,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                d: dvector![
+                    2.0066649276559488e-27,
+                    -4.0509209018715553e-16,
+                    2.3842744402326775e-11,
+                    1.2191456723415539e-10,
+                    8.4747414986738931,
+                    1.6090725074973034,
+                    5.9769349704040184,
+                    3.3715917053301805,
+                    0.0
+                ],
+                e: dvector![
+                    0.0,
+                    -1.9510132559829352e-28,
+                    4.6257226115657424e-16,
+                    -1.6857338440308153e-10,
+                    -3.5990827180290173e-09,
+                    1.7070654321454646,
+                    -1.3477082143017551,
+                    3.9130050557009666,
+                    0.0
+                ],
+            },
         ];
 
         for test in Vec::from(&tests[..]) {
@@ -581,16 +649,47 @@ mod tests {
                 eps: 4.9e-8,
                 zeps: 4.1e-6,
             },
+            Test {
+                label: "h2o sic lxm",
+                inp: load_dmat("testfiles/h2o_sic/step_fxm", 9, 9),
+                d: dvector![
+                    -2.385447812605463e-10,
+                    -4.050937453492381e-16,
+                    0.0,
+                    2.0066649276560428e-27,
+                    8.6444250709664496e-11,
+                    7.2971624774702655e-10,
+                    1.6066663041276248,
+                    8.6608186098499562,
+                    9.1648557674959541
+                ],
+                z: dmatrix![
+                -0.000000000000,0.000000000000,0.000000000000,1.000000000000,-0.000000000000,0.000000000000,0.000000000000,0.000000000000,0.000000000000;
+                -0.000000931462,0.999999999989,0.000000000000,-0.000000000000,0.000004634218,-0.000000087955,0.000000000000,0.000000000000,-0.000000000000;
+                0.480346766173,-0.000003578170,0.000000000000,0.000000000000,0.866034126102,-0.138751132034,0.000000000000,0.000000000000,-0.000000000000;
+                0.747668440556,0.000002237942,0.000000000000,-0.000000000000,-0.321610917390,0.580997694321,-0.000000000435,-0.000000000313,0.000000000243;
+                0.052382902446,0.000000243402,0.000000000000,-0.000000000000,-0.043732794441,-0.091618240785,0.193999171097,0.753339528760,-0.617894366538;
+                -0.260055382845,-0.000001208370,0.000000000000,0.000000000000,0.217111845721,0.454839571243,-0.780521279197,0.082117088547,-0.249795767018;
+                -0.244138101655,-0.000001134409,0.000000000000,0.000000000000,0.203823021502,0.427000081451,0.244334183332,0.524543073655,0.617801800258;
+                0.283342026405,0.000001316573,0.000000000000,-0.000000000000,-0.236553112989,-0.495568154122,-0.541711787937,0.388060436089,0.417288344168;
+                0.000000000000,0.000000000000,1.000000000000,0.000000000000,0.000000000000,0.000000000000,0.000000000000,0.000000000000,0.000000000000;
+                    ],
+                eps: 4.9e-8,
+                zeps: 4.1e-6,
+            },
         ];
         for test in Vec::from(&tests[..]) {
-            let (n, m, _a, mut d, e) = tred3(test.inp);
+            let (n, _m, _a, mut d, e) = tred3(test.inp);
             let mut z = Dmat::identity(n, n);
-            tql2(n, e, &mut d, m, &mut z);
+            dbg!(&test.label);
+            tql2(n, e, &mut d, &mut z);
             check_vec!(Dvec::from(d), test.d, test.eps, test.label);
-            check_mat!(&z, &test.z, test.zeps, "tql2", test.label);
+            check_mat!(&z, &test.z, test.zeps, test.label);
         }
     }
 
+    /// this is really `test_symm_eigen_decomp` since trbak3 is the last step
+    /// therein. I even call `symm_eigen_decomp` here now
     #[test]
     fn test_trbak3() {
         #[derive(Clone)]
@@ -632,26 +731,19 @@ mod tests {
             Test {
                 label: "h2o lxm",
                 inp: load_dmat("testfiles/h2o/linalg_fxm", 9, 9),
-                z: dmatrix![
-                0.391765147275,-0.028354931660,0.237286768879,-0.000009203740,-0.000000000000,0.000008443776,0.411764606209,-0.574847751519,-0.537969356039;
-                -0.570848030508,-0.234465445908,-0.031565616764,-0.000006253137,0.000000000000,-0.000007797157,-0.541728040734,-0.388039715500,-0.417274491858;
-                0.000000000000,0.000000000000,0.000000000000,0.000000000000,1.000000000000,-0.000000000000,0.000000000000,0.000000000000,0.000000000000;
-                -0.203226417068,-0.111671354955,0.934498081252,0.000002267984,-0.000000000000,-0.000004100362,0.000000001056,0.000000011004,0.270077522209;
-                0.000007308365,-0.935727084847,-0.111816630276,-0.000075101645,0.000000000000,0.000017597819,0.271958272549,0.194809024088,-0.000000007121;
-                -0.000016104777,0.000072380197,0.000006417108,-0.969130200186,0.000000000000,-0.246549487018,0.000000004126,0.000000000548,0.000000000494;
-                0.391765158160,-0.028349166829,0.237287460159,-0.000009203545,-0.000000000000,0.000008433496,-0.411764595824,0.574847709621,-0.537969399741;
-                0.570851713413,-0.235292587604,-0.024569079748,-0.000031450272,0.000000000000,0.000016611437,-0.541728026388,-0.388039684370,0.417274522764;
-                -0.000026157106,0.000037572921,0.000003651615,-0.246549484374,0.000000000000,0.969130202628,-0.000000014596,-0.000000001938,0.000000001970;
-                            ],
+                z: load_dmat("testfiles/h2o/linalg_z_final", 9, 9),
+                eps: 1e-6,
+            },
+            Test {
+                label: "h2o sic lxm",
+                inp: load_dmat("testfiles/h2o_sic/step_fxm", 9, 9),
+                z: load_dmat("testfiles/h2o_sic/linalg_z_final", 9, 9),
                 eps: 1e-6,
             },
         ];
         for test in Vec::from(&tests[..]) {
-            let (n, m, a, mut d, e) = tred3(test.inp);
-            let mut z = Dmat::identity(n, n);
-            tql2(n, e, &mut d, m, &mut z);
-            trbak3(n, a, m, &mut z);
-            check_mat!(&z, &test.z, test.eps, "trbak3", test.label);
+            let (_, z) = symm_eigen_decomp(test.inp, false);
+            check_mat!(&z, &test.z, test.eps, test.label);
         }
     }
 }

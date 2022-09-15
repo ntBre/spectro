@@ -62,7 +62,7 @@ fn asym() {
         let w = s.geom.weights();
         let sqm: Vec<_> = w.iter().map(|w: &f64| 1.0 / w.sqrt()).collect();
         let fxm = s.form_sec(fc2, &sqm);
-        let (_harms, lxm) = symm_eigen_decomp(fxm);
+        let (_harms, lxm) = symm_eigen_decomp(fxm, false);
 
         let (zmat, wila) = s.zeta(&lxm, &w);
 
@@ -73,13 +73,7 @@ fn asym() {
             "zmat",
             &test.infile,
         );
-        check_mat(
-            &wila.abs(),
-            &test.wila.abs(),
-            test.wila_eps,
-            "wila",
-            &test.infile,
-        );
+        check_mat(&wila.abs(), &test.wila.abs(), test.wila_eps, &test.infile);
     }
 }
 
@@ -97,7 +91,7 @@ fn sym() {
         let w = s.geom.weights();
         let sqm: Vec<_> = w.iter().map(|w: &f64| 1.0 / w.sqrt()).collect();
         let fxm = s.form_sec(fc2, &sqm);
-        let (harms, mut lxm) = symm_eigen_decomp(fxm);
+        let (harms, mut lxm) = symm_eigen_decomp(fxm, false);
         let freq = to_wavenumbers(&harms);
         let mut lx = s.make_lx(&sqm, &lxm);
         s.bdegnl(&freq, &mut lxm, &w, &mut lx);
@@ -111,13 +105,7 @@ fn sym() {
             "zmat",
             &test.infile,
         );
-        check_mat(
-            &wila.abs(),
-            &test.wila.abs(),
-            test.wila_eps,
-            "wila",
-            &test.infile,
-        );
+        check_mat(&wila.abs(), &test.wila.abs(), test.wila_eps, &test.infile);
     }
 }
 
@@ -134,7 +122,7 @@ fn py_ph3() {
     let w = s.geom.weights();
     let sqm: Vec<_> = w.iter().map(|w: &f64| 1.0 / w.sqrt()).collect();
     let fxm = s.form_sec(fc2, &sqm);
-    let (harms, _) = symm_eigen_decomp(fxm);
+    let (harms, _) = symm_eigen_decomp(fxm, false);
     let mut lxm = load_dmat("testfiles/ph3/py_lxm.out", 12, 12);
     let freq = to_wavenumbers(&harms);
     let mut lx = s.make_lx(&sqm, &lxm);
@@ -149,11 +137,5 @@ fn py_ph3() {
         "zmat",
         &test.infile,
     );
-    check_mat(
-        &wila.abs(),
-        &test.wila.abs(),
-        test.wila_eps,
-        "wila",
-        &test.infile,
-    );
+    check_mat(&wila.abs(), &test.wila.abs(), test.wila_eps, &test.infile);
 }

@@ -57,5 +57,5 @@ fn make_alpha() {
     );
     let want = load_dmat("testfiles/ph3/alpha", 6, 3);
 
-    check_mat(&got, &want, 1e-10, "alpha", "ph3");
+    check_mat(&got, &want, 1e-10, "ph3");
 }

@@ -29,7 +29,7 @@ fn bench_force3(b: &mut test::Bencher) {
     let w = s.geom.weights();
     let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
     let fxm = s.form_sec(fc2, &sqm);
-    let (harms, lxm) = utils::linalg::symm_eigen_decomp(fxm);
+    let (harms, lxm) = utils::linalg::symm_eigen_decomp(fxm, false);
     let freq = to_wavenumbers(&harms);
     let lx = s.make_lx(&sqm, &lxm);
     let f3x = load_fc3("testfiles/h2o/fort.30", s.n3n);
@@ -48,7 +48,7 @@ fn bench_force4(b: &mut test::Bencher) {
     let w = s.geom.weights();
     let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
     let fxm = s.form_sec(fc2, &sqm);
-    let (harms, lxm) = utils::linalg::symm_eigen_decomp(fxm);
+    let (harms, lxm) = utils::linalg::symm_eigen_decomp(fxm, false);
     let freq = to_wavenumbers(&harms);
     let lx = s.make_lx(&sqm, &lxm);
     let f4x = load_fc4("testfiles/h2o/fort.40", s.n3n);

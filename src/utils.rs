@@ -461,7 +461,7 @@ pub(crate) fn rsfrm2(
     val, eng[kst] - eng[0];
     ];
     // TODO left out error measures
-    let (eigval, eigvec) = symm_eigen_decomp(eres);
+    let (eigval, eigvec) = symm_eigen_decomp(eres, false);
     let a = eigvec[(0, 0)];
     let b = eigvec[(1, 0)];
     if a.abs() > b.abs() {
@@ -497,7 +497,7 @@ pub(crate) fn rsfrm1(
     eres[0], val;
     val, eres[2];
     ];
-    let (eigval, eigvec) = linalg::symm_eigen_decomp(eres);
+    let (eigval, eigvec) = linalg::symm_eigen_decomp(eres, false);
     let a = eigvec[(0, 0)];
     let b = eigvec[(1, 0)];
     if a.abs() > b.abs() {
@@ -591,7 +591,7 @@ mod tests {
         let w = s.geom.weights();
         let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
         let fxm = s.form_sec(fc2, &sqm);
-        let (harms, lxm) = linalg::symm_eigen_decomp(fxm);
+        let (harms, lxm) = linalg::symm_eigen_decomp(fxm, false);
         let freq = to_wavenumbers(&harms);
         let (_zmat, wila) = s.zeta(&lxm, &w);
         let tau = make_tau(3, 3, &freq, &s.primat, &wila);

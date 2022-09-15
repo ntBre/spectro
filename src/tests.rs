@@ -25,6 +25,7 @@ mod rot2nd;
 mod run;
 mod secular;
 mod sextic;
+mod steps;
 mod xcalc;
 mod xcals;
 mod zeta;
@@ -127,7 +128,6 @@ pub(crate) fn check_mat<
     got: &'a Matrix<f64, R, C, S>,
     want: &'a Matrix<f64, R, C, S>,
     eps: f64,
-    label: &str,
     infile: &str,
 ) where
     &'a Matrix<f64, R, C, S>: Sub<Output = Matrix<f64, R, C, S>>,
@@ -140,18 +140,17 @@ pub(crate) fn check_mat<
         let diff = got.clone() - want.clone();
         println!("diff\n{:.8}", diff);
         println!("max diff = {:.2e}", diff.abs().max());
-        assert!(false, "{} failed on {}", label, infile);
+        assert!(false, "failed on {}", infile);
     }
 }
 
 #[macro_export]
 macro_rules! check_mat {
-    ($got: expr, $want: expr, $eps: expr, $label: expr, $infile: expr) => {
+    ($got: expr, $want: expr, $eps: expr, $infile: expr) => {
         $crate::tests::check_mat(
             $got,
             $want,
             $eps,
-            $label,
             &format!("'{}', {}:{}:{}", $infile, file!(), line!(), column!()),
         )
     };
@@ -254,7 +253,7 @@ fn test_funds_and_e0() {
         let w = s.geom.weights();
         let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
         let fxm = s.form_sec(fc2, &sqm);
-        let (harms, lxm) = symm_eigen_decomp(fxm);
+        let (harms, lxm) = symm_eigen_decomp(fxm, false);
         let freq = to_wavenumbers(&harms);
         let lx = s.make_lx(&sqm, &lxm);
         let (zmat, _wila) = s.zeta(&lxm, &w);
@@ -297,7 +296,7 @@ fn test_enrgy() {
     let w = s.geom.weights();
     let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
     let fxm = s.form_sec(fc2, &sqm);
-    let (harms, lxm) = symm_eigen_decomp(fxm);
+    let (harms, lxm) = symm_eigen_decomp(fxm, false);
     let freq = to_wavenumbers(&harms);
     let lx = s.make_lx(&sqm, &lxm);
     let (zmat, _wila) = s.zeta(&lxm, &w);

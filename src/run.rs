@@ -25,7 +25,7 @@ impl Spectro {
         let w = self.geom.weights();
         let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
         let fxm = self.form_sec(fc2, &sqm);
-        let (harms, mut lxm) = symm_eigen_decomp(fxm);
+        let (harms, mut lxm) = symm_eigen_decomp(fxm, false);
         let freq = to_wavenumbers(&harms);
 
         // form the LX matrix

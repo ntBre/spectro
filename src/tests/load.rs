@@ -275,7 +275,7 @@ H    -0.5932829     -1.0275961      0.6975731
             ..Spectro::default()
         };
         process_geom(&mut s);
-        check_mat!(&s.axes, &test.want_axes, 1e-8, "geom_axes", &test.label);
+        check_mat!(&s.axes, &test.want_axes, 1e-8, &test.label);
         assert_abs_diff_eq!(s.geom, test.want_geom, epsilon = 1e-6);
     }
 }
