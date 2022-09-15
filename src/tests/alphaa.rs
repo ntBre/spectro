@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use approx::{abs_diff_ne, assert_abs_diff_eq};
 use nalgebra::dmatrix;
 
-use crate::{consts::FACT2, *};
+use crate::{consts::FACT2, utils::linalg::symm_eigen_decomp, *};
 
 use super::load_dmat;
 
@@ -39,7 +39,6 @@ fn alpha() {
         Test::new("c3hcn010", "alpha", 12),
     ];
     for test in Vec::from(&tests[..]) {
-        dbg!(&test.infile);
         let s = Spectro::load(test.infile);
         let fc2 = load_fc2(test.fort15, s.n3n);
         let fc2 = s.rot2nd(fc2);
@@ -47,7 +46,7 @@ fn alpha() {
         let w = s.geom.weights();
         let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
         let fxm = s.form_sec(fc2, &sqm);
-        let (harms, lxm) = utils::linalg::symm_eigen_decomp(fxm, false);
+        let (harms, lxm) = symm_eigen_decomp(fxm, true);
         let freq = to_wavenumbers(&harms);
         let lx = s.make_lx(&sqm, &lxm);
         let (zmat, wila) = s.zeta(&lxm, &w);
@@ -77,7 +76,7 @@ fn test_alphaa() {
     let w = s.geom.weights();
     let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
     let fxm = s.form_sec(fc2, &sqm);
-    let (harms, lxm) = utils::linalg::symm_eigen_decomp(fxm, false);
+    let (harms, lxm) = symm_eigen_decomp(fxm, true);
     let freq = to_wavenumbers(&harms);
     let lx = s.make_lx(&sqm, &lxm);
     let (zmat, wila) = s.zeta(&lxm, &w);

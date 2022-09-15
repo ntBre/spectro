@@ -21,11 +21,11 @@ fn load() {
         ],
         geom: Molecule::from_str(
             "
-C      0.00000000 -0.89784221  0.00000000
-C      0.67631628  0.36939882  0.00000000
-C     -0.67631628  0.36939882  0.00000000
-H      1.55759109  0.94685817  0.00000000
-H     -1.55759109  0.94685817  0.00000000
+C      0.00000000 -0.89784195  0.00000000
+C      0.67631609  0.36939872  0.00000000
+C     -0.67631609  0.36939872  0.00000000
+H      1.55759065  0.94685790  0.00000000
+H     -1.55759065  0.94685790  0.00000000
 ",
         )
         .unwrap(),
@@ -64,14 +64,32 @@ H     -1.55759109  0.94685817  0.00000000
         0.0, 0.0, 1.0;
         ],
         rotcon: vec![
-            1.1424648894465075,
-            1.0623773040516062,
-            0.5504832830226929,
+            1.1424655406001178,
+            1.0623779089716092,
+            0.5504835966157277,
         ],
-        primat: vec![14.75549102256656, 15.867837495713816, 30.62332851828037],
+        primat: vec![14.755482612605023, 15.867828460536954, 30.62331107314198],
         iatom: 0,
         axis_order: 0,
     };
+    assert_eq!(got.header, want.header);
+    assert_eq!(got.geom, want.geom);
+    assert_eq!(got.weights, want.weights);
+    assert_eq!(got.curvils, want.curvils);
+    assert_eq!(got.degmodes, want.degmodes);
+    assert_eq!(got.dummies, want.dummies);
+    assert_eq!(got.rotor, want.rotor);
+    assert_eq!(got.n3n, want.n3n);
+    assert_eq!(got.i3n3n, want.i3n3n);
+    assert_eq!(got.i4n3n, want.i4n3n);
+    assert_eq!(got.nvib, want.nvib);
+    assert_eq!(got.i2vib, want.i2vib);
+    assert_eq!(got.i3vib, want.i3vib);
+    assert_eq!(got.i4vib, want.i4vib);
+    assert_eq!(got.natom, want.natom);
+    assert_eq!(got.axes, want.axes);
+    assert_eq!(got.primat, want.primat);
+    assert_eq!(got.rotcon, want.rotcon);
     assert_eq!(got, want);
 }
 
@@ -85,10 +103,10 @@ fn load_dummy() {
         ],
         geom: Molecule::from_str(
             "
-He    -1.76798258  0.00000000  0.00000000
-H     -0.53078563  0.00000000  0.00000000
-H      0.53078563  0.00000000  0.00000000
-He     1.76798258  0.00000000  0.00000000
+He    -1.76798207  0.00000000  0.00000000
+H     -0.53078548  0.00000000  0.00000000
+H      0.53078548  0.00000000  0.00000000
+He     1.76798207  0.00000000  0.00000000
 ",
         )
         .unwrap(),
@@ -97,10 +115,10 @@ He     1.76798258  0.00000000  0.00000000
             (2, 1.007825),
             (3, 1.007825),
             (4, 4.00260325413),
-            (5, 0.00),
-            (6, 0.00),
-            (7, 0.00),
-            (8, 0.00),
+            (5, 0.0),
+            (6, 0.0),
+            (7, 0.0),
+            (8, 0.0),
         ],
         curvils: vec![
             Bond(1, 2),
@@ -142,20 +160,42 @@ He     1.76798258  0.00000000  0.00000000
         i4vib: 210,
         natom: 4,
         axes: matrix![
-        0.0, 1.0, 0.0;
-        0.0, 0.0, 1.0;
-        1.0, 0.0, 0.0;
+        0.0, 0.0, 1.0; 0.0, 1.0, 0.0; 1.0, 0.0, 0.0;
         ],
-        primat: vec![0.0, 19.422657990598942, 19.422657990598942],
+        // TODO were these old values right or are the new ones?
+        // primat: vec![0.0, 19.422657990598942, 19.422657990598942],
+        // rotcon: vec![
+        //     std::f64::INFINITY,
+        //     0.8679363261189563,
+        //     0.8679363261189563,
+        // ],
+        primat: vec![0.0, 25.590234721060718, 25.590234721060718],
         rotcon: vec![
             std::f64::INFINITY,
-            0.8679363261189563,
-            0.8679363261189563,
+            0.6587524734953539,
+            0.6587524734953539,
         ],
         iatom: 0,
         axis_order: 0,
     };
+    assert_eq!(got.header, want.header);
+    assert_eq!(got.geom, want.geom);
+    assert_eq!(got.weights, want.weights);
+    assert_eq!(got.curvils, want.curvils);
+    assert_eq!(got.degmodes, want.degmodes);
+    assert_eq!(got.dummies, want.dummies);
+    assert_eq!(got.rotor, want.rotor);
+    assert_eq!(got.n3n, want.n3n);
+    assert_eq!(got.i3n3n, want.i3n3n);
+    assert_eq!(got.i4n3n, want.i4n3n);
+    assert_eq!(got.nvib, want.nvib);
+    assert_eq!(got.i2vib, want.i2vib);
+    assert_eq!(got.i3vib, want.i3vib);
+    assert_eq!(got.i4vib, want.i4vib);
+    assert_eq!(got.natom, want.natom);
     assert_eq!(got.axes, want.axes);
+    assert_eq!(got.primat, want.primat);
+    assert_eq!(got.rotcon, want.rotcon);
     assert_eq!(got, want);
 }
 

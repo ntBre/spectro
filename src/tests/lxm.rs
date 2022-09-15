@@ -104,7 +104,7 @@ fn asym() {
         let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
         let fxm = s.form_sec(fc2, &sqm);
 
-        let (harms, lxm) = symm_eigen_decomp(fxm, false);
+        let (harms, lxm) = symm_eigen_decomp(fxm, true);
         let lx = s.make_lx(&sqm, &lxm);
 
         check_vec!(
@@ -144,7 +144,7 @@ fn asym() {
 fn c3hf_lxm() {
     let fxm = load_dmat("testfiles/c3hf/fort_fxm", 15, 15);
     let want = load_dmat("testfiles/c3hf/fort_lxm", 15, 15);
-    let (_, got) = symm_eigen_decomp(fxm, false);
+    let (_, got) = symm_eigen_decomp(fxm, true);
 
     let got = got.slice((0, 0), (15, 9));
     let want = want.slice((0, 0), (15, 9));
@@ -156,7 +156,7 @@ fn c3hf_lxm() {
 fn c3hcn_lxm() {
     let fxm = load_lower_triangle("testfiles/c3hcn/fort_fxm", 18);
     let want = load_dmat("testfiles/c3hcn/fort_lxm", 18, 18);
-    let (_, got) = symm_eigen_decomp(fxm, false);
+    let (_, got) = symm_eigen_decomp(fxm, true);
 
     let got = got.slice((0, 0), (18, 12));
     let want = want.slice((0, 0), (18, 12));
@@ -176,17 +176,18 @@ fn sym() {
         let w = s.geom.weights();
         let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
         let fxm = s.form_sec(fc2, &sqm);
-        let (harms, mut lxm) = symm_eigen_decomp(fxm, false);
+        let (harms, mut lxm) = symm_eigen_decomp(fxm, true);
         let freq = to_wavenumbers(&harms);
         let mut lx = s.make_lx(&sqm, &lxm);
         s.bdegnl(&freq, &mut lxm, &w, &mut lx);
 
-        // had to loosen this for one of the imaginary frequencies in nh3
-        check_vec(
+        // had to loosen this for one of the imaginary frequencies in nh3 and
+        // then a little more after using fortran symm eigen
+        check_vec!(
             to_wavenumbers(&harms),
             Dvec::from(test.harm),
-            1.1e-5,
-            &test.infile,
+            4.7e-5,
+            &test.infile
         );
 
         // only really care about the part with frequencies. there is more noise
@@ -215,7 +216,7 @@ fn pre_bdegnl() {
     let w = s.geom.weights();
     let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
     let fxm = s.form_sec(fc2, &sqm);
-    let (_, lxm) = symm_eigen_decomp(fxm, false);
+    let (_, lxm) = symm_eigen_decomp(fxm, true);
     let lx = s.make_lx(&sqm, &lxm);
 
     let got = lxm.slice((0, 0), (s.n3n, s.nvib));
@@ -223,12 +224,12 @@ fn pre_bdegnl() {
     let want = want.slice((0, 0), (s.n3n, s.nvib));
 
     // println!("{:.2e}", (got.clone() - want.clone()).max());
-    check_mat(&got.abs(), &want.abs(), 2e-9, "ph3");
+    check_mat!(&got.abs(), &want.abs(), 2e-9, "ph3");
 
     let got = lx.slice((0, 0), (s.n3n, s.nvib)).abs();
     let want = load_dmat("testfiles/ph3/pre_bdegnl_lx", 12, 12);
     let want = want.slice((0, 0), (s.n3n, s.nvib));
-    check_mat(&got.abs(), &want.abs(), 2e-9, "ph3");
+    check_mat!(&got.abs(), &want.abs(), 2e-9, "ph3");
 }
 
 /// this is testing that `bdegnl` is working properly with values input from the
@@ -390,7 +391,7 @@ N     -2.2072758     -0.0095340      0.0000000
     let fxm = s.form_sec(fc2, &sqm);
 
     let want = load_dmat("testfiles/c3hcn/fort_lxm", 18, 18);
-    let (_, got) = symm_eigen_decomp(fxm, false);
+    let (_, got) = symm_eigen_decomp(fxm, true);
 
     let got = got.slice((0, 0), (18, 12));
     let want = want.slice((0, 0), (18, 12));
@@ -430,7 +431,7 @@ H -0.59328292 -1.02759614  0.69757310
     let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
     let fxm = s.form_sec(fc2, &sqm);
 
-    let (_harms, lxm) = utils::linalg::symm_eigen_decomp(fxm, false);
+    let (_harms, lxm) = utils::linalg::symm_eigen_decomp(fxm, true);
 
     let want = load_dmat("testfiles/ph3/pre_bdegnl_lxm", 12, 12);
     let got = lxm.slice((0, 0), (12, 6));

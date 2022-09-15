@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use crate::{consts::FACT2, *};
+use crate::{consts::FACT2, utils::linalg::symm_eigen_decomp, *};
 
 use super::check_vec;
 
@@ -49,7 +49,7 @@ fn asym() {
         let w = s.geom.weights();
         let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
         let fxm = s.form_sec(fc2, &sqm);
-        let (harms, lxm) = utils::linalg::symm_eigen_decomp(fxm, false);
+        let (harms, lxm) = symm_eigen_decomp(fxm, true);
         let freq = to_wavenumbers(&harms);
         let lx = s.make_lx(&sqm, &lxm);
         let f4x = load_fc4(test.fort40, s.n3n);
@@ -72,7 +72,7 @@ fn sym() {
         let w = s.geom.weights();
         let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
         let fxm = s.form_sec(fc2, &sqm);
-        let (harms, mut lxm) = utils::linalg::symm_eigen_decomp(fxm, false);
+        let (harms, mut lxm) = symm_eigen_decomp(fxm, false);
         let freq = to_wavenumbers(&harms);
         let mut lx = s.make_lx(&sqm, &lxm);
         s.bdegnl(&freq, &mut lxm, &w, &mut lx);

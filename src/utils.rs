@@ -591,7 +591,7 @@ mod tests {
         let w = s.geom.weights();
         let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
         let fxm = s.form_sec(fc2, &sqm);
-        let (harms, lxm) = linalg::symm_eigen_decomp(fxm, false);
+        let (harms, lxm) = linalg::symm_eigen_decomp(fxm, true);
         let freq = to_wavenumbers(&harms);
         let (_zmat, wila) = s.zeta(&lxm, &w);
         let tau = make_tau(3, 3, &freq, &s.primat, &wila);

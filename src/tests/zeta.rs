@@ -62,18 +62,19 @@ fn asym() {
         let w = s.geom.weights();
         let sqm: Vec<_> = w.iter().map(|w: &f64| 1.0 / w.sqrt()).collect();
         let fxm = s.form_sec(fc2, &sqm);
-        let (_harms, lxm) = symm_eigen_decomp(fxm, false);
+        let (_harms, lxm) = symm_eigen_decomp(fxm, true);
 
         let (zmat, wila) = s.zeta(&lxm, &w);
 
-        check_tens(
+        check_tens!(
             &zmat.abs(),
             &test.zmat.abs(),
             test.zmat_eps,
             "zmat",
-            &test.infile,
+            &test.infile
         );
-        check_mat(&wila.abs(), &test.wila.abs(), test.wila_eps, &test.infile);
+
+        check_mat!(&wila.abs(), &test.wila.abs(), test.wila_eps, &test.infile);
     }
 }
 
@@ -91,21 +92,22 @@ fn sym() {
         let w = s.geom.weights();
         let sqm: Vec<_> = w.iter().map(|w: &f64| 1.0 / w.sqrt()).collect();
         let fxm = s.form_sec(fc2, &sqm);
-        let (harms, mut lxm) = symm_eigen_decomp(fxm, false);
+        let (harms, mut lxm) = symm_eigen_decomp(fxm, true);
         let freq = to_wavenumbers(&harms);
         let mut lx = s.make_lx(&sqm, &lxm);
         s.bdegnl(&freq, &mut lxm, &w, &mut lx);
 
         let (zmat, wila) = s.zeta(&lxm, &w);
 
-        check_tens(
+        check_tens!(
             &zmat.abs(),
             &test.zmat.abs(),
             test.zmat_eps,
             "zmat",
-            &test.infile,
+            &test.infile
         );
-        check_mat(&wila.abs(), &test.wila.abs(), test.wila_eps, &test.infile);
+
+        check_mat!(&wila.abs(), &test.wila.abs(), test.wila_eps, &test.infile);
     }
 }
 
@@ -122,7 +124,7 @@ fn py_ph3() {
     let w = s.geom.weights();
     let sqm: Vec<_> = w.iter().map(|w: &f64| 1.0 / w.sqrt()).collect();
     let fxm = s.form_sec(fc2, &sqm);
-    let (harms, _) = symm_eigen_decomp(fxm, false);
+    let (harms, _) = symm_eigen_decomp(fxm, true);
     let mut lxm = load_dmat("testfiles/ph3/py_lxm.out", 12, 12);
     let freq = to_wavenumbers(&harms);
     let mut lx = s.make_lx(&sqm, &lxm);
@@ -130,12 +132,13 @@ fn py_ph3() {
 
     let (zmat, wila) = s.zeta(&lxm, &w);
 
-    check_tens(
+    check_tens!(
         &zmat.abs(),
         &test.zmat.abs(),
         test.zmat_eps,
         "zmat",
-        &test.infile,
+        &test.infile
     );
-    check_mat(&wila.abs(), &test.wila.abs(), test.wila_eps, &test.infile);
+
+    check_mat!(&wila.abs(), &test.wila.abs(), test.wila_eps, &test.infile);
 }
