@@ -6,7 +6,7 @@ use std::{
     path::Path,
 };
 
-use crate::utils::{linalg::symm_eigen_decomp3, *};
+use crate::utils::*;
 use crate::Spectro;
 use crate::{
     consts::CONST,
@@ -30,10 +30,7 @@ impl Spectro {
 pub(crate) fn process_geom(ret: &mut Spectro) {
     // assumes input geometry in bohr
     ret.geom.to_angstrom();
-    let com = ret.geom.com();
-    ret.geom.translate(-com);
-    let moi = ret.geom.moi();
-    let (pr, mut axes) = symm_eigen_decomp3(moi);
+    let (pr, mut axes) = ret.geom.normalize();
     ret.primat = Vec::from(pr.as_slice());
     ret.rotcon = pr.iter().map(|m| CONST / m).collect();
     ret.rotor = ret.rotor_type(&pr);
@@ -70,8 +67,6 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
             todo!("dist.f:419");
         }
     }
-    // rotate to principal axes
-    ret.geom = ret.geom.transform(axes.transpose());
     ret.axes = axes;
 
     // center of mass again
