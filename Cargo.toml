@@ -8,8 +8,8 @@ edition = "2021"
 [dependencies]
 nalgebra = "0.31.1"
 approx = "0.5.1"
-symm = { git = "https://github.com/ntBre/symm", rev = "a5c1a21" }
-tensor = { git = "https://github.com/ntBre/tensor", rev = "0d2913e" }
+symm = { git = "https://github.com/ntBre/symm" }
+tensor = { git = "https://github.com/ntBre/tensor" }
 
 [dev-dependencies]
 serde = { version = "1.0.144", features = ["derive"] }
