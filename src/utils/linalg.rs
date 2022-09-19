@@ -1,6 +1,6 @@
 use crate::Dmat;
 use crate::Dvec;
-use nalgebra_lapack::SymmetricEigen;
+use nalgebra::SymmetricEigen;
 
 /// compute the eigen decomposition of the symmetric matrix `mat` and return
 /// both the sorted eigenvalues and the corresponding eigenvectors in descending

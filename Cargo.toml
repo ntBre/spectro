@@ -10,7 +10,6 @@ nalgebra = "0.31.1"
 approx = "0.5.1"
 symm = { git = "https://github.com/ntBre/symm", rev = "da4ae7a" }
 tensor = { git = "https://github.com/ntBre/tensor", rev = "0d2913e" }
-nalgebra-lapack = "0.22.0"
 
 [dev-dependencies]
 serde = { version = "1.0.144", features = ["derive"] }

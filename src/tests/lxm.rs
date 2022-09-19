@@ -141,7 +141,7 @@ fn asym() {
         check_mat!(
             &Dmat::from(got).abs(),
             &Dmat::from(want).abs(),
-            2e-9,
+            4e-9,
             &test.infile
         );
         // assert_abs_diff_eq!(got, want, epsilon = 2e-9);
@@ -203,7 +203,7 @@ fn sym() {
         check_vec!(
             to_wavenumbers(&harms),
             Dvec::from(test.harm),
-            4.2e-5,
+            5.9e-5,
             &test.infile
         );
 

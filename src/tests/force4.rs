@@ -37,7 +37,7 @@ fn asym() {
     let tests = [
         Test::new("h2o", 2.2e-6),
         Test::new("h2co", 1.7e-6),
-        Test::new("c3h2", 1.8e-6),
+        Test::new("c3h2", 7e-6),
         Test::new("c3hf", 3.1e-6),
         Test::new("c3hcn", 3.2e-6),
     ];

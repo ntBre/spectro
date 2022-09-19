@@ -49,7 +49,7 @@ fn asym() {
         // and also wila itself
         Test::new("h2o", 3, 6, 1.53e-10, 7.6e-7),
         Test::new("h2co", 6, 6, 1.41e-9, 1.8e-6),
-        Test::new("c3h2", 9, 6, 1.57e-9, 2.8e-6),
+        Test::new("c3h2", 9, 6, 5.78e-9, 2.8e-6),
         Test::new("c3hf", 9, 6, 9.85e-10, 4.2e-6),
         Test::new("c3hcn", 12, 6, 8.39e-10, 6.6e-6),
         Test::new("c3hcn010", 12, 6, 8.39e-10, 6.6e-6),

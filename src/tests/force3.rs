@@ -58,7 +58,7 @@ pub(crate) fn asym() {
     let tests = [
         Test::new("h2o", 4e-6),
         Test::new("h2co", 3e-6),
-        Test::new("c3h2", 7e-6),
+        Test::new("c3h2", 3e-5),
         Test::new("c3hf", 5e-6),
         Test::new("c3hcn", 5e-6),
     ];
