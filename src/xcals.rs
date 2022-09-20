@@ -195,13 +195,13 @@ impl Spectro {
                         let d3 = freq[(k)] + freq[(l)] - freq[(m)];
                         let d4 = -freq[(k)] + freq[(l)] + freq[(m)];
 
-                        if ifrm2.check((k, l), m) {
+                        if ifrm2.check((l, k), m) {
                             let delta = 1.0 / d1 + 1.0 / d2 + 1.0 / d4;
                             -(f3qcm[(k, l, m)].powi(2)) * delta / 16.0
-                        } else if ifrm2.check((l, m), k) {
-                            let delta = 1.0 / d1 + 1.0 / d2 + 1.0 / d3;
+                        } else if ifrm2.check((m, l), k) {
+                            let delta = 1.0 / d1 + 1.0 / d2 - 1.0 / d3;
                             -(f3qcm[(k, l, m)].powi(2)) * delta / 16.0
-                        } else if ifrm2.check((k, m), l) {
+                        } else if ifrm2.check((m, k), l) {
                             let delta = 1.0 / d1 + 1.0 / d3 + 1.0 / d4;
                             -(f3qcm[(k, l, m)].powi(2)) * delta / 16.0
                         } else {
