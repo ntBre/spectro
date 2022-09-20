@@ -285,49 +285,12 @@ impl Spectro {
         ixyz: usize,
     ) -> Dmat {
         let mut gcnst = Dmat::zeros(self.nvib, self.nvib);
-        for kk in 0..n2dm {
-            let (k, k2) = i2mode[kk];
-            let val1 = -f4qcm[(k, k, k, k)] / 48.0;
-            let wk = freq[k].powi(2);
 
-            let valu: f64 = i1mode
-                .iter()
-                .map(|&l| {
-                    let val2 = f3qcm[(k, k, l)].powi(2);
-                    if ifrm1.check(k, l) {
-                        let val3 = 32.0 * (2.0 * freq[(k)] + freq[(l)]);
-                        val2 / val3
-                    } else {
-                        let wl = freq[(l)] * freq[(l)];
-                        let val3 = val2 * freq[(l)];
-                        let val4 = 16.0 * (4.0 * wk - wl);
-                        -val3 / val4
-                    }
-                })
-                .sum();
+        self.gcnst1(
+            n2dm, &i2mode, f4qcm, freq, &i1mode, f3qcm, ifrm1, ia, zmat,
+            &mut gcnst,
+        );
 
-            let valus: f64 = i2mode
-                .iter()
-                .map(|&(l, _)| {
-                    let val2 = f3qcm[(k, k, l)].powi(2);
-                    if ifrm1.check(k, l) {
-                        let val3 = 1.0 / (8.0 * freq[(l)]);
-                        let val4 = 1.0 / (32.0 * (2.0 * freq[(k)] + freq[(l)]));
-                        -val2 * (val3 + val4)
-                    } else {
-                        let wl = freq[(l)] * freq[(l)];
-                        let val3 = 8.0 * wk - wl;
-                        let val4 = 16.0 * freq[(l)] * (4.0 * wk - wl);
-                        val2 * val3 / val4
-                    }
-                })
-                .sum();
-
-            let val7 = self.rotcon[(ia)] * (zmat[(k, k2, 2)].powi(2));
-            let value = val1 + valu + valus + val7;
-            gcnst[(k, k)] = value;
-            gcnst[(k2, k2)] = value;
-        }
         for kk in 1..n2dm {
             let (k, k2) = i2mode[kk];
             for ll in 0..kk {
@@ -414,6 +377,64 @@ impl Spectro {
             }
         }
         gcnst
+    }
+
+    pub(crate) fn gcnst1(
+        &self,
+        n2dm: usize,
+        i2mode: &Vec<(usize, usize)>,
+        f4qcm: &F4qcm,
+        freq: &Dvec,
+        i1mode: &Vec<usize>,
+        f3qcm: &F3qcm,
+        ifrm1: Ifrm1,
+        ia: usize,
+        zmat: &tensor::Tensor3<f64>,
+        gcnst: &mut Dmat,
+    ) {
+        for kk in 0..n2dm {
+            let (k, k2) = i2mode[kk];
+            let val1 = -f4qcm[(k, k, k, k)] / 48.0;
+            let wk = freq[k].powi(2);
+
+            let valu: f64 = i1mode
+                .iter()
+                .map(|&l| {
+                    let val2 = f3qcm[(k, k, l)].powi(2);
+                    if ifrm1.check(k, l) {
+                        let val3 = 32.0 * (2.0 * freq[(k)] + freq[(l)]);
+                        val2 / val3
+                    } else {
+                        let wl = freq[(l)] * freq[(l)];
+                        let val3 = val2 * freq[(l)];
+                        let val4 = 16.0 * (4.0 * wk - wl);
+                        -val3 / val4
+                    }
+                })
+                .sum();
+
+            let valus: f64 = i2mode
+                .iter()
+                .map(|&(l, _)| {
+                    let val2 = f3qcm[(k, k, l)].powi(2);
+                    if ifrm1.check(k, l) {
+                        let val3 = 1.0 / (8.0 * freq[(l)]);
+                        let val4 = 1.0 / (32.0 * (2.0 * freq[(k)] + freq[(l)]));
+                        -val2 * (val3 + val4)
+                    } else {
+                        let wl = freq[(l)] * freq[(l)];
+                        let val3 = 8.0 * wk - wl;
+                        let val4 = 16.0 * freq[(l)] * (4.0 * wk - wl);
+                        val2 * val3 / val4
+                    }
+                })
+                .sum();
+
+            let val7 = self.rotcon[(ia)] * (zmat[(k, k2, 2)].powi(2));
+            let value = val1 + valu + valus + val7;
+            gcnst[(k, k)] = value;
+            gcnst[(k2, k2)] = value;
+        }
     }
 
     /// nondeg-deg interactions for anharmonic constants of a symmetric top
