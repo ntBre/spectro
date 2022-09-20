@@ -102,13 +102,13 @@ fn make_e3(
                     let d2 = freq[(k)] - freq[(l)] + freq[(m)];
                     let d3 = freq[(k)] + freq[(l)] - freq[(m)];
                     let d4 = freq[(k)] - freq[(l)] - freq[(m)];
-                    if ifrm2.check((k, l), m) {
+                    if ifrm2.check((l, k), m) {
                         let delta6 = 1.0 / d1 + 1.0 / d2 + 1.0 / d4;
                         f3kst -= zval6 * delta6 / 8.0;
-                    } else if ifrm2.check((l, m), k) {
+                    } else if ifrm2.check((m, l), k) {
                         let delta6 = 1.0 / d1 + 1.0 / d2 - 1.0 / d3;
                         f3kst -= zval6 * delta6 / 8.0;
-                    } else if ifrm2.check((k, m), l) {
+                    } else if ifrm2.check((m, k), l) {
                         let delta6 = 1.0 / d1 - 1.0 / d3 + 1.0 / d4;
                         f3kst -= zval6 * delta6 / 8.0;
                     } else {
