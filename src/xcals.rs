@@ -280,14 +280,14 @@ impl Spectro {
         ifrm1: Ifrm1,
         ia: usize,
         zmat: &tensor::Tensor3<f64>,
-        ifrmchk: tensor::Tensor3<usize>,
+        ifrm2: &Ifrm2,
         ib: usize,
         ixyz: usize,
     ) -> Dmat {
         let mut gcnst = Dmat::zeros(self.nvib, self.nvib);
 
         self.gcnst1(
-            n2dm, &i2mode, f4qcm, freq, &i1mode, f3qcm, ifrm1, ia, zmat,
+            n2dm, &i2mode, f4qcm, freq, &i1mode, f3qcm, &ifrm1, ia, zmat,
             &mut gcnst,
         );
 
@@ -305,13 +305,13 @@ impl Spectro {
                         let d4 = -freq[(k)] + freq[(l)] + freq[(m)];
 
                         let klm = (k, l, m);
-                        if ifrmchk[(k, l, m)] != 0 {
+                        if ifrm2.check((k, l), m) {
                             let delta = 1.0 / d1 + 1.0 / d2 + 1.0 / d4;
                             -(f3qcm[(klm)].powi(2)) * delta / 8.0
-                        } else if ifrmchk[(l, m, k)] != 0 {
+                        } else if ifrm2.check((l, m), k) {
                             let delta = 1.0 / d1 + 1.0 / d2 + 1.0 / d3;
                             -(f3qcm[(klm)].powi(2)) * delta / 8.0
-                        } else if ifrmchk[(k, m, l)] != 0 {
+                        } else if ifrm2.check((k, m), l) {
                             let delta = 1.0 / d1 + 1.0 / d3 + 1.0 / d4;
                             -(f3qcm[(klm)].powi(2)) * delta / 8.0
                         } else {
@@ -331,19 +331,19 @@ impl Spectro {
                         let d4 = -freq[(k)] + freq[(l)] + freq[(m)];
 
                         let klm = (k, l, m);
-                        if ifrmchk[(l, m, k)] != 0 {
+                        if ifrm2.check((l, m), k) {
                             let delta = 8.0 * (2.0 * freq[(l)] + freq[(k)]);
                             -(f3qcm[(klm)].powi(2)) / delta
-                        } else if ifrmchk[(k, m, l)] != 0 {
+                        } else if ifrm2.check((k, m), l) {
                             let delta = 8.0 * (2.0 * freq[(k)] + freq[(l)]);
                             -(f3qcm[(klm)].powi(2)) / delta
-                        } else if ifrmchk[(k, l, m)] != 0 {
+                        } else if ifrm2.check((k, l), m) {
                             let delta = 1.0 / d1 + 1.0 / d2 + 1.0 / d4;
                             -(f3qcm[(klm)].powi(2)) * delta / 8.0
-                        } else if ifrmchk[(l, m, k)] != 0 {
+                        } else if ifrm2.check((l, m), k) {
                             let delta = 1.0 / d1 + 1.0 / d2 + 1.0 / d3;
                             -(f3qcm[(klm)].powi(2)) * delta / 8.0
-                        } else if ifrmchk[(k, m, l)] != 0 {
+                        } else if ifrm2.check((k, m), l) {
                             let delta = 1.0 / d1 + 1.0 / d3 + 1.0 / d4;
                             -(f3qcm[(klm)].powi(2)) * delta / 8.0
                         } else {
@@ -387,7 +387,7 @@ impl Spectro {
         freq: &Dvec,
         i1mode: &Vec<usize>,
         f3qcm: &F3qcm,
-        ifrm1: Ifrm1,
+        ifrm1: &Ifrm1,
         ia: usize,
         zmat: &tensor::Tensor3<f64>,
         gcnst: &mut Dmat,
@@ -681,7 +681,7 @@ impl Spectro {
         );
 
         let gcnst = self.make_gcnst(
-            n2dm, i2mode, f4qcm, freq, i1mode, f3qcm, ifrm1, ia, zmat, ifrmchk,
+            n2dm, i2mode, f4qcm, freq, i1mode, f3qcm, ifrm1, ia, zmat, &ifrm2,
             ib, ixyz,
         );
 

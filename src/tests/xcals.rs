@@ -248,7 +248,7 @@ fn gcnst1() {
         let mut got = Dmat::zeros(s.nvib, s.nvib);
 
         s.gcnst1(
-            n2dm, &i2mode, &f4qcm, &freq, &i1mode, &f3qcm, ifrm1, ia, &zmat,
+            n2dm, &i2mode, &f4qcm, &freq, &i1mode, &f3qcm, &ifrm1, ia, &zmat,
             &mut got,
         );
 
@@ -261,7 +261,7 @@ fn sym() {
     let tests = [
         Test::new("nh3", 6, 24.716378286389887, 5e-10, 3e-9),
         // TODO these have got to be fixed
-        Test::new("ph3", 6, 20.748849036017717, 1e-11, 7.6e-4),
+        Test::new("ph3", 6, 20.748849036017717, 1e-11, 6e-12),
         Test::new("bipy", 15, 32.906770783666872, 1e-11, 9.0),
     ];
     for test in Vec::from(&tests[..]) {
