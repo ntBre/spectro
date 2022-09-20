@@ -1,0 +1,8 @@
+// for debugging mismatches in `corrs` - fully-resonance-corrected anharmonic
+// vibrational frequencies
+
+digraph symm_tops {
+	corrs -> enrgy;
+	enrgy -> {freq xcnst gcnst restst f3qcm e0};
+	xcnst -> {freq f4qcm f3qcm zmat restst wila};
+}
