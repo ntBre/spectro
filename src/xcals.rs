@@ -57,6 +57,7 @@ fn make_e3(
     freq: &Dvec,
     f3qcm: &F3qcm,
     ifrm1: &Ifrm1,
+    ifrm2: &Ifrm2,
     ifrmchk: &tensor::Tensor3<usize>,
 ) -> f64 {
     let (n1dm, n2dm, _) = Mode::count(modes);
@@ -101,13 +102,13 @@ fn make_e3(
                     let d2 = freq[(k)] - freq[(l)] + freq[(m)];
                     let d3 = freq[(k)] + freq[(l)] - freq[(m)];
                     let d4 = freq[(k)] - freq[(l)] - freq[(m)];
-                    if ifrmchk[(k, l, m)] != 0 {
+                    if ifrm2.check((k, l), m) {
                         let delta6 = 1.0 / d1 + 1.0 / d2 + 1.0 / d4;
                         f3kst -= zval6 * delta6 / 8.0;
-                    } else if ifrmchk[(l, m, k)] != 0 {
+                    } else if ifrm2.check((l, m), k) {
                         let delta6 = 1.0 / d1 + 1.0 / d2 - 1.0 / d3;
                         f3kst -= zval6 * delta6 / 8.0;
-                    } else if ifrmchk[(k, m, l)] != 0 {
+                    } else if ifrm2.check((k, m), l) {
                         let delta6 = 1.0 / d1 - 1.0 / d3 + 1.0 / d4;
                         f3kst -= zval6 * delta6 / 8.0;
                     } else {
@@ -129,6 +130,8 @@ fn make_e3(
                     let d2 = freq[(k)] - freq[(l)] + freq[(m)];
                     let d3 = freq[(k)] + freq[(l)] - freq[(m)];
                     let d4 = freq[(k)] - freq[(l)] - freq[(m)];
+                    // TODO these should be ifrm2 as well, I think, but we
+                    // haven't had any issues here yet
                     if ifrmchk[(k, l, m)] != 0 {
                         let delta7 = 1.0 / d1 + 1.0 / d2 + 1.0 / d4;
                         f3stu -= 2.0 * zval7 * delta7 / 4.0;
@@ -485,24 +488,16 @@ impl Spectro {
                     if ifrm2.check((l, m), k) {
                         let delta = 8.0 * (2.0 * freq[(l)] + freq[(k)]);
                         valu -= (f3qcm[(klm)].powi(2)) / delta;
-                    // println!("case 1");
                     } else if ifrm2.check((k, l), m) {
                         let delta = 1.0 / d1 + 1.0 / d2 + 1.0 / d4;
                         valu = valu - (f3qcm[(klm)].powi(2)) * delta / 8.0;
-                    // println!("case 2");
                     } else if ifrm2.check((l, m), k) {
                         let delta = 1.0 / d1 + 1.0 / d2 + 1.0 / d3;
                         valu = valu - (f3qcm[(klm)].powi(2)) * delta / 8.0;
-                    // println!("case 3");
                     } else if ifrm2.check((k, m), l) {
                         let delta = 1.0 / d1 + 1.0 / d3 + 1.0 / d4;
                         valu = valu - (f3qcm[(klm)].powi(2)) * delta / 8.0;
-                    // println!("case 4");
                     } else {
-                        // TODO f3qcm itself appears to be the issue, mismatch
-                        // at (0, 4, 13), (0, 6, 13), (0, 9, 13), (0, 11, 13) -
-                        // seems to be an issue with m = 13
-                        // println!("case 5 {:?}{:20.12}", klm, f3qcm[klm]);
                         let delta = -d1 * d2 * d3 * d4;
                         let val3 = freq[(m)].powi(2)
                             - freq[(k)].powi(2)
@@ -516,9 +511,7 @@ impl Spectro {
                 let val7 = self.rotcon[(ib)]
                     * (zmat[(k, l, 0)].powi(2) + zmat[(k, l, 1)].powi(2));
                 let val8 = (val5 + val6) * val7;
-                // TODO valu is the issue
                 let value = val1 + val2 + valu + val8;
-                // println!();
                 xcnst[(k, l)] = value;
                 xcnst[(l, k)] = value;
                 xcnst[(k, l2)] = value;
@@ -674,7 +667,7 @@ impl Spectro {
 
         let e1 = make_e0(modes, f4qcm, f3qcm, freq, &ifrm1, &ifrmchk);
         let e2 = make_e2(modes, freq, f4qcm, f3qcm, &ifrm1);
-        let e3 = make_e3(modes, freq, f3qcm, &ifrm1, &ifrmchk);
+        let e3 = make_e3(modes, freq, f3qcm, &ifrm1, &ifrm2, &ifrmchk);
         let e0 = e1 + e2 + e3;
 
         // start calculating anharmonic constants

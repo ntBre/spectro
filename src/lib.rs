@@ -410,6 +410,7 @@ impl Spectro {
             ifrmchk[(f.i, f.j, f.k)] = 1;
             ifrmchk[(f.j, f.i, f.k)] = 1;
             ifrm2.insert((f.i, f.j), f.k);
+            ifrm2.insert((f.j, f.i), f.k);
         }
         (ifrmchk, ifrm1, ifrm2)
     }
