@@ -305,13 +305,13 @@ impl Spectro {
                         let d4 = -freq[(k)] + freq[(l)] + freq[(m)];
 
                         let klm = (k, l, m);
-                        if ifrm2.check((k, l), m) {
+                        if ifrm2.check((l, k), m) {
                             let delta = 1.0 / d1 + 1.0 / d2 + 1.0 / d4;
                             -(f3qcm[(klm)].powi(2)) * delta / 8.0
-                        } else if ifrm2.check((l, m), k) {
-                            let delta = 1.0 / d1 + 1.0 / d2 + 1.0 / d3;
+                        } else if ifrm2.check((m, l), k) {
+                            let delta = 1.0 / d1 + 1.0 / d2 - 1.0 / d3;
                             -(f3qcm[(klm)].powi(2)) * delta / 8.0
-                        } else if ifrm2.check((k, m), l) {
+                        } else if ifrm2.check((m, k), l) {
                             let delta = 1.0 / d1 + 1.0 / d3 + 1.0 / d4;
                             -(f3qcm[(klm)].powi(2)) * delta / 8.0
                         } else {
@@ -337,13 +337,13 @@ impl Spectro {
                         } else if ifrm2.check((k, m), l) {
                             let delta = 8.0 * (2.0 * freq[(k)] + freq[(l)]);
                             -(f3qcm[(klm)].powi(2)) / delta
-                        } else if ifrm2.check((k, l), m) {
+                        } else if ifrm2.check((l, k), m) {
                             let delta = 1.0 / d1 + 1.0 / d2 + 1.0 / d4;
                             -(f3qcm[(klm)].powi(2)) * delta / 8.0
-                        } else if ifrm2.check((l, m), k) {
-                            let delta = 1.0 / d1 + 1.0 / d2 + 1.0 / d3;
+                        } else if ifrm2.check((m, l), k) {
+                            let delta = 1.0 / d1 + 1.0 / d2 - 1.0 / d3;
                             -(f3qcm[(klm)].powi(2)) * delta / 8.0
-                        } else if ifrm2.check((k, m), l) {
+                        } else if ifrm2.check((m, k), l) {
                             let delta = 1.0 / d1 + 1.0 / d3 + 1.0 / d4;
                             -(f3qcm[(klm)].powi(2)) * delta / 8.0
                         } else {
@@ -361,14 +361,6 @@ impl Spectro {
                             * self.rotcon[(ia)]
                             * zmat[(k, k2, 2)]
                             * zmat[(l, l222, 2)];
-                // NOTE last two zmat values are the same sign instead of
-                // opposite for nh3, causes an issue in gcnst. hopefully it will
-                // cause small issues later on.. geometry looks okay, just
-                // pointing the opposite direction on the z axis from the
-                // fortran version. an element with the other sign exists in my
-                // zmat, but I don't really want to start randomly changing
-                // stuff without more tests. If I see multiple cases like this,
-                // I will feel more comfortable changing the index in the code
                 let value = valu + valus + val7;
                 gcnst[(k, l)] = value;
                 gcnst[(l, k)] = value;

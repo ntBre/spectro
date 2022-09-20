@@ -260,9 +260,9 @@ fn gcnst1() {
 fn sym() {
     let tests = [
         Test::new("nh3", 6, 24.716378286389887, 5e-10, 3e-9),
-        // TODO these have got to be fixed
         Test::new("ph3", 6, 20.748849036017717, 1e-11, 6e-12),
-        Test::new("bipy", 15, 32.906770783666872, 1e-11, 9.0),
+        // TODO fix this once I track down other issues
+        Test::new("bipy", 15, 32.906770783666872, 1e-11, 1.01),
     ];
     for test in Vec::from(&tests[..]) {
         let s = Spectro::load(&test.infile);
