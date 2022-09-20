@@ -1,4 +1,4 @@
-#![feature(test)]
+#![feature(test, stmt_expr_attributes)]
 
 use std::{
     cmp::{max, min},
@@ -21,7 +21,7 @@ use resonance::{Coriolis, Fermi1, Fermi2, Restst};
 use rot::Rot;
 use rotor::{Rotor, ROTOR_EPS};
 use state::State;
-use symm::Molecule;
+use symm::{Axis, Molecule};
 use tensor::Tensor4;
 use utils::*;
 
@@ -98,6 +98,9 @@ pub struct Spectro {
 
     /// order of the highest rotation axis. symmetric tops only
     pub axis_order: usize,
+
+    /// the actual Axis with order `axis_order`. symmetric tops only
+    pub axis: Axis,
 }
 
 impl Spectro {
@@ -738,7 +741,7 @@ impl Spectro {
 
                     // the minus sign is Papousek's definition of the
                     // symmetry operation Cn (??!)
-                    let other = self.geom.rotate(-360.0 / nabs, &symm::Axis::Z);
+                    let other = self.geom.rotate(-360.0 / nabs, &self.axis);
                     let buddies = self.geom.detect_buddies(&other, 1e-6);
 
                     // might be the wrong axis or wrong point group

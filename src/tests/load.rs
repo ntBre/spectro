@@ -69,6 +69,7 @@ H     -1.55759065  0.94685790  0.00000000
         primat: vec![14.755482612605023, 15.867828460536952, 30.62331107314198],
         iatom: 0,
         axis_order: 0,
+        axis: Axis::Z,
     };
     assert_eq!(got.header, want.header);
     assert_eq!(got.geom, want.geom);
@@ -177,6 +178,7 @@ He     1.76798207  0.00000000  0.00000000
         ],
         iatom: 0,
         axis_order: 0,
+        axis: Axis::Z,
     };
     assert_eq!(got.header, want.header);
     assert_eq!(got.geom, want.geom);

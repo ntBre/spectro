@@ -87,11 +87,9 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
     // has X = 0, which breaks the second criterion, meaning we should
     // rotate H1 to the X axis, but it's already there
     if ret.rotor.is_sym_top() {
-        let mut geom = ret.geom.clone();
-        geom.normalize();
         // NOTE smallest eps for which this works for the current test cases
         const TOL: f64 = 1e-6;
-        let pg = geom.point_group_approx(TOL);
+        let pg = ret.geom.point_group_approx(TOL);
         use symm::PointGroup::*;
         let iatl = match pg {
             C1 => todo!(),
@@ -105,7 +103,8 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
                 let o = plane ^ axis;
 
                 ret.axis_order = 3;
-                geom.atoms
+                ret.geom
+                    .atoms
                     .iter()
                     .position(|a| {
                         let v = [a.x, a.y, a.z];
@@ -140,6 +139,17 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
         let btemp = egr.transpose() * ret.axes.transpose();
         ret.axes = btemp.transpose();
         ret.iatom = iatl;
+
+        // detect point group and store the principal (C₃) axis for later use
+        // with iatl. have to do this again after the geometry is rotated
+        ret.axis = match ret.geom.point_group_approx(TOL) {
+            C1 => todo!(),
+            C2 { axis: _ } => todo!(),
+            Cs { plane: _ } => todo!(),
+            C2v { axis: _, planes: _ } => todo!(),
+            C3v { axis, plane: _ } => axis,
+            D2h { axes: _, planes: _ } => todo!(),
+        };
     }
     ret.natom = ret.natoms();
     let n3n = 3 * ret.natoms();
