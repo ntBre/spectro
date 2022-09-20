@@ -455,7 +455,7 @@ impl Spectro {
     }
 
     /// nondeg-deg interactions for anharmonic constants of a symmetric top
-    fn nondeg_deg(
+    pub(crate) fn nondeg_deg(
         &self,
         i1mode: &Vec<usize>,
         i2mode: &Vec<(usize, usize)>,
@@ -521,7 +521,7 @@ impl Spectro {
     }
 
     /// calculate the nondeg-nondeg anharmonic constants
-    fn nondeg_nondeg(
+    pub(crate) fn nondeg_nondeg(
         &self,
         i1mode: &Vec<usize>,
         f4qcm: &F4qcm,
@@ -619,18 +619,12 @@ impl Spectro {
         }
     }
 
-    /// calculate the anharmonic constants and E_0 for a symmetric top
-    pub fn xcals(
+    /// compute `ia`, `ib`, `n2dm`, `i1mode`, `i2mode`, and `ixyz` for [xcals]
+    pub(crate) fn setup_xcals(
         &self,
-        f4qcm: &F4qcm,
-        freq: &Dvec,
-        f3qcm: &F3qcm,
-        zmat: &Tensor3,
-        fermi1: &[Fermi1],
-        fermi2: &[Fermi2],
         modes: &[Mode],
         wila: &Dmat,
-    ) -> (Dmat, Dmat, f64) {
+    ) -> (usize, usize, usize, Vec<usize>, Vec<(usize, usize)>, usize) {
         let (ia, ib) = (2, 1);
         let (_, n2dm, _) = Mode::count(modes);
         let (i1mode, i2mode, _) = Mode::partition(modes);
@@ -661,6 +655,23 @@ impl Spectro {
             // is not linear, so good to have this todo here
             todo!()
         };
+        (ia, ib, n2dm, i1mode, i2mode, ixyz)
+    }
+
+    /// calculate the anharmonic constants and E_0 for a symmetric top
+    pub fn xcals(
+        &self,
+        f4qcm: &F4qcm,
+        freq: &Dvec,
+        f3qcm: &F3qcm,
+        zmat: &Tensor3,
+        fermi1: &[Fermi1],
+        fermi2: &[Fermi2],
+        modes: &[Mode],
+        wila: &Dmat,
+    ) -> (Dmat, Dmat, f64) {
+        let (ia, ib, n2dm, i1mode, i2mode, ixyz) =
+            self.setup_xcals(modes, wila);
         // NOTE skipping zeta checks, but they only print stuff
 
         let (ifrmchk, ifrm1, ifrm2) = self.make_fermi_checks(fermi1, fermi2);
