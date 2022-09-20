@@ -63,7 +63,12 @@ fn asym() {
 
 #[test]
 fn sym() {
-    let tests = [Test::new("nh3", 2.2e-6)];
+    let tests = [
+        //
+        Test::new("nh3", 2.2e-6),
+        Test::new("ph3", 2.2e-6),
+        Test::new("bipy", 2.2e-6),
+    ];
     for test in tests {
         let s = Spectro::load(&test.infile);
         let fc2 = load_fc2(test.fort15, s.n3n);
