@@ -169,18 +169,20 @@ fn check_rots(got: Vec<Rot>, want: Vec<Rot>, infile: &str) {
     }
 }
 
-fn inner(tests: &[Test]) {
-    for test in Vec::from(&tests[..]) {
-        let infile = test.infile.to_str().unwrap();
+macro_rules! inner {
+    ($tests: expr) => {
+        for test in Vec::from(&$tests[..]) {
+            let infile = test.infile.to_str().unwrap();
 
-        let spectro = Spectro::load(infile);
-        let got = spectro.run(test.fort15, test.fort30, test.fort40);
+            let spectro = Spectro::load(infile);
+            let got = spectro.run(test.fort15, test.fort30, test.fort40);
 
-        check!(got.harms, test.want.harms, "harms", infile);
-        check!(got.funds, test.want.funds, "funds", infile);
-        check!(got.corrs, test.want.corrs, "corrs", infile);
-        check_rots(got.rots, test.want.rots, infile);
-    }
+            check!(got.harms, test.want.harms, "harms", infile);
+            check!(got.funds, test.want.funds, "funds", infile);
+            check!(got.corrs, test.want.corrs, "corrs", infile);
+            check_rots(got.rots, test.want.rots, infile);
+        }
+    };
 }
 
 #[test]
@@ -212,7 +214,7 @@ fn asym() {
         Test::new("hosh", false),
         Test::new("hssh", false),
     ];
-    inner(&tests);
+    inner!(&tests);
 }
 
 #[test]
@@ -285,7 +287,7 @@ fn sym() {
             test.want.rots[j].state = states[i][j].clone();
         }
     }
-    inner(&tests[..]);
+    inner!(&tests[..]);
 }
 
 #[test]
@@ -298,5 +300,5 @@ fn lin() {
         Test::new("hmgnc", true),
         Test::new("hnc", true),
     ];
-    inner(&tests);
+    inner!(&tests);
 }

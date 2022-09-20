@@ -40,12 +40,27 @@ impl Test {
     }
 }
 
+macro_rules! check {
+    ($got: expr, $want: expr, $eps: expr, $label: expr, $infile: expr) => {
+        if !abs_diff_eq!($got, $want, epsilon = $eps) {
+            println!("got\n{:.6}", $got);
+            println!("want\n{:.6}", $want);
+            println!("diff\n={:.6}", $got.clone() - $want.clone());
+            println!(
+                "max diff = {:.2e}",
+                ($got.clone() - $want.clone()).abs().max()
+            );
+            assert!(false, "{} differs on {}", $label, $infile);
+        }
+    };
+}
+
 #[test]
 fn sym() {
     let tests = [
         Test::new("nh3", 6, 24.716378286389887),
-        // Test::new("ph3", 6, 20.748849036017717),
-        // Test::new("bipy", 15, 32.906770783666872),
+        Test::new("ph3", 6, 20.748849036017717),
+        Test::new("bipy", 15, 32.906770783666872),
     ];
     for test in Vec::from(&tests[..]) {
         let s = Spectro::load(&test.infile);
@@ -58,10 +73,8 @@ fn sym() {
         let (harms, mut lxm) = utils::linalg::symm_eigen_decomp(fxm, true);
         let freq = to_wavenumbers(&harms);
         let mut lx = s.make_lx(&sqm, &lxm);
-        if s.rotor.is_sym_top() {
-            s.bdegnl(&freq, &mut lxm, &w, &mut lx);
-        }
-        let (zmat, _) = s.zeta(&lxm, &w);
+        s.bdegnl(&freq, &mut lxm, &w, &mut lx);
+        let (zmat, wila) = s.zeta(&lxm, &w);
         let f3x = load_fc3(test.fort30, s.n3n);
         let mut f3x = s.rot3rd(f3x);
         let f3qcm = force3(s.n3n, &mut f3x, &lx, s.nvib, &freq);
@@ -79,26 +92,11 @@ fn sym() {
             iovrtn: _,
             icombn: _,
         } = Restst::new(&s, &zmat, &f3qcm, &freq);
-        let (zmat, wila) = s.zeta(&lxm, &w);
         let (xcnst, gcnst, e0) = s.xcals(
             &f4qcm, &freq, &f3qcm, &zmat, &fermi1, &fermi2, &modes, &wila,
         );
-        check(&xcnst, &test.xcnst, "xcnst", &test.infile);
-        check(&gcnst, &test.gcnst, "gcnst", &test.infile);
-        // println!("e0 diff = {:.2e}", (e0 - test.e0).abs());
-        assert_abs_diff_eq!(e0, test.e0, epsilon = 1.4e-7);
-    }
-}
-
-fn check(got: &Dmat, want: &Dmat, label: &'static str, infile: &str) {
-    if !abs_diff_eq!(got, want, epsilon = 1.54e-5) {
-        println!("got\n{:.6}", got);
-        println!("want\n{:.6}", want);
-        println!("diff\n={:.6}", got.clone() - want.clone());
-        println!(
-            "max diff = {:.2e}",
-            (got.clone() - want.clone()).abs().max()
-        );
-        assert!(false, "{} differs on {}", label, infile);
+        assert_abs_diff_eq!(e0, test.e0, epsilon = 2e-9);
+        check!(&xcnst, &test.xcnst, 5e-10, "xcnst", &test.infile);
+        check!(&gcnst, &test.gcnst, 3e-9, "gcnst", &test.infile);
     }
 }
