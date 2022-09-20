@@ -21,6 +21,9 @@ struct Test {
     /// xcnst after the nondeg-deg part
     xcnst_nd: Dmat,
 
+    /// xcnst after the first deg-deg part
+    xcnst_dd: Dmat,
+
     e0: f64,
     xcnst_eps: f64,
     gcnst_eps: f64,
@@ -51,6 +54,7 @@ impl Test {
             xcnst: load_dmat(start.join(dir).join("xcnst"), nvib, nvib),
             xcnst_nn: load_dmat(start.join(dir).join("xcnst_nn"), nvib, nvib),
             xcnst_nd: load_dmat(start.join(dir).join("xcnst_nd"), nvib, nvib),
+            xcnst_dd: load_dmat(start.join(dir).join("xcnst_dd"), nvib, nvib),
             gcnst: load_dmat(start.join(dir).join("gcnst"), nvib, nvib),
             e0,
             xcnst_eps,
@@ -184,12 +188,51 @@ fn nondeg_deg() {
 }
 
 #[test]
+fn deg_deg1() {
+    let tests = [
+        Test::new("nh3", 6, 24.716378286389887, 5e-10, 0.0),
+        Test::new("ph3", 6, 20.748849036017717, 1e-11, 0.0),
+        Test::new("bipy", 15, 32.906770783666872, 1e-11, 0.0),
+    ];
+    for test in Vec::from(&tests[..]) {
+        let s = Spectro::load(&test.infile);
+        let (freq, zmat, wila, f3qcm, f4qcm, fermi1, fermi2, modes) =
+            setup(&test, &s);
+        let (ia, ib, _n2dmm, i1mode, i2mode, _ixyz) =
+            s.setup_xcals(&modes, &wila);
+        let (_ifrmchk, ifrm1, ifrm2) = s.make_fermi_checks(&fermi1, &fermi2);
+        let mut got = Dmat::zeros(s.nvib, s.nvib);
+
+        s.nondeg_nondeg(
+            &i1mode, &f4qcm, &f3qcm, &freq, &ifrm2, ia, &zmat, &ifrm1, &mut got,
+        );
+
+        s.nondeg_deg(
+            &i1mode, &i2mode, &f4qcm, &f3qcm, &freq, &ifrm2, ib, &zmat,
+            &mut got,
+        );
+
+        xcals::deg_deg1(
+            &i2mode, &f4qcm, &freq, &i1mode, &f3qcm, &ifrm1, &mut got,
+        );
+
+        check!(
+            &got,
+            &test.xcnst_dd,
+            test.xcnst_eps,
+            "deg-deg",
+            &test.infile
+        );
+    }
+}
+
+#[test]
 fn sym() {
     let tests = [
         Test::new("nh3", 6, 24.716378286389887, 5e-10, 3e-9),
         // TODO these have got to be fixed
-        Test::new("ph3", 6, 20.748849036017717, 7.6e-4, 7.6e-3),
-        Test::new("bipy", 15, 32.906770783666872, 8.0, 9.0),
+        Test::new("ph3", 6, 20.748849036017717, 1e-11, 7.6e-3),
+        Test::new("bipy", 15, 32.906770783666872, 1e-11, 9.0),
     ];
     for test in Vec::from(&tests[..]) {
         let s = Spectro::load(&test.infile);

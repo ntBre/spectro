@@ -171,45 +171,7 @@ impl Spectro {
         ib: usize,
         ixyz: usize,
     ) {
-        for (kk, &(k, _)) in i2mode.iter().enumerate() {
-            let val1 = f4qcm[(k, k, k, k)] / 16.0;
-            let wk = freq[k].powi(2);
-
-            let mut valu = 0.0;
-            for &l in i1mode {
-                let val2 = f3qcm[(k, k, l)].powi(2);
-                if ifrm1.check(k, l) {
-                    let val3 = 1.0 / (8.0 * freq[(l)]);
-                    let val4 = 1.0 / (32.0 * (2.0 * freq[(k)] + freq[(l)]));
-                    valu -= val2 * (val3 + val4);
-                } else {
-                    let wl = freq[(l)] * freq[(l)];
-                    let val3 = 8.0 * wk - 3.0 * wl;
-                    let val4 = 16.0 * freq[(l)] * (4.0 * wk - wl);
-                    valu -= val2 * val3 / val4;
-                }
-            }
-
-            let mut valus = 0.0;
-            for &(l, _) in i2mode {
-                let val2 = f3qcm[(k, k, l)].powi(2);
-                if ifrm1.check(k, l) {
-                    let val3 = 1.0 / (8.0 * freq[(l)]);
-                    let val4 = 1.0 / (32.0 * (2.0 * freq[(k)] + freq[(l)]));
-                    valus -= val2 * (val3 + val4);
-                } else {
-                    let wl = freq[(l)] * freq[(l)];
-                    let val3 = 8.0 * wk - 3.0 * wl;
-                    let val4 = 16.0 * freq[(l)] * (4.0 * wk - wl);
-                    valus -= val2 * val3 / val4;
-                }
-            }
-
-            let value = val1 + valu + valus;
-            let k2 = i2mode[kk].1;
-            xcnst[(k, k)] = value;
-            xcnst[(k2, k2)] = value;
-        }
+        deg_deg1(i2mode, f4qcm, freq, i1mode, f3qcm, ifrm1, xcnst);
 
         for kk in 1..n2dm {
             let k = i2mode[kk].0;
@@ -703,5 +665,55 @@ impl Spectro {
         );
 
         (xcnst, gcnst, e0)
+    }
+}
+
+pub(crate) fn deg_deg1(
+    i2mode: &Vec<(usize, usize)>,
+    f4qcm: &F4qcm,
+    freq: &Dvec,
+    i1mode: &Vec<usize>,
+    f3qcm: &F3qcm,
+    ifrm1: &Ifrm1,
+    xcnst: &mut Dmat,
+) {
+    for (kk, &(k, _)) in i2mode.iter().enumerate() {
+        let val1 = f4qcm[(k, k, k, k)] / 16.0;
+        let wk = freq[k].powi(2);
+
+        let mut valu = 0.0;
+        for &l in i1mode {
+            let val2 = f3qcm[(k, k, l)].powi(2);
+            if ifrm1.check(k, l) {
+                let val3 = 1.0 / (8.0 * freq[(l)]);
+                let val4 = 1.0 / (32.0 * (2.0 * freq[(k)] + freq[(l)]));
+                valu -= val2 * (val3 + val4);
+            } else {
+                let wl = freq[(l)] * freq[(l)];
+                let val3 = 8.0 * wk - 3.0 * wl;
+                let val4 = 16.0 * freq[(l)] * (4.0 * wk - wl);
+                valu -= val2 * val3 / val4;
+            }
+        }
+
+        let mut valus = 0.0;
+        for &(l, _) in i2mode {
+            let val2 = f3qcm[(k, k, l)].powi(2);
+            if ifrm1.check(k, l) {
+                let val3 = 1.0 / (8.0 * freq[(l)]);
+                let val4 = 1.0 / (32.0 * (2.0 * freq[(k)] + freq[(l)]));
+                valus -= val2 * (val3 + val4);
+            } else {
+                let wl = freq[(l)] * freq[(l)];
+                let val3 = 8.0 * wk - 3.0 * wl;
+                let val4 = 16.0 * freq[(l)] * (4.0 * wk - wl);
+                valus -= val2 * val3 / val4;
+            }
+        }
+
+        let value = val1 + valu + valus;
+        let k2 = i2mode[kk].1;
+        xcnst[(k, k)] = value;
+        xcnst[(k2, k2)] = value;
     }
 }
