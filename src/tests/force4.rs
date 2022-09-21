@@ -64,7 +64,6 @@ fn asym() {
 #[test]
 fn sym() {
     let tests = [
-        //
         Test::new("nh3", 2.2e-6),
         Test::new("ph3", 2.2e-6),
         Test::new("bipy", 2.2e-6),

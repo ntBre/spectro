@@ -270,13 +270,6 @@ fn sym() {
             ]),
         ],
     ];
-    // TODO can't actually run bipy without much more careful handling in symm.
-    // it gets labeled as C1 because it's planes.len(), axes.len() is (2, 2).
-    // need to actually examine the planes and axes, tag axes with their type
-    // (C2 or C3 are the ones I check now) and make sure I take the right plane
-    // with that axis. better yet, generalize planes to include non-Cartesian
-    // planes like a comment in symm mentions so I can fully describe the C3v
-    // point group
     let mut tests = [
         Test::new("nh3", true),
         Test::new("ph3", true),

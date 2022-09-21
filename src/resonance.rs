@@ -1,6 +1,7 @@
 use std::{
     cmp::{max, min},
     collections::HashSet,
+    fmt::Display,
 };
 
 use crate::{
@@ -66,6 +67,12 @@ pub struct Fermi2 {
 impl Fermi2 {
     pub fn new(i: usize, j: usize, k: usize) -> Self {
         Self { i, j, k }
+    }
+}
+
+impl Display for Fermi2 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:5}{:5}{:5}", self.i, self.j, self.k)
     }
 }
 

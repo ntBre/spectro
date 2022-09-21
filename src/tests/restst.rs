@@ -36,19 +36,26 @@ fn inner(tests: &[Test]) {
         let w = s.geom.weights();
         let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
         let fxm = s.form_sec(fc2, &sqm);
-        let (harms, lxm) = utils::linalg::symm_eigen_decomp(fxm, true);
+        let (harms, mut lxm) = utils::linalg::symm_eigen_decomp(fxm, true);
         let freq = to_wavenumbers(&harms);
-        let lx = s.make_lx(&sqm, &lxm);
+        let mut lx = s.make_lx(&sqm, &lxm);
+        if s.rotor.is_sym_top() {
+            s.bdegnl(&freq, &mut lxm, &w, &mut lx);
+        }
         let (zmat, _wila) = s.zeta(&lxm, &w);
         let f3x = load_fc3(&test.fort30, s.n3n);
         let mut f3x = s.rot3rd(f3x);
         let f3qcm = force3(s.n3n, &mut f3x, &lx, s.nvib, &freq);
         let got = Restst::new(&s, &zmat, &f3qcm, &freq);
-        assert_eq!(got.coriolis, test.want.coriolis);
-        assert_eq!(got.fermi1, test.want.fermi1);
-        assert_eq!(got.fermi2, test.want.fermi2);
-        assert_eq!(got.darling, test.want.darling);
-        assert_eq!(got.states.len(), test.want.states.len());
+        assert_eq!(got.coriolis, test.want.coriolis, "{}", test.infile);
+        assert_eq!(got.fermi1, test.want.fermi1, "{}", test.infile);
+        // for i in 0..got.fermi2.len() {
+        //     println!("{} vs {}", got.fermi2[i], test.want.fermi2[i]);
+        // }
+        assert_eq!(got.fermi2.len(), test.want.fermi2.len());
+        assert_eq!(got.fermi2, test.want.fermi2, "{}", test.infile);
+        assert_eq!(got.darling, test.want.darling, "{}", test.infile);
+        assert_eq!(got.states.len(), test.want.states.len(), "{}", test.infile);
         let (i1sts, i2sts, i3sts) = State::partition(&got.states);
         let (want_i1, want_i2, want_i3) = State::partition(&test.want.states);
         assert_eq!(i1sts.len(), want_i1.len());
@@ -59,14 +66,14 @@ fn inner(tests: &[Test]) {
             States(i1sts.clone()),
             States(want_i1.clone())
         );
-        assert_eq!(i2sts, want_i2);
-        assert_eq!(i3sts, want_i3);
-        assert_eq!(got.states, test.want.states);
-        assert_eq!(got.modes, test.want.modes);
-        assert_eq!(got.ifunda, test.want.ifunda);
-        assert_eq!(got.iovrtn, test.want.iovrtn);
-        assert_eq!(got.icombn, test.want.icombn);
-        assert_eq!(got, test.want);
+        assert_eq!(i2sts, want_i2, "{}", test.infile);
+        assert_eq!(i3sts, want_i3, "{}", test.infile);
+        assert_eq!(got.states, test.want.states, "{}", test.infile);
+        assert_eq!(got.modes, test.want.modes, "{}", test.infile);
+        assert_eq!(got.ifunda, test.want.ifunda, "{}", test.infile);
+        assert_eq!(got.iovrtn, test.want.iovrtn, "{}", test.infile);
+        assert_eq!(got.icombn, test.want.icombn, "{}", test.infile);
+        assert_eq!(got, test.want, "{}", test.infile);
     }
 }
 
@@ -533,6 +540,113 @@ fn sym() {
                 ],
             },
         ),
+        Test::new(
+            "bipy",
+            Restst {
+                coriolis: vec![
+                    Coriolis::new(8, 11, 1),
+                    Coriolis::new(9, 11, 1),
+                    Coriolis::new(11, 8, 1),
+                    Coriolis::new(11, 9, 1),
+                ],
+                fermi1: vec![
+                    Fermi1::new(13, 8),
+                    Fermi1::new(13, 4),
+                    Fermi1::new(13, 9),
+                ],
+                fermi2: vec![
+                    Fermi2::new(2, 9, 13),
+                    Fermi2::new(2, 13, 9),
+                    Fermi2::new(8, 13, 13),
+                    Fermi2::new(13, 4, 13),
+                    Fermi2::new(13, 9, 2),
+                    Fermi2::new(13, 9, 13),
+                    Fermi2::new(13, 4, 13),
+                    Fermi2::new(13, 9, 2),
+                    Fermi2::new(13, 9, 13),
+                ],
+                darling: vec![
+                    Darling::new(1, 0),
+                    Darling::new(3, 2),
+                    Darling::new(8, 9),
+                    Darling::new(8, 11),
+                    Darling::new(6, 4),
+                    Darling::new(11, 9),
+                ],
+                states: vec![
+                    // ground state
+                    I1st(vec![0, 0, 0, 0, 0, 0]),
+                    // non-deg funds
+                    I1st(vec![1, 0, 0, 0, 0, 0]),
+                    I1st(vec![0, 1, 0, 0, 0, 0]),
+                    // deg funds
+                    I2st(vec![(1, 1), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0)]),
+                    I2st(vec![(0, 0), (1, 1), (0, 0), (0, 0), (0, 0), (0, 0)]),
+                    // non-deg overtones
+                    I1st(vec![2, 0, 0, 0, 0, 0]),
+                    I1st(vec![0, 2, 0, 0, 0, 0]),
+                    // deg overtones
+                    I2st(vec![(2, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0)]),
+                    I2st(vec![(0, 0), (2, 0), (0, 0), (0, 0), (0, 0), (0, 0)]),
+                    // nondeg-nondeg combination
+                    I1st(vec![1, 1, 0, 0, 0, 0]),
+                    // nondeg-deg combinations
+                    I12st {
+                        i1st: vec![1, 0, 0, 0, 0, 0],
+                        i2st: vec![
+                            (1, 1),
+                            (0, 0),
+                            (0, 0),
+                            (0, 0),
+                            (0, 0),
+                            (0, 0),
+                        ],
+                    },
+                    I12st {
+                        i1st: vec![1, 0, 0, 0, 0, 0],
+                        i2st: vec![
+                            (0, 0),
+                            (1, 1),
+                            (0, 0),
+                            (0, 0),
+                            (0, 0),
+                            (0, 0),
+                        ],
+                    },
+                    I12st {
+                        i1st: vec![0, 1, 0, 0, 0, 0],
+                        i2st: vec![
+                            (1, 1),
+                            (0, 0),
+                            (0, 0),
+                            (0, 0),
+                            (0, 0),
+                            (0, 0),
+                        ],
+                    },
+                    I12st {
+                        i1st: vec![0, 1, 0, 0, 0, 0],
+                        i2st: vec![
+                            (0, 0),
+                            (1, 1),
+                            (0, 0),
+                            (0, 0),
+                            (0, 0),
+                            (0, 0),
+                        ],
+                    },
+                    // deg-deg combination
+                    I2st(vec![(1, 1), (1, 1), (0, 0), (0, 0), (0, 0), (0, 0)]),
+                ],
+                modes: vec![I2(0, 1), I2(3, 4), I1(2), I1(5)],
+                ifunda: vec![3, 3, 1, 4, 4, 2],
+                iovrtn: vec![7, 7, 5, 8, 8, 6],
+                icombn: vec![
+                    0, 0, 0, 10, 10, 0, 14, 14, 11, 0, 14, 14, 11, 0, 0, 12,
+                    12, 9, 13, 13, 0,
+                ],
+            },
+        ),
     ];
-    inner(&tests);
+    inner(&tests[2..]);
 }

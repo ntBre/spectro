@@ -65,13 +65,16 @@ impl Rotor {
             // tops
             SphericalTop => todo!(),
             OblateSymmTop | ProlateSymmTop => {
-                // these are the principal axes, I hope this is true for my
-                // realignment because they only check one. the comment says to
-                // do something different for prolate and oblate/linear
-                // molecules, but it was changed to just this
                 let ia = 2;
                 let ib = 1;
                 let ic = 0;
+                // not entirely sure about this, but I needed to swap a and b at
+                // least for bipy
+                let (a, b, c) = if self.is_prolate() {
+                    (0, 2, 1)
+                } else {
+                    (ia, ib, ic)
+                };
                 for ii in 0..n1dm {
                     let i = i1mode[ii];
                     for jj in 0..n1dm {
@@ -82,7 +85,7 @@ impl Rotor {
                         let diff = freq[i] - freq[j];
                         if diff.abs() <= CTOL {
                             if zmat[(i, j, ia)].abs() >= ZTOL {
-                                ret.push(Coriolis::new(i, j, ia));
+                                ret.push(Coriolis::new(i, j, a));
                             }
                         }
                     }
@@ -92,10 +95,10 @@ impl Rotor {
                         let diff = freq[i] - freq[j];
                         if diff.abs() <= CTOL {
                             if zmat[(i, j, ib)].abs() >= ZTOL {
-                                ret.push(Coriolis::new(i, j, ib));
+                                ret.push(Coriolis::new(i, j, b));
                             }
                             if zmat[(i, j, ic)].abs() >= ZTOL {
-                                ret.push(Coriolis::new(i, j, ic));
+                                ret.push(Coriolis::new(i, j, c));
                             }
                         }
                     }
@@ -111,7 +114,7 @@ impl Rotor {
                         let diff = freq[i] - freq[j];
                         if diff.abs() <= CTOL {
                             if zmat[(i, j, ia)].abs() >= ZTOL {
-                                ret.push(Coriolis::new(i, j, ia));
+                                ret.push(Coriolis::new(i, j, a));
                             }
                         }
                     }
@@ -121,10 +124,10 @@ impl Rotor {
                         let diff = freq[i] - freq[j];
                         if diff.abs() <= CTOL {
                             if zmat[(i, j, ib)].abs() >= ZTOL {
-                                ret.push(Coriolis::new(i, j, ib));
+                                ret.push(Coriolis::new(i, j, b));
                             }
                             if zmat[(i, j, ic)].abs() >= ZTOL {
-                                ret.push(Coriolis::new(i, j, ic));
+                                ret.push(Coriolis::new(i, j, c));
                             }
                         }
                     }
@@ -137,10 +140,10 @@ impl Rotor {
                         let diff = freq[i] - freq[j];
                         if diff.abs() <= CTOL {
                             if zmat[(i, j, ib)].abs() >= ZTOL {
-                                ret.push(Coriolis::new(i, j, ib));
+                                ret.push(Coriolis::new(i, j, b));
                             }
                             if zmat[(i, j, ic)].abs() >= ZTOL {
-                                ret.push(Coriolis::new(i, j, ic));
+                                ret.push(Coriolis::new(i, j, c));
                             }
                         }
                     }
