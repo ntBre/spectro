@@ -17,6 +17,8 @@ struct Test {
 }
 
 impl Test {
+    /// create a new [Test] with its directory in testfiles and the dimensions
+    /// of its `lxm` matrix
     fn new(dir: &'static str, lxm: (usize, usize)) -> Self {
         let start = Path::new("testfiles");
         Self {
@@ -183,7 +185,11 @@ fn c3hcn_lxm() {
 
 #[test]
 fn sym() {
-    let tests = [Test::new("nh3", (12, 6)), Test::new("ph3", (12, 6))];
+    let tests = [
+        Test::new("nh3", (12, 6)),
+        Test::new("ph3", (12, 6)),
+        Test::new("bipy", (21, 21)),
+    ];
 
     for test in Vec::from(&tests[..]) {
         let s = Spectro::load(&test.infile);
