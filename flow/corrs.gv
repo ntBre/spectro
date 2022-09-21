@@ -8,4 +8,6 @@ digraph symm_tops {
 	xcnst -> {freq f4qcm f3qcm zmat restst wila};
 
 	wila -> lxm -> fxm -> fc2;
+
+	restst -> {coriolis fermi1 fermi2 darling states modes ifunda iovrtn icombn};
 }

@@ -61,12 +61,26 @@ impl State {
 }
 
 // this is actually awful but it works
-pub struct States(pub Vec<Vec<usize>>);
+pub struct I1states(pub Vec<Vec<usize>>);
 
-impl Display for States {
+impl Display for I1states {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for state in &self.0 {
             write!(f, "{}", State::I1st(state.clone()))?;
+        }
+        Ok(())
+    }
+}
+
+// this is actually awful but it works
+pub struct I2states(pub Vec<Vec<(usize, usize)>>);
+
+impl Display for I2states {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut i = 0;
+        for state in &self.0 {
+            writeln!(f, "{i}:{}", State::I2st(state.clone()))?;
+            i += 1;
         }
         Ok(())
     }

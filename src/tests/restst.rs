@@ -1,6 +1,11 @@
 use std::path::Path;
 
-use crate::{consts::FACT2, resonance::Darling, state::States, *};
+use crate::{
+    consts::FACT2,
+    resonance::Darling,
+    state::{I1states, I2states},
+    *,
+};
 
 struct Test {
     infile: String,
@@ -63,10 +68,22 @@ fn inner(tests: &[Test]) {
             i1sts,
             want_i1,
             "got\n{}\n\nwant{}",
-            States(i1sts.clone()),
-            States(want_i1.clone())
+            I1states(i1sts.clone()),
+            I1states(want_i1.clone())
         );
-        assert_eq!(i2sts, want_i2, "{}", test.infile);
+        assert_eq!(i2sts.len(), want_i2.len());
+        for i in 0..i2sts.len() {
+            if i2sts[i] != want_i2[i] {
+                println!("error on {i}");
+            }
+        }
+        assert_eq!(
+            i2sts,
+            want_i2,
+            "got\n{}\n\nwant{}",
+            I2states(i2sts.clone()),
+            I2states(want_i2.clone())
+        );
         assert_eq!(i3sts, want_i3, "{}", test.infile);
         assert_eq!(got.states, test.want.states, "{}", test.infile);
         assert_eq!(got.modes, test.want.modes, "{}", test.infile);
@@ -573,80 +590,36 @@ fn sym() {
                     Darling::new(6, 4),
                     Darling::new(11, 9),
                 ],
-                states: vec![
-                    // ground state
-                    I1st(vec![0, 0, 0, 0, 0, 0]),
-                    // non-deg funds
-                    I1st(vec![1, 0, 0, 0, 0, 0]),
-                    I1st(vec![0, 1, 0, 0, 0, 0]),
-                    // deg funds
-                    I2st(vec![(1, 1), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0)]),
-                    I2st(vec![(0, 0), (1, 1), (0, 0), (0, 0), (0, 0), (0, 0)]),
-                    // non-deg overtones
-                    I1st(vec![2, 0, 0, 0, 0, 0]),
-                    I1st(vec![0, 2, 0, 0, 0, 0]),
-                    // deg overtones
-                    I2st(vec![(2, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0)]),
-                    I2st(vec![(0, 0), (2, 0), (0, 0), (0, 0), (0, 0), (0, 0)]),
-                    // nondeg-nondeg combination
-                    I1st(vec![1, 1, 0, 0, 0, 0]),
-                    // nondeg-deg combinations
-                    I12st {
-                        i1st: vec![1, 0, 0, 0, 0, 0],
-                        i2st: vec![
-                            (1, 1),
-                            (0, 0),
-                            (0, 0),
-                            (0, 0),
-                            (0, 0),
-                            (0, 0),
-                        ],
-                    },
-                    I12st {
-                        i1st: vec![1, 0, 0, 0, 0, 0],
-                        i2st: vec![
-                            (0, 0),
-                            (1, 1),
-                            (0, 0),
-                            (0, 0),
-                            (0, 0),
-                            (0, 0),
-                        ],
-                    },
-                    I12st {
-                        i1st: vec![0, 1, 0, 0, 0, 0],
-                        i2st: vec![
-                            (1, 1),
-                            (0, 0),
-                            (0, 0),
-                            (0, 0),
-                            (0, 0),
-                            (0, 0),
-                        ],
-                    },
-                    I12st {
-                        i1st: vec![0, 1, 0, 0, 0, 0],
-                        i2st: vec![
-                            (0, 0),
-                            (1, 1),
-                            (0, 0),
-                            (0, 0),
-                            (0, 0),
-                            (0, 0),
-                        ],
-                    },
-                    // deg-deg combination
-                    I2st(vec![(1, 1), (1, 1), (0, 0), (0, 0), (0, 0), (0, 0)]),
+                states: include!("../../testfiles/bipy/states"),
+                // I just copied these from the output
+                modes: vec![
+                    I2(4, 5),
+                    I2(6, 7),
+                    I2(9, 10),
+                    I2(11, 12),
+                    I2(13, 14),
+                    I1(0),
+                    I1(1),
+                    I1(2),
+                    I1(3),
+                    I1(8),
                 ],
-                modes: vec![I2(0, 1), I2(3, 4), I1(2), I1(5)],
-                ifunda: vec![3, 3, 1, 4, 4, 2],
-                iovrtn: vec![7, 7, 5, 8, 8, 6],
+                ifunda: vec![1, 2, 3, 4, 6, 6, 7, 7, 5, 8, 8, 9, 9, 10, 10],
+                iovrtn: vec![
+                    11, 12, 13, 14, 16, 16, 17, 17, 15, 18, 18, 19, 19, 20, 20,
+                ],
                 icombn: vec![
-                    0, 0, 0, 10, 10, 0, 14, 14, 11, 0, 14, 14, 11, 0, 0, 12,
-                    12, 9, 13, 13, 0,
+                    0, 21, 0, 22, 30, 0, 23, 31, 38, 0, 25, 33, 40, 46, 0, 25,
+                    33, 40, 46, 0, 0, 26, 34, 41, 47, 56, 56, 0, 26, 34, 41,
+                    47, 56, 56, 0, 0, 24, 32, 39, 45, 51, 51, 52, 52, 0, 27,
+                    35, 42, 48, 57, 57, 60, 60, 53, 0, 27, 35, 42, 48, 57, 57,
+                    60, 60, 53, 0, 0, 28, 36, 43, 49, 58, 58, 61, 61, 54, 63,
+                    63, 0, 28, 36, 43, 49, 58, 58, 61, 61, 54, 63, 63, 0, 0,
+                    29, 37, 44, 50, 59, 59, 62, 62, 55, 64, 64, 65, 65, 0, 29,
+                    37, 44, 50, 59, 59, 62, 62, 55, 64, 64, 65, 65, 0, 0,
                 ],
             },
         ),
     ];
-    inner(&tests[2..]);
+    inner(&tests[..]);
 }
