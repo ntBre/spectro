@@ -15,6 +15,7 @@ use std::path::Path;
 mod alphaa;
 mod alphas;
 mod bench;
+mod enrgy;
 mod force3;
 mod force4;
 mod load;
@@ -61,6 +62,7 @@ fn load_lower_triangle(filename: &str, size: usize) -> Dmat {
 }
 
 pub(crate) fn check_vec(got: Dvec, want: Dvec, eps: f64, infile: &str) {
+    assert_eq!(got.len(), want.len());
     if !abs_diff_eq!(got, want, epsilon = eps) {
         assert_eq!(got.len(), want.len());
         println!(
@@ -298,56 +300,4 @@ fn test_funds_and_e0() {
             epsilon = 1e-3
         );
     }
-}
-
-#[test]
-fn test_enrgy() {
-    let s = Spectro::load("testfiles/h2o/spectro.in");
-    let fc2 = load_fc2("testfiles/fort.15", s.n3n);
-    let fc2 = s.rot2nd(fc2);
-    let fc2 = FACT2 * fc2;
-    let w = s.geom.weights();
-    let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
-    let fxm = s.form_sec(fc2, &sqm);
-    let (harms, lxm) = symm_eigen_decomp(fxm, true);
-    let freq = to_wavenumbers(&harms);
-    let lx = s.make_lx(&sqm, &lxm);
-    let (zmat, _wila) = s.zeta(&lxm, &w);
-    let f3x = load_fc3("testfiles/fort.30", s.n3n);
-    let mut f3x = s.rot3rd(f3x);
-    let f3qcm = force3(s.n3n, &mut f3x, &lx, s.nvib, &freq);
-    let f4x = load_fc4("testfiles/fort.40", s.n3n);
-    let f4x = s.rot4th(f4x);
-    let f4qcm = force4(s.n3n, &f4x, &lx, s.nvib, &freq);
-    let restst = Restst::new(&s, &zmat, &f3qcm, &freq);
-    let Restst {
-        coriolis: _,
-        fermi1,
-        fermi2,
-        darling: _,
-        modes,
-        states,
-        ifunda: _,
-        iovrtn: _,
-        icombn: _,
-    } = &restst;
-    let (xcnst, e0) =
-        s.xcalc(&f4qcm, &freq, &f3qcm, &zmat, &modes, &fermi1, &fermi2);
-    let wante0 = 20.057563725859055;
-    assert_abs_diff_eq!(e0, wante0, epsilon = 6e-8);
-    let mut got = vec![0.0; states.len()];
-    s.enrgy(&freq, &xcnst, &None, &restst, &f3qcm, e0, &mut got);
-    let want = vec![
-        4656.438188555293,
-        8409.60462543482,
-        8312.975664427879,
-        6254.953686350812,
-        12065.411263606182,
-        11883.428277109273,
-        7818.958032793332,
-        11899.804775421886,
-        9988.129295095654,
-        9895.66935813587,
-    ];
-    check_vec!(Dvec::from(got), Dvec::from(want), 2.1e-5, "enrgy");
 }
