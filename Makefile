@@ -8,6 +8,9 @@ test:
 %.pdf : %.gv
 	dot -Tpdf $< -o $@
 
+%.svg : %.gv
+	dot -Tsvg $< -o $@
+
 flow: flow/asym.pdf
 
 #############
