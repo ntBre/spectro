@@ -155,7 +155,7 @@ where
 
 pub fn load_fc3<P>(infile: P, n3n: usize) -> Tensor3
 where
-    P: AsRef<Path>,
+    P: AsRef<Path> + std::fmt::Debug,
 {
     let mut f3x = Tensor3::zeros(n3n, n3n, n3n);
     let f33 = load_vec(infile);
@@ -179,7 +179,7 @@ where
 
 pub fn load_fc4<P>(infile: P, n3n: usize) -> Tensor4
 where
-    P: AsRef<Path>,
+    P: AsRef<Path> + std::fmt::Debug,
 {
     let mut f4x = Tensor4::zeros(n3n, n3n, n3n, n3n);
     let f44 = load_vec(infile);
@@ -221,8 +221,14 @@ where
     f4x
 }
 
-pub(crate) fn load_vec<P: AsRef<Path>>(infile: P) -> Vec<f64> {
-    let data = read_to_string(infile).unwrap();
+pub(crate) fn load_vec<P>(infile: P) -> Vec<f64>
+where
+    P: AsRef<Path> + std::fmt::Debug,
+{
+    let data = match read_to_string(&infile) {
+        Ok(data) => data,
+        Err(e) => panic!("failed to read {:?} with {e}", infile),
+    };
     data.split_ascii_whitespace()
         .map(|s| s.parse().unwrap())
         .collect()

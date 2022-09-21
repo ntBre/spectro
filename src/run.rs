@@ -12,7 +12,7 @@ use std::path::Path;
 impl Spectro {
     pub fn run<P>(self, fort15: P, fort30: P, fort40: P) -> Output
     where
-        P: AsRef<Path>,
+        P: AsRef<Path> + std::fmt::Debug,
     {
         // load the force constants, rotate them to the new axes, and convert
         // them to the proper units
