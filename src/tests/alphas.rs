@@ -1,12 +1,18 @@
-use std::collections::HashMap;
-
-use nalgebra::dvector;
-
-use crate::{f3qcm::F3qcm, utils::load_vec, Spectro, Tensor3};
-
 use super::{check_mat, load_dmat};
+use crate::{
+    consts::FACT2,
+    resonance::Restst,
+    tests::force3,
+    utils::{linalg::symm_eigen_decomp, load_fc2, load_fc3, to_wavenumbers},
+    Dmat, Spectro,
+};
+use crate::{f3qcm::F3qcm, utils::load_vec, Tensor3};
+use nalgebra::dvector;
+use std::collections::HashMap;
+use std::path::Path;
 
 #[test]
+#[allow(clippy::excessive_precision)]
 fn make_alpha() {
     let s = Spectro {
         rotcon: vec![
@@ -58,4 +64,71 @@ fn make_alpha() {
     let want = load_dmat("testfiles/ph3/alpha", 6, 3);
 
     check_mat(&got, &want, 1e-10, "ph3");
+}
+
+#[derive(Clone)]
+struct Test {
+    infile: String,
+    fort15: String,
+    fort30: String,
+    want: Dmat,
+}
+
+impl Test {
+    fn new(dir: &'static str, states: usize) -> Self {
+        let start = Path::new("testfiles");
+        Self {
+            infile: String::from(
+                start.join(dir).join("spectro.in").to_str().unwrap(),
+            ),
+            fort15: String::from(
+                start.join(dir).join("fort.15").to_str().unwrap(),
+            ),
+            fort30: String::from(
+                start.join(dir).join("fort.30").to_str().unwrap(),
+            ),
+            want: load_dmat(start.join(dir).join("rotnst"), states, 3),
+        }
+    }
+}
+
+/// take the values from alphas.f:792
+#[test]
+fn rotnst() {
+    let tests = [
+        //
+        Test::new("bipy", 66),
+    ];
+    for test in Vec::from(&tests[..]) {
+        let s = Spectro::load(&test.infile);
+        let fc2 = load_fc2(test.fort15, s.n3n);
+        let fc2 = s.rot2nd(fc2);
+        let fc2 = FACT2 * fc2;
+        let w = s.geom.weights();
+        let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
+        let fxm = s.form_sec(fc2, &sqm);
+        let (harms, mut lxm) = symm_eigen_decomp(fxm, true);
+        let freq = to_wavenumbers(&harms);
+        let mut lx = s.make_lx(&sqm, &lxm);
+        s.bdegnl(&freq, &mut lxm, &w, &mut lx);
+        let f3x = load_fc3(test.fort30, s.n3n);
+        let mut f3x = s.rot3rd(f3x);
+        let f3qcm = force3(s.n3n, &mut f3x, &lx, s.nvib, &freq);
+
+        let (zmat, wila) = s.zeta(&lxm, &w);
+
+        let r = Restst::new(&s, &zmat, &f3qcm, &freq);
+
+        let got = s.alphas(
+            &freq,
+            &wila,
+            &zmat,
+            &f3qcm,
+            &r.modes,
+            &r.states,
+            &r.coriolis,
+        );
+
+        check_mat!(&got, &test.want, 5e-13, test.infile);
+    }
 }
