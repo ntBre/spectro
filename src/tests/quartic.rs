@@ -1,6 +1,6 @@
 use std::{fs::read_to_string, path::Path};
 
-use approx::assert_abs_diff_eq;
+use approx::{abs_diff_ne, assert_abs_diff_eq};
 
 use crate::{
     consts::FACT2,
@@ -34,8 +34,10 @@ impl Test {
     }
 }
 
+/// generate these tests with the pq function in the old-spectro/gdb/help.py
+/// directory with a break point at qcent.f:443
 #[test]
-fn test_quartic() {
+fn asym() {
     let tests = [
         Test::new("h2o"),
         Test::new("h2co"),
@@ -55,13 +57,48 @@ fn test_quartic() {
         let freq = to_wavenumbers(&harms);
         let (_zmat, wila) = s.zeta(&lxm, &w);
         let got = Quartic::new(&s, &freq, &wila);
-        // println!("got\n{}", got);
-        // println!("want\n{}", test.want);
-        // println!("diff\n{}", got.clone() - test.want.clone());
 
         // accept this size of epsilon because this is about how good the
         // rotational constant agreement is and b[xyz][as] are the largest
         // differences
-        assert_abs_diff_eq!(got, test.want, epsilon = 2e-5);
+        if abs_diff_ne!(got, test.want, epsilon = 2e-5) {
+            println!("got\n{}", got);
+            println!("want\n{}", test.want);
+            println!("diff\n{}", got - test.want.clone());
+            panic!("{} failed", test.infile);
+        }
+    }
+}
+
+/// this only checks bxs, bys, and bzs, the values that are used in rots
+#[test]
+fn sym() {
+    let tests = [
+        //
+        Test::new("bipy"),
+    ];
+    for test in Vec::from(&tests[..]) {
+        let s = Spectro::load(&test.infile);
+        let fc2 = load_fc2(test.fort15, s.n3n);
+        let fc2 = s.rot2nd(fc2);
+        let fc2 = FACT2 * fc2;
+        let w = s.geom.weights();
+        let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
+        let fxm = s.form_sec(fc2, &sqm);
+        let (harms, mut lxm) = symm_eigen_decomp(fxm, true);
+        let freq = to_wavenumbers(&harms);
+        let mut lx = s.make_lx(&sqm, &lxm);
+        s.bdegnl(&freq, &mut lxm, &w, &mut lx);
+        let (_zmat, wila) = s.zeta(&lxm, &w);
+        let got = Quartic::new(&s, &freq, &wila);
+
+        let (g1, g2, g3) = got.srots();
+        let (w1, w2, w3) = test.want.srots();
+
+        assert_abs_diff_eq!(
+            nalgebra::dvector![g1, g2, g3],
+            nalgebra::dvector![w1, w2, w3],
+            epsilon = 2e-5
+        );
     }
 }
