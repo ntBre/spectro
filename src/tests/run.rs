@@ -286,12 +286,45 @@ fn sym() {
 
 #[test]
 fn lin() {
-    let tests = [
+    use State::*;
+    let states = [
+        //
+        vec![
+            I1st(vec![0, 0, 0, 0]),
+            I1st(vec![1, 0, 0, 0]),
+            I1st(vec![0, 1, 0, 0]),
+            I2st(vec![(1, 1), (0, 0), (0, 0), (0, 0)]),
+        ],
+        vec![
+            I1st(vec![0, 0, 0, 0]),
+            I1st(vec![1, 0, 0, 0]),
+            I1st(vec![0, 1, 0, 0]),
+            I2st(vec![(1, 1), (0, 0), (0, 0), (0, 0)]),
+        ],
+        vec![
+            I1st(vec![0, 0, 0, 0]),
+            I1st(vec![1, 0, 0, 0]),
+            I1st(vec![0, 1, 0, 0]),
+            I2st(vec![(1, 1), (0, 0), (0, 0), (0, 0)]),
+        ],
+        vec![
+            I1st(vec![0, 0, 0, 0]),
+            I1st(vec![1, 0, 0, 0]),
+            I1st(vec![0, 1, 0, 0]),
+            I2st(vec![(1, 1), (0, 0), (0, 0), (0, 0)]),
+        ],
+    ];
+    let mut tests = [
         Test::new("c2h-", true),
         Test::new("hcn", true),
         Test::new("hco+", true),
-        Test::new("hmgnc", true),
+        // Test::new("hmgnc", true),
         Test::new("hnc", true),
     ];
+    for (i, test) in tests.iter_mut().enumerate() {
+        for j in 0..test.want.rots.len() {
+            test.want.rots[j].state = states[i][j].clone();
+        }
+    }
     inner!(&tests);
 }

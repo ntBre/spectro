@@ -864,8 +864,11 @@ impl Spectro {
             // } else {
             // only difference is order of vibr indices here
             let bxs = b1s + vibr[(2)];
-            let bys = b2s + vibr[(0)];
-            let bzs = b3s + vibr[(1)];
+            let mut bys = b2s + vibr[(0)];
+            let mut bzs = b3s + vibr[(1)];
+            if self.rotor.is_linear() {
+                (bys, bzs) = (bzs, bys);
+            }
             // (bxs, bys, bzs)
             // };
             match &states[nst] {

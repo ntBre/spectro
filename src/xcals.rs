@@ -601,13 +601,7 @@ impl Spectro {
         modes: &[Mode],
         wila: &Dmat,
     ) -> (usize, usize, usize, Vec<usize>, Vec<(usize, usize)>, usize) {
-        // rotcon[2] is inf for linear molecules because the unique moi gets put
-        // in the final position
-        let (ia, ib) = if self.rotor.is_linear() {
-            (0, 1)
-        } else {
-            (2, 1)
-        };
+        let (ia, ib) = (2, 1);
         let (_, n2dm, _) = Mode::count(modes);
         let (i1mode, i2mode, _) = Mode::partition(modes);
         // find out which of a(xz)tb or a(yz)tb are zero

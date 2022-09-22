@@ -35,7 +35,12 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
     let moi = ret.geom.moi();
     let (pr, mut axes) = symm_eigen_decomp3(moi);
     ret.primat = Vec::from(pr.as_slice());
-    ret.rotcon = pr.iter().map(|m| CONST / m).collect();
+    // this is what the fortran code does, rust was okay with making it INF, but
+    // this plays more nicely with the math we do later
+    ret.rotcon = pr
+        .iter()
+        .map(|m| if *m > 1e-2 { CONST / m } else { 0.0 })
+        .collect();
     ret.rotor = ret.rotor_type(&pr);
     if ret.rotor.is_sym_top() {
         const TOL: f64 = 1e-5;
@@ -57,15 +62,14 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
             ];
             let atemp = axes * egr;
             axes = atemp;
-            let pb1 = CONST / pr[(2)];
-            let pb2 = CONST / pr[(1)];
-            let pb3 = CONST / pr[(0)];
             ret.primat[(0)] = pr[(2)];
             ret.primat[(1)] = pr[(1)];
             ret.primat[(2)] = pr[(0)];
-            ret.rotcon[(0)] = pb1;
-            ret.rotcon[(1)] = pb2;
-            ret.rotcon[(2)] = pb3;
+            ret.rotcon = ret
+                .primat
+                .iter()
+                .map(|m| if *m > 1e-2 { CONST / m } else { 0.0 })
+                .collect();
         } else if iaxis == 2 {
             todo!("dist.f:419");
         }

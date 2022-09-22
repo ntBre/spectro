@@ -162,7 +162,7 @@ fn nondeg_deg() {
     let tests = [
         Test::new("nh3", 6, 24.716378286389887, 4e-10, 0.0),
         Test::new("ph3", 6, 20.748849036017717, 1e-11, 0.0),
-        Test::new("bipy", 15, 32.906770783666872, 1e-11, 0.0),
+        Test::new("bipy", 15, 32.906_770_783_666_87, 1e-11, 0.0),
     ];
     for test in Vec::from(&tests[..]) {
         let s = Spectro::load(&test.infile);
@@ -197,7 +197,7 @@ fn deg_deg1() {
     let tests = [
         Test::new("nh3", 6, 24.716378286389887, 5e-10, 0.0),
         Test::new("ph3", 6, 20.748849036017717, 1e-11, 0.0),
-        Test::new("bipy", 15, 32.906770783666872, 1e-11, 0.0),
+        Test::new("bipy", 15, 32.906_770_783_666_87, 1e-11, 0.0),
     ];
     for test in Vec::from(&tests[..]) {
         let s = Spectro::load(&test.infile);
@@ -237,7 +237,7 @@ fn gcnst1() {
         Test::new("nh3", 6, 24.716378286389887, 5e-10, 3e-9),
         Test::new("ph3", 6, 20.748849036017717, 1e-11, 6e-12),
         Test::new("bipy", 15, 32.906_770_783_666_87, 1e-11, 6e-12),
-        Test::new("c2h-", 4, -1.0534319575869713, 1e-11, 1.4),
+        Test::new("c2h-", 4, -1.0534319575869713, 1e-11, 6e-12),
     ];
     for test in Vec::from(&tests[..]) {
         let s = Spectro::load(&test.infile);
@@ -279,10 +279,7 @@ fn sym() {
             warn!("high bipy gcnst eps");
             Test::new("bipy", 15, 32.906_770_783_666_87, 1e-11, 1.01)
         },
-        {
-            warn!("high c2h- gcnst eps");
-            Test::new("c2h-", 4, -1.0534319575869713, 1e-11, 1.3)
-        },
+        Test::new("c2h-", 4, -1.0534319575869713, 1e-11, 6e-12),
     ];
     for test in Vec::from(&tests[..]) {
         let s = Spectro::load(&test.infile);
