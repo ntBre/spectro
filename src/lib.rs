@@ -811,17 +811,24 @@ impl Spectro {
         states: &[State],
         quartic: &Quartic,
     ) -> Vec<Rot> {
-        let (ia, ib) = if self.rotor.is_prolate() {
-            (0, 1)
+        // NOTE not sure how irep is supposed to be set. it's from a common
+        // block and possibly set accidentally in a different section before
+        // this is called. but for my only prolate test case, it is 2, while for
+        // the oblate cases 5 works.
+        let (ia, ib, irep) = if self.rotor.is_prolate() {
+            (2, 1, 2)
+        // NOTE spectro checks prolateness wrong. by its own setup, the
+        // unique rotational constant should be in ROTCON(3), but it
+        // checks ROTCON(1)-ROTCON(2) to decide if it's prolate, so for
+        // any symmetric top it will not be "prolate" by this test
+        // (0, 1, 3)
         } else {
-            (2, 1)
+            (2, 1, 5)
         };
-        let irep = 5;
         let (ic, _) = princ_cart(irep);
         let (nstop, _) = rotnst.shape();
         let (b1s, b2s, b3s) = quartic.srots();
         let mut ret = Vec::new();
-        // TODO want only fundamental states
         for nst in 0..nstop {
             match &states[nst] {
                 State::I1st(v) => {
@@ -845,18 +852,18 @@ impl Spectro {
             vibr[ic[0]] = vib1;
             vibr[ic[1]] = vib2;
             vibr[ic[2]] = vib2;
-            let (bxs, bys, bzs) = if self.rotor.is_prolate() {
-                let bxs = b1s + vibr[(1)];
-                let bys = b2s + vibr[(0)];
-                let bzs = b3s + vibr[(2)];
-                (bxs, bys, bzs)
-            } else {
-                // only difference is order of vibr indices here
-                let bxs = b1s + vibr[(2)];
-                let bys = b2s + vibr[(0)];
-                let bzs = b3s + vibr[(1)];
-                (bxs, bys, bzs)
-            };
+            // let (bxs, bys, bzs) = if self.rotor.is_prolate() {
+            //     let bxs = b1s + vibr[(1)];
+            //     let bys = b2s + vibr[(0)];
+            //     let bzs = b3s + vibr[(2)];
+            //     (bxs, bys, bzs)
+            // } else {
+            // only difference is order of vibr indices here
+            let bxs = b1s + vibr[(2)];
+            let bys = b2s + vibr[(0)];
+            let bzs = b3s + vibr[(1)];
+            // (bxs, bys, bzs)
+            // };
             match &states[nst] {
                 State::I1st(_) | State::I2st(_) => {
                     ret.push(Rot::new(states[nst].clone(), bys, bxs, bzs));

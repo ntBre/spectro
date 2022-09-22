@@ -123,7 +123,7 @@ fn check(got: Vec<f64>, want: Vec<f64>, msg: &str, label: &str) {
                 got[i] - want[i],
             );
         }
-        assert!(false, "{} differ at {}", msg, label);
+        panic!("{} differ at {}", msg, label);
     }
 }
 
@@ -145,27 +145,28 @@ fn check_rots(got: Vec<Rot>, want: Vec<Rot>, infile: &str) {
         DVector::from(want.clone()),
         epsilon = 2e-5
     ) {
-        println!("{}", "got");
+        println!("got");
         for g in &got {
             println!("{}", g);
         }
-        println!("{}", "want");
+        println!("want");
         for g in &want {
             println!("{}", g);
         }
-        println!("{}", "diff");
+        println!("diff");
+        let mut max = 0.0;
         for g in 0..got.len() {
-            println!(
-                "{}",
-                Rot::new(
-                    got[g].state.clone(),
-                    got[g].a - want[g].a,
-                    got[g].b - want[g].b,
-                    got[g].c - want[g].c,
-                )
-            );
+            let a = got[g].a - want[g].a;
+            let b = got[g].b - want[g].b;
+            let c = got[g].c - want[g].c;
+            for i in [a, b, c] {
+                if i.abs() > max {
+                    max = i.abs();
+                }
+            }
+            println!("{}", Rot::new(got[g].state.clone(), a, b, c));
         }
-        assert!(false, "rots differ at {}", infile);
+        panic!("rots differ by {max:.2e} at {}", infile);
     }
 }
 
@@ -261,11 +262,11 @@ fn sym() {
                 (0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0),
             ]),
             I2st(vec![
-                (0, 0), (0, 0), (0, 0), (1, 1), (0, 0), (0, 0), (0, 0), (0, 0),
+                (0, 0), (0, 0), (0, 0), (0, 0), (1, 1), (0, 0), (0, 0), (0, 0),
                 (0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0),
             ]),
             I2st(vec![
-                (0, 0), (0, 0), (0, 0), (0, 0), (1, 1), (0, 0), (0, 0), (0, 0),
+                (0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (1, 1), (0, 0), (0, 0),
                 (0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0),
             ]),
         ],
