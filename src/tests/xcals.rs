@@ -265,6 +265,7 @@ fn sym() {
             eprintln!("warning: high bipy gcnst eps");
             Test::new("bipy", 15, 32.906_770_783_666_87, 1e-11, 1.01)
         },
+        Test::new("c2h-", 4, -1.0534319575869713, 1e-11, 6e-12),
     ];
     for test in Vec::from(&tests[..]) {
         let s = Spectro::load(&test.infile);

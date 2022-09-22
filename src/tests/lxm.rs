@@ -191,9 +191,7 @@ fn sym() {
         Test::new("nh3", (12, 6), 2e-9),
         Test::new("ph3", (12, 6), 2e-9),
         Test::new("bipy", (21, 21), 2e-9),
-        // actually had to take these from spectro2.out, maybe my local copy is
-        // broken, even after reverting my linalg work
-        Test::new("c2h-", (9, 4), 5e-8),
+        Test::new("c2h-", (9, 9), 2e-9),
     ];
 
     for test in Vec::from(&tests[..]) {
