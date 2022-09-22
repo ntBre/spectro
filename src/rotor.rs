@@ -62,11 +62,11 @@ impl Rotor {
         let mut ret = Vec::new();
         match self {
             Diatomic => todo!(),
-            Linear => todo!(),
             // I think linear and spherical tops are handled with the other symm
-            // tops
+            // tops, but make myself think about it again when I cross that
+            // bridge
             SphericalTop => todo!(),
-            OblateSymmTop | ProlateSymmTop => {
+            OblateSymmTop | ProlateSymmTop | Linear => {
                 let ia = 2;
                 let ib = 1;
                 let ic = 0;
@@ -177,9 +177,8 @@ impl Rotor {
         let mut ret = Vec::new();
         match self {
             Rotor::Diatomic => todo!(),
-            Rotor::Linear => todo!(),
             Rotor::SphericalTop => todo!(),
-            Rotor::OblateSymmTop | Rotor::ProlateSymmTop => {
+            Rotor::OblateSymmTop | Rotor::ProlateSymmTop | Rotor::Linear => {
                 for ii in 1..n1dm {
                     let i = i1mode[ii];
                     for jj in 0..ii {
@@ -226,9 +225,8 @@ impl Rotor {
         let (i1mode, i2mode, _) = Mode::partition(modes);
         match self {
             Diatomic => todo!(),
-            Linear => todo!(),
             SphericalTop => todo!(),
-            OblateSymmTop | ProlateSymmTop => {
+            OblateSymmTop | ProlateSymmTop | Linear => {
                 for i in &i1mode {
                     for j in &i1mode {
                         ferm1_test(freq, *i, *j, f3qcm, &mut ret);
@@ -268,9 +266,8 @@ impl Rotor {
         let mut ret = Vec::new();
         match self {
             Rotor::Diatomic => todo!(),
-            Rotor::Linear => todo!(),
             Rotor::SphericalTop => todo!(),
-            Rotor::OblateSymmTop | Rotor::ProlateSymmTop => {
+            Rotor::OblateSymmTop | Rotor::ProlateSymmTop | Rotor::Linear => {
                 for ii in 1..n1dm {
                     let i = i1mode[ii];
 

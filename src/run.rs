@@ -4,9 +4,7 @@ use crate::utils::{
     make_funds, to_wavenumbers,
 };
 use crate::Mode;
-use crate::{
-    consts::FACT2, quartic::Quartic, resonance::Restst, sextic::Sextic,
-};
+use crate::{consts::FACT2, quartic::Quartic, resonance::Restst};
 use std::path::Path;
 
 impl Spectro {
@@ -112,7 +110,6 @@ impl Spectro {
         // print_vib_states(&eng, &states);
 
         let quartic = Quartic::new(&self, &freq, &wila);
-        let _sextic = Sextic::new(&self, &wila, &zmat, &freq, &f3qcm);
         let rots = if self.rotor.is_sym_top() {
             if self.rotor.is_spherical_top() {
                 panic!("don't know what to do with a spherical top here");

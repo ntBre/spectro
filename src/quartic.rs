@@ -15,7 +15,7 @@ use crate::{
 /// values in Watson S. djw, djkw, and dkw are Wilson's centrifugal distortion
 /// constants. djn, djkn, dkn, sdjn, r5, and r6 are Nielsen distortion constants
 #[cfg_attr(test, derive(serde::Deserialize))]
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub(crate) struct Quartic {
     pub(crate) sigma: f64,
     pub(crate) rkappa: f64,
@@ -169,6 +169,11 @@ impl Quartic {
 
     /// calculate the quartic centrifugal distortion constants
     pub(crate) fn new(s: &Spectro, freq: &Dvec, wila: &Dmat) -> Self {
+        // the only thing spectro computes for a linear molecule is "De" which I
+        // don't think is used anywhere else.
+        if s.is_linear() {
+            return Self::default();
+        }
         let maxcor = if s.is_linear() { 2 } else { 3 };
         let tau = make_tau(maxcor, s.nvib, freq, &s.primat, wila);
         let taupcm = tau_prime(maxcor, &tau);

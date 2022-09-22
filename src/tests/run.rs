@@ -285,7 +285,6 @@ fn sym() {
 }
 
 #[test]
-#[ignore]
 fn lin() {
     let tests = [
         Test::new("c2h-", true),

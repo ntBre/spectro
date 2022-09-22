@@ -40,7 +40,7 @@ mod resonance;
 mod rot;
 mod rotor;
 mod run;
-mod sextic;
+pub mod sextic;
 mod state;
 mod utils;
 mod xcals;

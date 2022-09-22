@@ -16,7 +16,7 @@ use crate::{
 /// sphijk->h2, and sphik->h3. TODO make this an enum to get rid of this comment
 #[cfg_attr(test, derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, Default, PartialEq)]
-pub(crate) struct Sextic {
+pub struct Sextic {
     pub(crate) phij: f64,
     pub(crate) phijk: f64,
     pub(crate) phikj: f64,
@@ -420,7 +420,7 @@ pub(crate) fn c_mat(
 }
 
 impl Sextic {
-    pub(crate) fn new(
+    pub fn new(
         s: &Spectro,
         wila: &Dmat,
         zmat: &Tensor3,
