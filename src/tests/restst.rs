@@ -96,6 +96,7 @@ fn inner(tests: &[Test]) {
 
 #[test]
 fn asym() {
+    use resonance::Axis::*;
     use state::State::*;
     use Mode::*;
     let tests = [
@@ -127,7 +128,7 @@ fn asym() {
         Test::new(
             "h2co",
             Restst {
-                coriolis: vec![Coriolis::new(5, 4, 0)],
+                coriolis: vec![Coriolis::new(5, 4, A)],
                 fermi1: vec![Fermi1::new(3, 1)],
                 fermi2: vec![Fermi2::new(4, 2, 0)],
                 darling: vec![Darling::new(1, 0), Darling::new(5, 4)],
@@ -174,13 +175,13 @@ fn asym() {
             "c3h2",
             Restst {
                 coriolis: vec![
-                    Coriolis::new(5, 4, 0),
-                    Coriolis::new(6, 5, 0),
-                    Coriolis::new(7, 4, 2),
-                    Coriolis::new(7, 5, 1),
-                    Coriolis::new(7, 6, 2),
-                    Coriolis::new(8, 6, 1),
-                    Coriolis::new(8, 7, 0),
+                    Coriolis::new(5, 4, A),
+                    Coriolis::new(6, 5, A),
+                    Coriolis::new(7, 4, C),
+                    Coriolis::new(7, 5, B),
+                    Coriolis::new(7, 6, C),
+                    Coriolis::new(8, 6, B),
+                    Coriolis::new(8, 7, A),
                 ],
                 fermi1: vec![
                     Fermi1::new(2, 0),
@@ -279,9 +280,9 @@ fn asym() {
             "c3hf",
             Restst {
                 coriolis: vec![
-                    Coriolis::new(5, 4, 0),
-                    Coriolis::new(5, 4, 1),
-                    Coriolis::new(8, 7, 0),
+                    Coriolis::new(5, 4, A),
+                    Coriolis::new(5, 4, B),
+                    Coriolis::new(8, 7, A),
                 ],
                 fermi1: vec![
                     Fermi1::new(4, 1),
@@ -390,6 +391,7 @@ fn asym() {
 #[test]
 fn sym() {
     use mode::Mode::*;
+    use resonance::Axis::*;
     use state::State::*;
     // NOTE just pasted the states in for now
     let tests = [
@@ -477,7 +479,7 @@ fn sym() {
         Test::new(
             "ph3",
             Restst {
-                coriolis: vec![Coriolis::new(5, 3, 1), Coriolis::new(3, 5, 1)],
+                coriolis: vec![Coriolis::new(5, 3, B), Coriolis::new(3, 5, B)],
                 fermi1: vec![Fermi1::new(3, 2), Fermi1::new(3, 0)],
                 // you get it twice because we don't know about degeneracies at
                 // this point
@@ -561,10 +563,10 @@ fn sym() {
             "bipy",
             Restst {
                 coriolis: vec![
-                    Coriolis::new(8, 11, 1),
-                    Coriolis::new(9, 11, 1),
-                    Coriolis::new(11, 8, 1),
-                    Coriolis::new(11, 9, 1),
+                    Coriolis::new(8, 11, B),
+                    Coriolis::new(9, 11, B),
+                    Coriolis::new(11, 8, B),
+                    Coriolis::new(11, 9, B),
                 ],
                 fermi1: vec![
                     Fermi1::new(13, 8),

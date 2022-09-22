@@ -28,17 +28,34 @@ pub struct Coriolis {
     pub axis: Axis,
 }
 
+impl From<usize> for Axis {
+    fn from(i: usize) -> Self {
+        match i {
+            0 => Axis::A,
+            1 => Axis::B,
+            2 => Axis::C,
+            _ => panic!("unmatched axis"),
+        }
+    }
+}
+
+impl From<i32> for Axis {
+    fn from(i: i32) -> Self {
+        match i {
+            0 => Axis::A,
+            1 => Axis::B,
+            2 => Axis::C,
+            _ => panic!("unmatched axis"),
+        }
+    }
+}
+
 impl Coriolis {
-    pub fn new(i: usize, j: usize, axis: usize) -> Self {
+    pub fn new(i: usize, j: usize, axis: impl Into<Axis>) -> Self {
         Self {
             i,
             j,
-            axis: match axis {
-                0 => Axis::A,
-                1 => Axis::B,
-                2 => Axis::C,
-                _ => panic!(),
-            },
+            axis: axis.into(),
         }
     }
 }
