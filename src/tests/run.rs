@@ -287,32 +287,18 @@ fn sym() {
 #[test]
 fn lin() {
     use State::*;
+    let lin_tri = vec![
+        I1st(vec![0, 0, 0, 0]),
+        I1st(vec![1, 0, 0, 0]),
+        I1st(vec![0, 1, 0, 0]),
+        I2st(vec![(1, 1), (0, 0), (0, 0), (0, 0)]),
+    ];
     let states = [
         //
-        vec![
-            I1st(vec![0, 0, 0, 0]),
-            I1st(vec![1, 0, 0, 0]),
-            I1st(vec![0, 1, 0, 0]),
-            I2st(vec![(1, 1), (0, 0), (0, 0), (0, 0)]),
-        ],
-        vec![
-            I1st(vec![0, 0, 0, 0]),
-            I1st(vec![1, 0, 0, 0]),
-            I1st(vec![0, 1, 0, 0]),
-            I2st(vec![(1, 1), (0, 0), (0, 0), (0, 0)]),
-        ],
-        vec![
-            I1st(vec![0, 0, 0, 0]),
-            I1st(vec![1, 0, 0, 0]),
-            I1st(vec![0, 1, 0, 0]),
-            I2st(vec![(1, 1), (0, 0), (0, 0), (0, 0)]),
-        ],
-        vec![
-            I1st(vec![0, 0, 0, 0]),
-            I1st(vec![1, 0, 0, 0]),
-            I1st(vec![0, 1, 0, 0]),
-            I2st(vec![(1, 1), (0, 0), (0, 0), (0, 0)]),
-        ],
+        lin_tri.clone(),
+        lin_tri.clone(),
+        lin_tri.clone(),
+        lin_tri,
     ];
     let mut tests = [
         Test::new("c2h-", true),
