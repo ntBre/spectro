@@ -14,9 +14,9 @@ pub fn symm_eigen_decomp(mat: Dmat, reverse: bool) -> (Dvec, Dmat) {
     } = SymmetricEigen::new(mat);
     let mut pairs: Vec<_> = vals.iter().enumerate().collect();
     if reverse {
-        pairs.sort_by(|(_, a), (_, b)| b.partial_cmp(&a).unwrap());
+        pairs.sort_by(|(_, a), (_, b)| b.partial_cmp(a).unwrap());
     } else {
-        pairs.sort_by(|(_, a), (_, b)| a.partial_cmp(&b).unwrap());
+        pairs.sort_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap());
     }
     let (rows, cols) = vecs.shape();
     let mut ret = Dmat::zeros(rows, cols);
@@ -24,7 +24,7 @@ pub fn symm_eigen_decomp(mat: Dmat, reverse: bool) -> (Dvec, Dmat) {
         ret.set_column(i, &vecs.column(pairs[i].0));
     }
     (
-        Dvec::from_iterator(vals.len(), pairs.iter().map(|a| a.1.clone())),
+        Dvec::from_iterator(vals.len(), pairs.iter().map(|a| *a.1)),
         ret,
     )
 }
@@ -37,11 +37,11 @@ pub fn symm_eigen_decomp3(mat: Mat3) -> (Vec3, Mat3) {
         eigenvalues: vals,
     } = SymmetricEigen::new(mat);
     let mut pairs: Vec<_> = vals.iter().enumerate().collect();
-    pairs.sort_by(|(_, a), (_, b)| a.partial_cmp(&b).unwrap());
+    pairs.sort_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap());
     let (_, cols) = vecs.shape();
     let mut ret = Mat3::zeros();
     for i in 0..cols {
         ret.set_column(i, &vecs.column(pairs[i].0));
     }
-    (Vec3::from_iterator(pairs.iter().map(|a| a.1.clone())), ret)
+    (Vec3::from_iterator(pairs.iter().map(|a| *a.1)), ret)
 }

@@ -71,7 +71,7 @@ impl Spectro {
     pub(crate) fn make_alpha(
         &self,
         n1dm: usize,
-        i1mode: &Vec<usize>,
+        i1mode: &[usize],
         ia: usize,
         freq: &Dvec,
         wila: &Dmat,
@@ -80,7 +80,7 @@ impl Spectro {
         zmat: &tensor::Tensor3<f64>,
         f3qcm: &F3qcm,
         n2dm: usize,
-        i2mode: &Vec<(usize, usize)>,
+        i2mode: &[(usize, usize)],
         iaib: usize,
         ib: usize,
         ibib: usize,

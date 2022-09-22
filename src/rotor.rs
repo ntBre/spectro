@@ -1,3 +1,5 @@
+#![allow(clippy::if_same_then_else)]
+
 use crate::f3qcm::F3qcm;
 use crate::resonance::{Coriolis, Darling, Fermi1, Fermi2};
 use crate::{mode::Mode, Dvec};
@@ -11,7 +13,7 @@ pub(crate) const ROTOR_EPS: f64 = 1.0e-4;
 // TODO probably need to get rid of default here. it will complicate the spectro
 // usage a little bit but then I don't have to have the None variant and keep
 // checking for it
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub enum Rotor {
     Diatomic,
     Linear,
@@ -83,10 +85,9 @@ impl Rotor {
                             continue;
                         }
                         let diff = freq[i] - freq[j];
-                        if diff.abs() <= CTOL {
-                            if zmat[(i, j, ia)].abs() >= ZTOL {
-                                ret.push(Coriolis::new(i, j, a));
-                            }
+                        if diff.abs() <= CTOL && zmat[(i, j, ia)].abs() >= ZTOL
+                        {
+                            ret.push(Coriolis::new(i, j, a));
                         }
                     }
 
@@ -112,10 +113,9 @@ impl Rotor {
                         }
                         let j = i2mode[jj].1;
                         let diff = freq[i] - freq[j];
-                        if diff.abs() <= CTOL {
-                            if zmat[(i, j, ia)].abs() >= ZTOL {
-                                ret.push(Coriolis::new(i, j, a));
-                            }
+                        if diff.abs() <= CTOL && zmat[(i, j, ia)].abs() >= ZTOL
+                        {
+                            ret.push(Coriolis::new(i, j, a));
                         }
                     }
 
@@ -348,11 +348,11 @@ impl Rotor {
                                     ret.push(Fermi2::new(i, j, k));
                                     continue;
                                 }
-                            } else if diff3.abs() <= DFTOL {
-                                if f3qcm[ijk].abs() >= F3TOL {
-                                    ret.push(Fermi2::new(i, j, k));
-                                    continue;
-                                }
+                            } else if diff3.abs() <= DFTOL
+                                && f3qcm[ijk].abs() >= F3TOL
+                            {
+                                ret.push(Fermi2::new(i, j, k));
+                                continue;
                             }
                         }
 
@@ -382,11 +382,11 @@ impl Rotor {
                                     ret.push(Fermi2::new(i, j, k));
                                     continue;
                                 }
-                            } else if diff3.abs() <= DFTOL {
-                                if f3qcm[ijk].abs() >= F3TOL {
-                                    ret.push(Fermi2::new(i, j, k));
-                                    continue;
-                                }
+                            } else if diff3.abs() <= DFTOL
+                                && f3qcm[ijk].abs() >= F3TOL
+                            {
+                                ret.push(Fermi2::new(i, j, k));
+                                continue;
                             }
                         }
                     }
@@ -399,10 +399,12 @@ impl Rotor {
                         let j = i1mode[jj];
                         for kk in 0..jj {
                             let k = i1mode[kk];
-                            if i != j && j != k && i != k {
-                                if ferm2_test(freq, i, j, k, f3qcm, &mut ret) {
-                                    continue;
-                                }
+                            if i != j
+                                && j != k
+                                && i != k
+                                && ferm2_test(freq, i, j, k, f3qcm, &mut ret)
+                            {
+                                continue;
                             }
                         }
                     }
@@ -490,10 +492,8 @@ fn ferm1_test(
     ret: &mut Vec<Fermi1>,
 ) {
     let diff = 2.0 * freq[i] - freq[j];
-    if diff.abs() <= FTOL1 {
-        if f3qcm[(i, i, j)].abs() >= F3TOL {
-            ret.push(Fermi1::new(i, j));
-        }
+    if diff.abs() <= FTOL1 && f3qcm[(i, i, j)].abs() >= F3TOL {
+        ret.push(Fermi1::new(i, j));
     }
 }
 
@@ -523,20 +523,17 @@ fn ferm2_test(
             ret.push(Fermi2::new(i, j, k));
             return true;
         }
-    } else if dalet.abs() <= DFTOL {
-        if f3qcm[(i, j, k)].abs() >= F3TOL {
-            ret.push(Fermi2::new(i, j, k));
-            return true;
-        }
+    } else if dalet.abs() <= DFTOL && f3qcm[(i, j, k)].abs() >= F3TOL {
+        ret.push(Fermi2::new(i, j, k));
+        return true;
     }
     false
 }
 
 fn aminjm(diff1: f64, diff2: f64, diff3: f64) -> f64 {
     let mut dalet = [diff1, diff2, diff3];
-    dalet.sort_by(|a, b| a.partial_cmp(&b).unwrap());
-    let dalet = dalet[2];
-    dalet
+    dalet.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    dalet[2]
 }
 
 impl Display for Rotor {

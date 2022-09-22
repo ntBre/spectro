@@ -374,10 +374,10 @@ impl Spectro {
     pub(crate) fn gcnst1(
         &self,
         n2dm: usize,
-        i2mode: &Vec<(usize, usize)>,
+        i2mode: &[(usize, usize)],
         f4qcm: &F4qcm,
         freq: &Dvec,
-        i1mode: &Vec<usize>,
+        i1mode: &[usize],
         f3qcm: &F3qcm,
         ifrm1: &Ifrm1,
         ia: usize,
@@ -465,13 +465,13 @@ impl Spectro {
                         valu -= (f3qcm[(klm)].powi(2)) / delta;
                     } else if ifrm2.check((k, l), m) {
                         let delta = 1.0 / d1 + 1.0 / d2 + 1.0 / d4;
-                        valu = valu - (f3qcm[(klm)].powi(2)) * delta / 8.0;
+                        valu -= (f3qcm[(klm)].powi(2)) * delta / 8.0;
                     } else if ifrm2.check((l, m), k) {
                         let delta = 1.0 / d1 + 1.0 / d2 + 1.0 / d3;
-                        valu = valu - (f3qcm[(klm)].powi(2)) * delta / 8.0;
+                        valu -= (f3qcm[(klm)].powi(2)) * delta / 8.0;
                     } else if ifrm2.check((k, m), l) {
                         let delta = 1.0 / d1 + 1.0 / d3 + 1.0 / d4;
-                        valu = valu - (f3qcm[(klm)].powi(2)) * delta / 8.0;
+                        valu -= (f3qcm[(klm)].powi(2)) * delta / 8.0;
                     } else {
                         let delta = -d1 * d2 * d3 * d4;
                         let val3 = freq[(m)].powi(2)
@@ -595,6 +595,7 @@ impl Spectro {
     }
 
     /// compute `ia`, `ib`, `n2dm`, `i1mode`, `i2mode`, and `ixyz` for [xcals]
+    #[allow(clippy::type_complexity)]
     pub(crate) fn setup_xcals(
         &self,
         modes: &[Mode],
@@ -616,6 +617,7 @@ impl Spectro {
                     iyz += 1;
                 }
             }
+            #[allow(clippy::if_same_then_else)]
             if ixz > 0 && iyz > 0 {
                 (1, 2, 3, 0, 1)
             } else if ixz > 0 {

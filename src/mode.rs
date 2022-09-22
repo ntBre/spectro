@@ -1,4 +1,4 @@
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Mode {
     I1(usize),
     I2(usize, usize),
@@ -23,18 +23,19 @@ impl Mode {
     /// return vectors of the separated singly-degenerate, doubly-degenerate,
     /// and triply-degenerate modes. these are referrred to in the Fortran code
     /// as `i1mode`, `i2mode`, and `i3mode`.
+    #[allow(clippy::type_complexity)]
     pub fn partition(
         modes: &[Self],
     ) -> (Vec<usize>, Vec<(usize, usize)>, Vec<(usize, usize, usize)>) {
         let mut ret = (vec![], vec![], vec![]);
         for m in modes {
             match m {
-                &Mode::I1(i) => ret.0.push(i),
-                &Mode::I2(i, j) => {
-                    ret.1.push((i, j));
+                Mode::I1(i) => ret.0.push(*i),
+                Mode::I2(i, j) => {
+                    ret.1.push((*i, *j));
                 }
-                &Mode::I3(i, j, k) => {
-                    ret.2.push((i, j, k));
+                Mode::I3(i, j, k) => {
+                    ret.2.push((*i, *j, *k));
                 }
             }
         }

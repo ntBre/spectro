@@ -12,7 +12,7 @@ use crate::{
     Dvec, Spectro, Tensor3,
 };
 
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum Axis {
     #[default]
     A = 0,
@@ -21,7 +21,7 @@ pub enum Axis {
 }
 
 /// coriolis resonance wᵢ = wⱼ
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Coriolis {
     pub i: usize,
     pub j: usize,
@@ -44,7 +44,7 @@ impl Coriolis {
 }
 
 /// type 1 Fermi resonance 2wᵢ = wⱼ
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Fermi1 {
     pub i: usize,
     pub j: usize,
@@ -57,7 +57,7 @@ impl Fermi1 {
 }
 
 /// type 2 Fermi resonance wₖ = wⱼ + wᵢ
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Fermi2 {
     pub i: usize,
     pub j: usize,
@@ -77,7 +77,7 @@ impl Display for Fermi2 {
 }
 
 /// Darling-Dennison resonance 2wᵢ = 2wⱼ
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Darling {
     pub i: usize,
     pub j: usize,
@@ -89,7 +89,7 @@ impl Darling {
     }
 }
 
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Restst {
     pub coriolis: Vec<Coriolis>,
     pub fermi1: Vec<Fermi1>,

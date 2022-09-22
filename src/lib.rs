@@ -1,7 +1,7 @@
 #![feature(test, stmt_expr_attributes)]
+#![allow(clippy::too_many_arguments, clippy::needless_range_loop)]
 
 use std::{
-    cmp::{max, min},
     collections::{HashMap, HashSet},
     f64::consts::PI,
     fmt::Debug,
@@ -17,7 +17,7 @@ use ifrm1::Ifrm1;
 use ifrm2::Ifrm2;
 use nalgebra::DMatrix;
 use quartic::Quartic;
-use resonance::{Coriolis, Fermi1, Fermi2, Restst};
+use resonance::{Coriolis, Fermi1, Fermi2};
 use rot::Rot;
 use rotor::{Rotor, ROTOR_EPS};
 use state::State;
@@ -28,6 +28,7 @@ use utils::*;
 mod alphas;
 mod consts;
 mod dummy;
+mod enrgy;
 mod f3qcm;
 mod f4qcm;
 mod ifrm1;
@@ -54,7 +55,7 @@ type Mat3 = nalgebra::Matrix3<f64>;
 type Dvec = nalgebra::DVector<f64>;
 type Dmat = nalgebra::DMatrix<f64>;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Curvil {
     Bond(usize, usize),
 
@@ -166,7 +167,7 @@ impl Spectro {
         states: &[State],
         coriolis: &[Coriolis],
     ) -> Dmat {
-        let alpha = self.alpha(freq, &wila, &zmat, f3qcm, coriolis);
+        let alpha = self.alpha(freq, wila, zmat, f3qcm, coriolis);
         // do the fundamentals + the ground state
         let nstop = self.nvib + 1;
         let (n1dm, _, _) = Mode::count(modes);
@@ -194,171 +195,6 @@ impl Spectro {
             }
         }
         rotnst
-    }
-
-    /// vibrational energy levels and properties in resonance. returns the
-    /// energies in the same order as the states in `i1sts`
-    fn enrgy(
-        &self,
-        freq: &Dvec,
-        xcnst: &Dmat,
-        gcnst: &Option<Dmat>,
-        restst: &Restst,
-        f3qcm: &F3qcm,
-        e0: f64,
-        eng: &mut [f64],
-    ) {
-        let Restst {
-            coriolis: _,
-            fermi1,
-            fermi2,
-            darling: _,
-            states,
-            modes,
-            ifunda,
-            iovrtn,
-            icombn,
-        }: &Restst = restst;
-
-        let nstate = states.len();
-        let (n1dm, n2dm, _) = Mode::count(modes);
-        let (i1mode, i2mode, _) = Mode::partition(modes);
-        let (i1sts, i2sts, _) = State::partition(states);
-        for nst in 0..nstate {
-            let mut val1 = 0.0;
-            for (ii, &i) in i1mode.iter().enumerate() {
-                val1 += freq[i] * ((i1sts[nst][ii] as f64) + 0.5);
-            }
-
-            let mut val2 = 0.0;
-            for (ii, &(i, _)) in i2mode.iter().enumerate() {
-                val2 += freq[i] * (i2sts[nst][ii].0 as f64 + 1.0);
-            }
-
-            // this is val2 in the asym top code
-            let mut val3 = 0.0;
-            for ii in 0..n1dm {
-                let i = i1mode[ii];
-                for jj in 0..=ii {
-                    let j = i1mode[jj];
-                    val3 += xcnst[(i, j)]
-                        * ((i1sts[nst][ii] as f64) + 0.5)
-                        * ((i1sts[nst][jj] as f64) + 0.5);
-                }
-            }
-
-            let mut val4 = 0.0;
-            for (ii, &i) in i1mode.iter().enumerate() {
-                for (jj, &(j, _)) in i2mode.iter().enumerate() {
-                    val4 += xcnst[(i, j)]
-                        * ((i1sts[nst][ii] as f64 + 0.5)
-                            * (i2sts[nst][jj].0 as f64 + 1.0));
-                }
-            }
-
-            let mut val5 = 0.0;
-            for ii in 0..n2dm {
-                let i = i2mode[ii].0;
-                for jj in 0..=ii {
-                    let j = i2mode[jj].0;
-                    val5 += xcnst[(i, j)]
-                        * ((i2sts[nst][ii].0 as f64 + 1.0)
-                            * (i2sts[nst][jj].0 as f64 + 1.0));
-                }
-            }
-
-            let mut val6 = 0.0;
-            for (ii, &(i, _)) in i2mode.iter().enumerate() {
-                for (jj, &(j, _)) in i2mode.iter().take(ii + 1).enumerate() {
-                    val6 += gcnst
-                        .as_ref()
-                        .expect("g constants required for symmetric tops")
-                        [(i, j)]
-                        * (i2sts[nst][ii].1 as f64)
-                        * (i2sts[nst][jj].1 as f64);
-                }
-            }
-
-            eng[nst] = val1 + val2 + val3 + val4 + val5 + val6 + e0;
-        }
-
-        let (_, ifrm1, ifrm2) = self.make_fermi_checks(fermi1, fermi2);
-
-        if self.rotor.is_sym_top() {
-            // NOTE I think this is not going to work at all :( I think my
-            // ist/jst stuff inside rsfrm1 is going to break spectacularly here
-            // but we'll see
-            for ii in 0..n1dm {
-                let ivib = i1mode[ii];
-                // type 1 fermi resonance
-                if let Some(&jvib) = ifrm1.get(&ivib) {
-                    let ist = iovrtn[ivib];
-                    let jst = ifunda[jvib];
-                    rsfrm1(ist, jst, ivib, jvib, f3qcm, eng, false);
-                }
-
-                // type 2 fermi resonance
-                for jj in ii + 1..n1dm {
-                    let jvib = i1mode[jj];
-                    if let Some(&kvib) = ifrm2.get(&(jvib, ivib)) {
-                        // +1 because that's how I inserted them in restst
-                        let ijvib = ioff(max(ivib, jvib) + 1) + min(ivib, jvib);
-                        let ijst = icombn[ijvib];
-                        let kst = ifunda[kvib];
-                        rsfrm2(ijst, kst, ivib, jvib, kvib, f3qcm, eng);
-                    }
-                }
-
-                for jj in 0..n2dm {
-                    let (jvib, _) = i2mode[jj];
-                    if let Some(&kvib) = ifrm2.get(&(jvib, ivib)) {
-                        let ijvib = ioff(max(ivib, jvib) + 1) + min(ivib, jvib);
-                        let ijst = icombn[ijvib];
-                        let kst = ifunda[kvib];
-                        rsfrm2(ijst, kst, ivib, jvib, kvib, f3qcm, eng);
-                    }
-                }
-            }
-
-            // type 1 again
-            for ii in 0..n2dm {
-                let (ivib, _) = i2mode[ii];
-                if let Some(&jvib) = ifrm1.get(&ivib) {
-                    let ist = iovrtn[ivib];
-                    let jst = ifunda[jvib];
-                    rsfrm1(ist, jst, ivib, jvib, f3qcm, eng, true);
-                }
-
-                // type 2 again
-                for jj in ii + 1..n2dm {
-                    let (jvib, _) = i2mode[jj];
-                    if let Some(&kvib) = ifrm2.get(&(jvib, ivib)) {
-                        let ijvib = ioff(max(ivib, jvib) + 1) + min(ivib, jvib);
-                        let ijst = icombn[ijvib];
-                        let kst = ifunda[kvib];
-                        rsfrm2(ijst, kst, ivib, jvib, kvib, f3qcm, eng);
-                    }
-                }
-            }
-        } else {
-            for iii in 0..n1dm {
-                let ivib = i1mode[iii];
-                if let Some(&jvib) = ifrm1.get(&ivib) {
-                    let ist = iovrtn[ivib];
-                    let jst = ifunda[jvib];
-                    rsfrm1(ist, jst, ivib, jvib, f3qcm, eng, false);
-                }
-                for jjj in iii + 1..n1dm {
-                    let jvib = i1mode[jjj];
-                    if let Some(&kvib) = ifrm2.get(&(jvib, ivib)) {
-                        let ijvib = ioff(max(ivib, jvib) + 1) + min(ivib, jvib);
-                        let ijst = icombn[ijvib];
-                        let kst = ifunda[kvib];
-                        rsfrm2(ijst, kst, ivib, jvib, kvib, f3qcm, eng);
-                    }
-                }
-            }
-        }
     }
 
     /// formation of the secular equation
@@ -595,14 +431,8 @@ impl Spectro {
             let bxa = b4a + vibr[0];
             let bya = b5a + vibr[1];
             let bza = b6a + vibr[2];
-            match &states[nst] {
-                State::I1st(_) => {
-                    ret.push(Rot::new(states[nst].clone(), bza, bxa, bya));
-                }
-                _ => (),
-                // State::I2st(_) => todo!(),
-                // State::I3st(_) => todo!(),
-                // State::I12st { i1st: _, i2st: _ } => todo!(),
+            if let State::I1st(_) = &states[nst] {
+                ret.push(Rot::new(states[nst].clone(), bza, bxa, bya));
             }
             // TODO return these S ones too
             // let bxs = b1s + vibr[0];
@@ -643,7 +473,7 @@ impl Spectro {
     /// also aligns linear molecule modes, assuming molecule is already aligned
     /// on the z axis. for linear molecules, IATOM will obviously be on the z
     /// axis.
-    fn bdegnl(&self, freq: &Dvec, lxm: &mut Dmat, w: &Vec<f64>, lx: &mut Dmat) {
+    fn bdegnl(&self, freq: &Dvec, lxm: &mut Dmat, w: &[f64], lx: &mut Dmat) {
         /// cutoff for considering two modes degenerate
         const TOL: f64 = 0.05;
         for ii in 0..self.nvib - 1 {
@@ -682,19 +512,15 @@ impl Spectro {
                             f64::atan(
                                 lxm[(ncomp1, imode2)] / lxm[(ncomp1, imode1)],
                             )
+                        } else if iz2x == 0 {
+                            0.5 * PI
+                        } else if iz2y == 0 {
+                            f64::atan(
+                                -1.0 * lxm[(ncomp2, imode1)]
+                                    / lxm[(ncomp1, imode2)],
+                            )
                         } else {
-                            if iz2x == 0 {
-                                0.5 * PI
-                            } else {
-                                if iz2y == 0 {
-                                    f64::atan(
-                                        -1.0 * lxm[(ncomp2, imode1)]
-                                            / lxm[(ncomp1, imode2)],
-                                    )
-                                } else {
-                                    0.5 * PI
-                                }
-                            }
+                            0.5 * PI
                         }
                     } else {
                         if self.rotor.is_linear() {
@@ -702,18 +528,14 @@ impl Spectro {
                         }
                         let ncomp3 = ncomp1 + 2;
                         if lxm[(ncomp3, imode2)].abs() > TOLER {
-                            let theta = f64::atan(
+                            f64::atan(
                                 -1.0 * lxm[(ncomp3, imode1)]
                                     / lxm[(ncomp3, imode2)],
-                            );
-                            theta
+                            )
+                        } else if lxm[(ncomp3, imode1)] > TOLER {
+                            0.5 * PI
                         } else {
-                            if lxm[(ncomp3, imode1)] > TOLER {
-                                let theta = 0.5 * PI;
-                                theta
-                            } else {
-                                panic!("cannot determine mode alignment")
-                            }
+                            panic!("cannot determine mode alignment")
                         }
                     };
 
@@ -745,10 +567,12 @@ impl Spectro {
                     let buddies = self.geom.detect_buddies(&other, 1e-6);
 
                     // might be the wrong axis or wrong point group
-                    let iatom2 = buddies[self.iatom].expect(&format!(
-                        "can't find symmetry related atom to atom {}",
-                        self.iatom
-                    ));
+                    let iatom2 = buddies[self.iatom].unwrap_or_else(|| {
+                        panic!(
+                            "can't find symmetry related atom to atom {}",
+                            self.iatom
+                        )
+                    });
 
                     let alpha = (-2.0 * PI) / (nabs);
 
@@ -795,8 +619,7 @@ impl Spectro {
                                 iflag = true;
                                 if test * test2 < 0.0 {
                                     for ii in 0..self.n3n {
-                                        lxm[(ii, imode2)] =
-                                            -1.0 * lxm[(ii, imode2)];
+                                        lxm[(ii, imode2)] *= -1.0;
                                     }
                                 }
                             }
@@ -813,12 +636,9 @@ impl Spectro {
                                 * f64::sin(-alpha * s);
                             let test3 = (test.abs() - test2.abs())
                                 / lxm[(ncomp3, imode2)];
-                            if test3.abs() < 0.001 {
-                                if test * test2 < 0.0 {
-                                    for ii in 0..self.n3n {
-                                        lxm[(ii, imode2)] =
-                                            -1.0 * lxm[(ii, imode2)];
-                                    }
+                            if test3.abs() < 0.001 && test * test2 < 0.0 {
+                                for ii in 0..self.n3n {
+                                    lxm[(ii, imode2)] *= -1.0;
                                 }
                             }
                         }
@@ -1049,7 +869,7 @@ impl Spectro {
 }
 
 fn make_sym_funds(
-    modes: &Vec<Mode>,
+    modes: &[Mode],
     freq: &Dvec,
     xcnst: &Dmat,
     gcnst: &Option<Dmat>,
@@ -1202,10 +1022,8 @@ fn make_resin(
         tmp[k] = 1;
         data.insert(tmp);
     }
-    let data: Vec<_> = data.iter().cloned().flatten().collect();
-    let resin =
-        DMatrix::<usize>::from_row_slice(data.len() / n1dm, n1dm, &data);
-    resin
+    let data: Vec<_> = data.iter().flatten().cloned().collect();
+    DMatrix::<usize>::from_row_slice(data.len() / n1dm, n1dm, &data)
 }
 
 /// contains all of the output data from running Spectro

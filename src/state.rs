@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum State {
     /// singly-degenerate mode state
     I1st(Vec<usize>),
@@ -25,6 +25,7 @@ impl State {
     /// return vectors of the separated singly-degenerate, doubly-degenerate,
     /// and triply-degenerate states. these are referrred to in the Fortran code
     /// as `i1sts`, `i2sts`, and `i3sts`.
+    #[allow(clippy::type_complexity)]
     pub fn partition(
         states: &[Self],
     ) -> (Vec<Vec<usize>>, Vec<Vec<(usize, usize)>>, Vec<Vec<usize>>) {
@@ -77,10 +78,8 @@ pub struct I2states(pub Vec<Vec<(usize, usize)>>);
 
 impl Display for I2states {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut i = 0;
-        for state in &self.0 {
+        for (i, state) in self.0.iter().enumerate() {
             writeln!(f, "{i}:{}", State::I2st(state.clone()))?;
-            i += 1;
         }
         Ok(())
     }

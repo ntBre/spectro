@@ -3,7 +3,9 @@ use std::path::{Path, PathBuf};
 use approx::{abs_diff_ne, assert_abs_diff_eq};
 use nalgebra::dmatrix;
 
-use crate::{consts::FACT2, utils::linalg::symm_eigen_decomp, *};
+use crate::{
+    consts::FACT2, resonance::Restst, utils::linalg::symm_eigen_decomp, *,
+};
 
 use super::load_dmat;
 

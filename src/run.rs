@@ -62,17 +62,17 @@ impl Spectro {
 
         let (xcnst, gcnst, e0) = if self.rotor.is_sym_top() {
             let (x, g, e) = self.xcals(
-                &f4qcm, &freq, &f3qcm, &zmat, &fermi1, &fermi2, &modes, &wila,
+                &f4qcm, &freq, &f3qcm, &zmat, fermi1, fermi2, modes, &wila,
             );
             (x, Some(g), e)
         } else {
-            let (x, e) = self
-                .xcalc(&f4qcm, &freq, &f3qcm, &zmat, &modes, &fermi1, &fermi2);
+            let (x, e) =
+                self.xcalc(&f4qcm, &freq, &f3qcm, &zmat, modes, fermi1, fermi2);
             (x, None, e)
         };
 
         let (harms, funds) = if self.rotor.is_sym_top() {
-            make_sym_funds(&modes, &freq, &xcnst, &gcnst)
+            make_sym_funds(modes, &freq, &xcnst, &gcnst)
         } else {
             (
                 freq.as_slice()[..self.nvib].to_vec(),
@@ -81,9 +81,9 @@ impl Spectro {
         };
 
         let rotnst = if self.rotor.is_sym_top() {
-            self.alphas(&freq, &wila, &zmat, &f3qcm, &modes, &states, &coriolis)
+            self.alphas(&freq, &wila, &zmat, &f3qcm, modes, states, coriolis)
         } else {
-            self.alphaa(&freq, &wila, &zmat, &f3qcm, &modes, &states, &coriolis)
+            self.alphaa(&freq, &wila, &zmat, &f3qcm, modes, states, coriolis)
         };
 
         // this is worked on by resona and then enrgy so keep it out here
@@ -91,7 +91,7 @@ impl Spectro {
         let mut eng = vec![0.0; nstate];
 
         if !self.rotor.is_sym_top() {
-            resona(e0, &modes, &freq, &xcnst, &fermi1, &fermi2, &mut eng);
+            resona(e0, modes, &freq, &xcnst, fermi1, fermi2, &mut eng);
         } else {
             // straight from jan martin himself
             // println!(
@@ -104,7 +104,7 @@ impl Spectro {
         // it's not obvious that the states are in this proper order, but by
         // construction that seems to be the case
         let mut corrs = Vec::new();
-        let (n1dm, n2dm, n3dm) = Mode::count(&modes);
+        let (n1dm, n2dm, n3dm) = Mode::count(modes);
         for i in 1..n1dm + n2dm + n3dm + 1 {
             corrs.push(eng[i] - eng[0]);
         }
@@ -117,9 +117,9 @@ impl Spectro {
             if self.rotor.is_spherical_top() {
                 panic!("don't know what to do with a spherical top here");
             }
-            self.rots(&rotnst, &states, &quartic)
+            self.rots(&rotnst, states, &quartic)
         } else {
-            self.rota(&rotnst, &states, &quartic)
+            self.rota(&rotnst, states, &quartic)
         };
 
         Output {

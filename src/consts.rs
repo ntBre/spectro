@@ -13,9 +13,6 @@ pub(crate) const FUNIT3: f64 =
 pub(crate) const FUNIT4: f64 =
     4.359813653 / (0.52917706 * 0.52917706 * 0.52917706 * 0.52917706);
 
-/// pre-computed √(elmass/amu)
-pub(crate) const _FAC1: f64 = 0.02342178947039116194;
-
 pub(crate) const _AMU: f64 = 1.66056559e-27;
 
 pub(crate) const _ELMASS: f64 = 0.91095344e-30;
@@ -33,7 +30,7 @@ pub(crate) const CONST: f64 = 1.0e+02 * (PH * AVN) / (8.0e+00 * PI * PI * CL);
 pub(crate) const PH: f64 = 6.626176;
 
 /// pre-computed sqrt of ALAM
-pub(crate) const SQLAM: f64 = 0.17222125037910759882;
+pub(crate) const SQLAM: f64 = 0.172_221_250_379_107_6;
 
 pub(crate) const FACT3: f64 = 1.0e6 / (SQLAM * SQLAM * SQLAM * PH * CL);
 
@@ -62,7 +59,7 @@ pub(crate) const AVN: f64 = 6.022045;
 pub(crate) const _PARA: f64 = 1.0 / AVN;
 
 // pre-compute the sqrt and make const
-pub(crate) const SQRT_AVN: f64 = 2.4539855337796920273026076438896;
+pub(crate) const SQRT_AVN: f64 = 2.453_985_533_779_692;
 
 // conversion to cm-1
 pub(crate) const WAVE: f64 = 1e4 * SQRT_AVN / (2.0 * PI * CL);

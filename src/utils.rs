@@ -85,7 +85,10 @@ where
     <T as FromStr>::Err: Debug,
 {
     line.split_whitespace()
-        .map(|s| s.parse::<T>().expect(&format!("failed to parse {}", s)))
+        .map(|s| {
+            s.parse::<T>()
+                .unwrap_or_else(|_| panic!("failed to parse {}", s))
+        })
         .collect::<Vec<_>>()
 }
 
@@ -250,7 +253,7 @@ pub fn force3(
         let start = (0, 0);
         let end = (n3n, n3n - 1);
         let mut dd =
-            Dmat::from_row_slice(n3n, n3n, &f3x.submatrix(start, end, kabc));
+            Dmat::from_row_slice(n3n, n3n, f3x.submatrix(start, end, kabc));
         dd *= FUNIT3;
         let ee = lx.clone().transpose() * dd.clone() * lx.clone();
         f3x.set_submatrix(start, end, kabc, ee.data.as_slice());
@@ -290,7 +293,7 @@ pub fn force4(
             let mut dd = Dmat::from_row_slice(
                 n3n,
                 n3n,
-                &f4x.submatrix((0, 0), (n3n, n3n - 1), kabc, labc),
+                f4x.submatrix((0, 0), (n3n, n3n - 1), kabc, labc),
             );
             dd *= FUNIT4;
             let ee = lxt.clone() * dd * lx.clone();
@@ -415,8 +418,7 @@ pub(crate) fn make_e0(
         }
     }
     // biggest differences in f4k and f3klm, but I think it's okay
-    let e0 = f4k + f3k + f3kkl + f3klm;
-    e0
+    f4k + f3k + f3kkl + f3klm
 }
 
 /// compute the fundamental frequencies from the harmonic frequencies and the
