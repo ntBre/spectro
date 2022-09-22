@@ -605,7 +605,7 @@ impl Spectro {
         let (_, n2dm, _) = Mode::count(modes);
         let (i1mode, i2mode, _) = Mode::partition(modes);
         // find out which of a(xz)tb or a(yz)tb are zero
-        let (ixyz, _ia1, _ia2, _ix, _iy) = if !self.rotor.is_linear() {
+        let ixyz = if !self.rotor.is_linear() {
             const TOL: f64 = 0.000001;
             let mut ixz = 0;
             let mut iyz = 0;
@@ -618,16 +618,14 @@ impl Spectro {
                 }
             }
             if ixz > 0 {
-                (1, 2, 3, 0, 1)
+                1
             } else if iyz > 0 {
-                (0, 0, 4, 1, 0)
+                0
             } else {
                 panic!("big problem in xcals");
             }
         } else {
-            // actually everything I have here pretty much assumes the molecule
-            // is not linear, so good to have this todo here
-            todo!()
+            1
         };
         (ia, ib, n2dm, i1mode, i2mode, ixyz)
     }

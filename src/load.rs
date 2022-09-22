@@ -90,7 +90,7 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
     // both H1 and N meet the first criterion, both have Y = 0, but N also
     // has X = 0, which breaks the second criterion, meaning we should
     // rotate H1 to the X axis, but it's already there
-    if ret.rotor.is_sym_top() {
+    if ret.rotor.is_sym_top() && !ret.rotor.is_linear() {
         // NOTE smallest eps for which this works for the current test cases
         const TOL: f64 = 1e-6;
         let pg = ret.geom.point_group_approx(TOL);

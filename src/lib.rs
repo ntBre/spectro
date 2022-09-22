@@ -555,90 +555,94 @@ impl Spectro {
                     // wavefunctions???) first do linear molecules:
 
                     if self.rotor.is_linear() {
-                        todo!("bdegnl.f:136");
-                    }
-
-                    // usize so already abs
-                    let nabs = self.axis_order as f64;
-
-                    // the minus sign is Papousek's definition of the
-                    // symmetry operation Cn (??!)
-                    let other = self.geom.rotate(-360.0 / nabs, &self.axis);
-                    let buddies = self.geom.detect_buddies(&other, 1e-6);
-
-                    // might be the wrong axis or wrong point group
-                    let iatom2 = buddies[self.iatom].unwrap_or_else(|| {
-                        panic!(
-                            "can't find symmetry related atom to atom {}",
-                            self.iatom
-                        )
-                    });
-
-                    let alpha = (-2.0 * PI) / (nabs);
-
-                    let mut s = 0.0;
-                    let ncomp21 = 3 * iatom2;
-                    let ncomp22 = 3 * iatom2 + 1;
-                    let ncomp23 = 3 * iatom2 + 2;
-                    let mut iflag = false;
-                    for is in 0..5 {
-                        let is2 = (is + is) as f64;
-                        s += 1.0;
-                        if is2 >= nabs {
-                            continue;
+                        if lxm[(ncomp1, imode1)] * lxm[(ncomp2, imode2)] > 0.0 {
+                            for i in 0..self.n3n {
+                                lxm[(i, imode2)] *= -1.0;
+                            }
                         }
-                        if iflag {
-                            continue;
-                        }
-                        if izero != 4 {
-                            let (test, test2, test3) =
-                                if f64::abs(f64::cos(alpha)) > TOLER {
-                                    let test = f64::cos(alpha)
-                                        * lxm[(ncomp1, imode1)]
-                                        - f64::cos(alpha * s)
-                                            * lxm[(ncomp21, imode1)];
-                                    let test2 = lxm[(ncomp21, imode2)]
-                                        * f64::sin(-alpha * s);
-                                    let test3 = (f64::abs(test)
-                                        - f64::abs(test2))
-                                        / lxm[(ncomp1, imode1)];
-                                    (test, test2, test3)
-                                } else {
-                                    let test = f64::sin(alpha)
-                                        * lxm[(ncomp1, imode1)]
-                                        - f64::cos(alpha * s)
-                                            * lxm[(ncomp22, imode1)];
-                                    let test2 = lxm[(ncomp22, imode2)]
-                                        * f64::sin(-alpha * s);
-                                    let test3 = (f64::abs(test)
-                                        - f64::abs(test2))
-                                        / lxm[(ncomp1, imode1)];
-                                    (test, test2, test3)
-                                };
-                            if f64::abs(test3) < 0.001 {
-                                iflag = true;
-                                if test * test2 < 0.0 {
+                    } else {
+                        // usize so already abs
+                        let nabs = self.axis_order as f64;
+
+                        // the minus sign is Papousek's definition of the
+                        // symmetry operation Cn (??!)
+                        let other = self.geom.rotate(-360.0 / nabs, &self.axis);
+                        let buddies = self.geom.detect_buddies(&other, 1e-6);
+
+                        // might be the wrong axis or wrong point group
+                        let iatom2 = buddies[self.iatom].unwrap_or_else(|| {
+                            panic!(
+                                "can't find symmetry related atom to atom {}",
+                                self.iatom
+                            )
+                        });
+
+                        let alpha = (-2.0 * PI) / (nabs);
+
+                        let mut s = 0.0;
+                        let ncomp21 = 3 * iatom2;
+                        let ncomp22 = 3 * iatom2 + 1;
+                        let ncomp23 = 3 * iatom2 + 2;
+                        let mut iflag = false;
+                        for is in 0..5 {
+                            let is2 = (is + is) as f64;
+                            s += 1.0;
+                            if is2 >= nabs {
+                                continue;
+                            }
+                            if iflag {
+                                continue;
+                            }
+                            if izero != 4 {
+                                let (test, test2, test3) =
+                                    if f64::abs(f64::cos(alpha)) > TOLER {
+                                        let test = f64::cos(alpha)
+                                            * lxm[(ncomp1, imode1)]
+                                            - f64::cos(alpha * s)
+                                                * lxm[(ncomp21, imode1)];
+                                        let test2 = lxm[(ncomp21, imode2)]
+                                            * f64::sin(-alpha * s);
+                                        let test3 = (f64::abs(test)
+                                            - f64::abs(test2))
+                                            / lxm[(ncomp1, imode1)];
+                                        (test, test2, test3)
+                                    } else {
+                                        let test = f64::sin(alpha)
+                                            * lxm[(ncomp1, imode1)]
+                                            - f64::cos(alpha * s)
+                                                * lxm[(ncomp22, imode1)];
+                                        let test2 = lxm[(ncomp22, imode2)]
+                                            * f64::sin(-alpha * s);
+                                        let test3 = (f64::abs(test)
+                                            - f64::abs(test2))
+                                            / lxm[(ncomp1, imode1)];
+                                        (test, test2, test3)
+                                    };
+                                if f64::abs(test3) < 0.001 {
+                                    iflag = true;
+                                    if test * test2 < 0.0 {
+                                        for ii in 0..self.n3n {
+                                            lxm[(ii, imode2)] *= -1.0;
+                                        }
+                                    }
+                                }
+                            } else {
+                                // assume it's the same as the other definition
+                                let ncomp3 = ncomp1 + 2;
+                                let mut test = lxm[(ncomp3, imode2)];
+                                // TODO improper rotations negate test here
+
+                                test -= f64::cos(alpha * s)
+                                    * lxm[(ncomp23, imode2)];
+                                let test2 = -1.0
+                                    * lxm[(ncomp23, imode1)]
+                                    * f64::sin(-alpha * s);
+                                let test3 = (test.abs() - test2.abs())
+                                    / lxm[(ncomp3, imode2)];
+                                if test3.abs() < 0.001 && test * test2 < 0.0 {
                                     for ii in 0..self.n3n {
                                         lxm[(ii, imode2)] *= -1.0;
                                     }
-                                }
-                            }
-                        } else {
-                            // assume it's the same as the other definition
-                            let ncomp3 = ncomp1 + 2;
-                            let mut test = lxm[(ncomp3, imode2)];
-                            // TODO improper rotations negate test here
-
-                            test -=
-                                f64::cos(alpha * s) * lxm[(ncomp23, imode2)];
-                            let test2 = -1.0
-                                * lxm[(ncomp23, imode1)]
-                                * f64::sin(-alpha * s);
-                            let test3 = (test.abs() - test2.abs())
-                                / lxm[(ncomp3, imode2)];
-                            if test3.abs() < 0.001 && test * test2 < 0.0 {
-                                for ii in 0..self.n3n {
-                                    lxm[(ii, imode2)] *= -1.0;
                                 }
                             }
                         }
@@ -885,7 +889,7 @@ fn make_sym_funds(
     let (i1mode, i2mode, _) = Mode::partition(modes);
     let mut harms = Vec::new();
     let mut funds = Vec::new();
-    for ii in 0..n1dm {
+    for ii in 0..dbg!(n1dm) {
         let i = i1mode[ii];
         let mut val = freq[i] + xcnst[(i, i)] * 2.0;
         for jj in 0..n1dm {

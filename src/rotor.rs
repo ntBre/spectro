@@ -424,9 +424,8 @@ impl Rotor {
         use Rotor::*;
         match &self {
             Diatomic => false,
-            Linear => false,
             SphericalTop => false,
-            OblateSymmTop | ProlateSymmTop => true,
+            OblateSymmTop | ProlateSymmTop | Linear => true,
             AsymmTop => false,
             None => unset_rotor!(),
         }
