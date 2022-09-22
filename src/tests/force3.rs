@@ -71,27 +71,25 @@ pub(crate) fn sym() {
         Test::new("nh3", 5e-6),
         Test::new("ph3", 3e-6),
         Test::new("bipy", 3e-6),
+        Test::new("c2h-", 3e-6),
     ];
-    {
-        let tests: &[Test] = &tests;
-        for test in tests {
-            let s = Spectro::load(&test.infile);
-            let fc2 = load_fc2(&test.fort15, s.n3n);
-            let fc2 = s.rot2nd(fc2);
-            let fc2 = FACT2 * fc2;
-            let w = s.geom.weights();
-            let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
-            let fxm = s.form_sec(fc2, &sqm);
-            let (harms, mut lxm) = symm_eigen_decomp(fxm, true);
-            let freq = to_wavenumbers(&harms);
-            let mut lx = s.make_lx(&sqm, &lxm);
-            s.bdegnl(&freq, &mut lxm, &w, &mut lx);
-            let f3x = load_fc3(&test.fort30, s.n3n);
-            let mut f3x = s.rot3rd(f3x);
-            let got = force3(s.n3n, &mut f3x, &lx, s.nvib, &freq);
-            let got = Dvec::from(got).abs();
-            let want = Dvec::from(test.want.clone()).abs();
-            check_vec!(got, want, test.eps, &test.infile);
-        }
-    };
+    for test in tests {
+        let s = Spectro::load(&test.infile);
+        let fc2 = load_fc2(&test.fort15, s.n3n);
+        let fc2 = s.rot2nd(fc2);
+        let fc2 = FACT2 * fc2;
+        let w = s.geom.weights();
+        let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
+        let fxm = s.form_sec(fc2, &sqm);
+        let (harms, mut lxm) = symm_eigen_decomp(fxm, true);
+        let freq = to_wavenumbers(&harms);
+        let mut lx = s.make_lx(&sqm, &lxm);
+        s.bdegnl(&freq, &mut lxm, &w, &mut lx);
+        let f3x = load_fc3(&test.fort30, s.n3n);
+        let mut f3x = s.rot3rd(f3x);
+        let got = force3(s.n3n, &mut f3x, &lx, s.nvib, &freq);
+        let got = Dvec::from(got).abs();
+        let want = Dvec::from(test.want.clone()).abs();
+        check_vec!(got, want, test.eps, &test.infile);
+    }
 }

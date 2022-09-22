@@ -153,10 +153,10 @@ pub(crate) fn check_mat<
     if abs_diff_ne!(got, want, epsilon = eps) {
         println!("got\n{:.8}", got);
         println!("want\n{:.8}", want);
-        let diff = got.clone() - want.clone();
+        let diff = got - want;
         println!("diff\n{:.8}", diff);
         println!("max diff = {:.2e}", diff.abs().max());
-        assert!(false, "failed on {}", infile);
+        panic!("failed on {}", infile);
     }
 }
 

@@ -48,6 +48,8 @@ fn make_e2(
             }
         }
     }
+    // BUG all three are wrong so it's probably an issue with one of the
+    // arguments
     f4s + f3s + f3kss
 }
 
@@ -650,8 +652,14 @@ impl Spectro {
 
         let e1 = make_e0(modes, f4qcm, f3qcm, freq, &ifrm1, &ifrmchk);
         let e2 = make_e2(modes, freq, f4qcm, f3qcm, &ifrm1);
-        let e3 = make_e3(modes, freq, f3qcm, &ifrm1, &ifrm2, &ifrmchk);
+        let e3 = if self.rotor.is_linear() {
+            0.0
+        } else {
+            make_e3(modes, freq, f3qcm, &ifrm1, &ifrm2, &ifrmchk)
+        };
         let e0 = e1 + e2 + e3;
+        // BUG something wrong with e2
+        println!("{:20.12}{:20.12}{:20.12}{:20.12}", e1, e2, e3, e0);
 
         // start calculating anharmonic constants
         let mut xcnst = Dmat::zeros(self.nvib, self.nvib);

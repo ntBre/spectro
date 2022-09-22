@@ -14,12 +14,13 @@ struct Test {
     lxm: Dmat,
     lx: Dmat,
     harm: Vec<f64>,
+    eps: f64,
 }
 
 impl Test {
     /// create a new [Test] with its directory in testfiles and the dimensions
     /// of its `lxm` matrix
-    fn new(dir: &'static str, lxm: (usize, usize)) -> Self {
+    fn new(dir: &'static str, lxm: (usize, usize), eps: f64) -> Self {
         let start = Path::new("testfiles");
         Self {
             infile: String::from(
@@ -39,6 +40,7 @@ impl Test {
                 lxm.1,
             ),
             harm: load_vec(start.join(dir).join("harm").to_str().unwrap()),
+            eps,
         }
     }
 }
@@ -83,14 +85,14 @@ pub(crate) fn check_eigen<
         let g = got.column(col);
         let w = want.column(col);
         if abs_diff_ne!(g, w, epsilon = eps) {
-            let diff1 = (g.clone() - w.clone()).abs().max();
+            let diff1 = (g - w).abs().max();
             let g = -1.0 * g;
             // stupid nalgebra typing issue
             let w = 1.0 * w;
             if abs_diff_ne!(g, w, epsilon = eps) {
                 println!("got\n{:.8}", got);
                 println!("want\n{:.8}", want);
-                let diff = got.clone() - want.clone();
+                let diff = got - want;
                 let diff2 = (g.clone() - w.clone()).abs().max();
                 println!("diff\n{:.8}", diff);
                 println!("max diff = {:.2e}", diff1.min(diff2));
@@ -107,12 +109,12 @@ pub(crate) fn check_eigen<
 #[test]
 fn asym() {
     let tests = [
-        Test::new("h2o", (9, 9)),
-        Test::new("h2co", (12, 12)),
-        Test::new("c3h2", (15, 15)),
-        Test::new("c3hf", (15, 15)),
-        Test::new("c3hcn", (18, 18)),
-        Test::new("c3hcn010", (18, 18)),
+        Test::new("h2o", (9, 9), 5e-9),
+        Test::new("h2co", (12, 12), 5e-9),
+        Test::new("c3h2", (15, 15), 5e-9),
+        Test::new("c3hf", (15, 15), 5e-9),
+        Test::new("c3hcn", (18, 18), 5e-9),
+        Test::new("c3hcn010", (18, 18), 5e-9),
     ];
 
     for test in Vec::from(&tests[..]) {
@@ -143,7 +145,7 @@ fn asym() {
         check_mat!(
             &Dmat::from(got).abs(),
             &Dmat::from(want).abs(),
-            4e-9,
+            test.eps,
             &test.infile
         );
         // assert_abs_diff_eq!(got, want, epsilon = 2e-9);
@@ -153,7 +155,7 @@ fn asym() {
         // println!("{:.2e}", (got.clone() - want.clone()).max());
         // a little looser, but I guess that's from mass differences since these
         // are multiplied by 1/√w
-        assert_abs_diff_eq!(got, want, epsilon = 5e-9);
+        assert_abs_diff_eq!(got, want, epsilon = test.eps);
     }
 }
 
@@ -186,9 +188,12 @@ fn c3hcn_lxm() {
 #[test]
 fn sym() {
     let tests = [
-        Test::new("nh3", (12, 6)),
-        Test::new("ph3", (12, 6)),
-        Test::new("bipy", (21, 21)),
+        Test::new("nh3", (12, 6), 2e-9),
+        Test::new("ph3", (12, 6), 2e-9),
+        Test::new("bipy", (21, 21), 2e-9),
+        // actually had to take these from spectro2.out, maybe my local copy is
+        // broken, even after reverting my linalg work
+        Test::new("c2h-", (9, 4), 5e-8),
     ];
 
     for test in Vec::from(&tests[..]) {
@@ -218,12 +223,11 @@ fn sym() {
         let got = lxm.slice((0, 0), (s.n3n, s.nvib));
         let want = test.lxm.slice((0, 0), (s.n3n, s.nvib));
 
-        // println!("{:.2e}", (got.clone() - want.clone()).max());
-        check_mat(&got.abs(), &want.abs(), 2e-9, &test.infile);
+        check_mat!(&got.abs(), &want.abs(), test.eps, &test.infile);
 
         let got = lx.slice((0, 0), (s.n3n, s.nvib)).abs();
         let want = test.lx.slice((0, 0), (s.n3n, s.nvib)).abs();
-        check_mat(&got, &want, 2e-9, &test.infile);
+        check_mat!(&got, &want, test.eps, &test.infile);
     }
 }
 

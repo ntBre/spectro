@@ -2,6 +2,7 @@ use std::ops::{Index, IndexMut};
 
 use crate::utils::find4;
 
+#[derive(Debug)]
 pub struct F4qcm(Vec<f64>);
 
 impl F4qcm {

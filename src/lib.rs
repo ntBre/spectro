@@ -474,11 +474,11 @@ impl Spectro {
     /// on the z axis. for linear molecules, IATOM will obviously be on the z
     /// axis.
     fn bdegnl(&self, freq: &Dvec, lxm: &mut Dmat, w: &[f64], lx: &mut Dmat) {
-        /// cutoff for considering two modes degenerate
-        const TOL: f64 = 0.05;
+        // cutoff for considering two modes degenerate
+        let tol = if self.rotor.is_linear() { 1.0 } else { 0.05 };
         for ii in 0..self.nvib - 1 {
             for jj in ii + 1..self.nvib {
-                if (freq[ii] - freq[jj]).abs() < TOL {
+                if (freq[ii] - freq[jj]).abs() < tol {
                     /// size of the expected errors in lxm
                     const TOLER: f64 = 1e-5;
 
@@ -889,7 +889,7 @@ fn make_sym_funds(
     let (i1mode, i2mode, _) = Mode::partition(modes);
     let mut harms = Vec::new();
     let mut funds = Vec::new();
-    for ii in 0..dbg!(n1dm) {
+    for ii in 0..n1dm {
         let i = i1mode[ii];
         let mut val = freq[i] + xcnst[(i, i)] * 2.0;
         for jj in 0..n1dm {

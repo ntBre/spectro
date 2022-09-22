@@ -4,16 +4,16 @@ import numpy as np
 def print_mat(mat, rows, cols):
     for row in range(0, rows):
         for col in range(0, cols):
-            print(f"{mat[row,col]:20.12f}", end="")
+            print(f"{mat[row,col]:12.8f}", end="")
         print()
 
 
 # fxm = np.loadtxt("../testfiles/ph3/fxm_full", dtype=np.double)
 # want = np.loadtxt("../testfiles/ph3/pre_bdegnl_lxm", dtype=np.double)
 
-ROWS = 12
-COLS = 12
-fxm = np.loadtxt("../testfiles/ph3/py_fxm.in", dtype=np.double)
+fxm = np.loadtxt("../testfiles/c2h-/step_fxm", dtype=np.double)
+
+(ROWS, COLS) = fxm.shape
 
 w, v = np.linalg.eigh(fxm)
 

@@ -141,7 +141,7 @@ fn test_rot2nd() {
 }
 
 #[test]
-fn test_fxm() {
+fn fxm() {
     #[derive(Clone)]
     struct Test {
         infile: PathBuf,
@@ -163,6 +163,7 @@ fn test_fxm() {
     let tests = [
         //
         Test::new("h2o_sic", 9),
+        Test::new("c2h-", 9),
     ];
 
     for test in tests {
@@ -175,6 +176,6 @@ fn test_fxm() {
         let got = s.form_sec(fc2, &sqm);
         let mut want = test.want.clone();
         want.fill_upper_triangle_with_lower_triangle();
-        check_mat!(&got, &want, 4.4e-13, &test.infile.display());
+        check_mat!(&got, &want, 5e-13, &test.infile.display());
     }
 }

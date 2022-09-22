@@ -69,6 +69,8 @@ impl Spectro {
             (x, None, e)
         };
 
+        println!("xcnst={:.8}", xcnst);
+
         let (harms, funds) = if self.rotor.is_sym_top() {
             make_sym_funds(modes, &freq, &xcnst, &gcnst)
         } else {
