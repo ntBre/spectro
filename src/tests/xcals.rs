@@ -132,9 +132,10 @@ fn nondeg_nondeg() {
     let tests = [
         Test::new("nh3", 6, 24.716378286389887, 1e-11, 0.0),
         Test::new("ph3", 6, 20.748849036017717, 1e-11, 0.0),
-        Test::new("bipy", 15, 32.906770783666872, 1e-11, 0.0),
+        Test::new("bipy", 15, 32.906_770_783_666_87, 1e-11, 0.0),
+        Test::new("c2h-", 4, -1.0534319575869713, 1e-11, 6e-12),
     ];
-    for test in Vec::from(&tests[..]) {
+    for test in Vec::from(&tests[3..]) {
         let s = Spectro::load(&test.infile);
         let (freq, zmat, wila, f3qcm, f4qcm, fermi1, fermi2, modes) =
             setup(&test, &s);
@@ -235,7 +236,8 @@ fn gcnst1() {
     let tests = [
         Test::new("nh3", 6, 24.716378286389887, 5e-10, 3e-9),
         Test::new("ph3", 6, 20.748849036017717, 1e-11, 6e-12),
-        Test::new("bipy", 15, 32.906770783666872, 1e-11, 6e-12),
+        Test::new("bipy", 15, 32.906_770_783_666_87, 1e-11, 6e-12),
+        Test::new("c2h-", 4, -1.0534319575869713, 1e-11, 1.4),
     ];
     for test in Vec::from(&tests[..]) {
         let s = Spectro::load(&test.infile);
@@ -256,16 +258,31 @@ fn gcnst1() {
     }
 }
 
+macro_rules! warn {
+    ($msg: expr) => {
+        eprintln!(
+            "\nwarning: {} --> {}:{}:{}",
+            $msg,
+            file!(),
+            line!(),
+            column!()
+        );
+    };
+}
+
 #[test]
 fn sym() {
     let tests = [
         Test::new("nh3", 6, 24.716378286389887, 5e-10, 3e-9),
         Test::new("ph3", 6, 20.748849036017717, 1e-11, 6e-12),
         {
-            eprintln!("warning: high bipy gcnst eps");
+            warn!("high bipy gcnst eps");
             Test::new("bipy", 15, 32.906_770_783_666_87, 1e-11, 1.01)
         },
-        Test::new("c2h-", 4, -1.0534319575869713, 1e-11, 6e-12),
+        {
+            warn!("high c2h- gcnst eps");
+            Test::new("c2h-", 4, -1.0534319575869713, 1e-11, 1.3)
+        },
     ];
     for test in Vec::from(&tests[..]) {
         let s = Spectro::load(&test.infile);
