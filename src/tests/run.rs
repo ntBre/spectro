@@ -294,18 +294,20 @@ fn lin() {
         I2st(vec![(1, 1), (0, 0), (0, 0), (0, 0)]),
     ];
     let states = [
-        //
+        // triatomics
         lin_tri.clone(),
         lin_tri.clone(),
         lin_tri.clone(),
         lin_tri,
+        // tetraatomics
+        include!("../../testfiles/hmgnc/states.rs"),
     ];
     let mut tests = [
         Test::new("c2h-", true),
         Test::new("hcn", true),
         Test::new("hco+", true),
-        // Test::new("hmgnc", true),
         Test::new("hnc", true),
+        Test::new("hmgnc", true),
     ];
     for (i, test) in tests.iter_mut().enumerate() {
         for j in 0..test.want.rots.len() {

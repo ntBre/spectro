@@ -40,6 +40,7 @@ with open(infile, "r") as infile:
             search = False
 
 
+print("vec![")
 for s in sorted(states):
     state = states[s]
     if all(x == 0 for x in state.non_deg + state.deg_vt + state.deg_vl):
@@ -92,3 +93,4 @@ for s in sorted(states):
         }},
 """
         )
+print("]")
