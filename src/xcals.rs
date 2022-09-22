@@ -617,10 +617,7 @@ impl Spectro {
                     iyz += 1;
                 }
             }
-            #[allow(clippy::if_same_then_else)]
             if ixz > 0 && iyz > 0 {
-                (1, 2, 3, 0, 1)
-            } else if ixz > 0 {
                 (1, 2, 3, 0, 1)
             } else if iyz > 0 {
                 (0, 0, 4, 1, 0)
