@@ -261,8 +261,10 @@ fn sym() {
     let tests = [
         Test::new("nh3", 6, 24.716378286389887, 5e-10, 3e-9),
         Test::new("ph3", 6, 20.748849036017717, 1e-11, 6e-12),
-        // TODO fix this once I track down other issues
-        Test::new("bipy", 15, 32.906770783666872, 1e-11, 1.01),
+        {
+            eprintln!("warning: high bipy gcnst eps");
+            Test::new("bipy", 15, 32.906_770_783_666_87, 1e-11, 1.01)
+        },
     ];
     for test in Vec::from(&tests[..]) {
         let s = Spectro::load(&test.infile);

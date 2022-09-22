@@ -42,9 +42,6 @@ impl Spectro {
         let (_, ifrm1, ifrm2) = self.make_fermi_checks(fermi1, fermi2);
 
         if self.rotor.is_sym_top() {
-            // NOTE I think this is not going to work at all :( I think my
-            // ist/jst stuff inside rsfrm1 is going to break spectacularly here
-            // but we'll see
             for ii in 0..n1dm {
                 let ivib = i1mode[ii];
                 // type 1 fermi resonance
@@ -57,7 +54,7 @@ impl Spectro {
                 // type 2 fermi resonance
                 for jj in ii + 1..n1dm {
                     let jvib = i1mode[jj];
-                    if let Some(&kvib) = ifrm2.get(&(jvib, ivib)) {
+                    if let Some(&kvib) = ifrm2.get_either(&(jvib, ivib)) {
                         // +1 because that's how I inserted them in restst
                         let ijvib = ioff(max(ivib, jvib) + 1) + min(ivib, jvib);
                         let ijst = icombn[ijvib];
@@ -68,7 +65,7 @@ impl Spectro {
 
                 for jj in 0..n2dm {
                     let (jvib, _) = i2mode[jj];
-                    if let Some(&kvib) = ifrm2.get(&(jvib, ivib)) {
+                    if let Some(&kvib) = ifrm2.get_either(&(jvib, ivib)) {
                         let ijvib = ioff(max(ivib, jvib) + 1) + min(ivib, jvib);
                         let ijst = icombn[ijvib];
                         let kst = ifunda[kvib];
@@ -89,7 +86,7 @@ impl Spectro {
                 // type 2 again
                 for jj in ii + 1..n2dm {
                     let (jvib, _) = i2mode[jj];
-                    if let Some(&kvib) = ifrm2.get(&(jvib, ivib)) {
+                    if let Some(&kvib) = ifrm2.get_either(&(jvib, ivib)) {
                         let ijvib = ioff(max(ivib, jvib) + 1) + min(ivib, jvib);
                         let ijst = icombn[ijvib];
                         let kst = ifunda[kvib];

@@ -19,6 +19,16 @@ impl Ifrm2 {
         self.0.get(k)
     }
 
+    /// like [get] but also check for the key with the elements in the other
+    /// order
+    pub(crate) fn get_either(&self, k: &(usize, usize)) -> Option<&usize> {
+        if let Some(e) = self.0.get(k) {
+            Some(e)
+        } else {
+            self.0.get(&(k.1, k.0))
+        }
+    }
+
     /// check if `k` is contained in `self` and its value is `v`
     pub(crate) fn check(&self, k: (usize, usize), v: usize) -> bool {
         let tmp = self.get(&k);

@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+#[derive(Debug)]
 pub(crate) struct Ifrm1(HashMap<usize, usize>);
 
 impl Ifrm1 {
