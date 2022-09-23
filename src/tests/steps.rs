@@ -26,7 +26,7 @@ use std::{
 use symm::Molecule;
 
 #[test]
-fn test_load() {
+fn load_geom() {
     #[derive(Clone)]
     struct Test {
         infile: PathBuf,
@@ -65,6 +65,18 @@ fn test_load() {
              O      0.0000000     -0.0657528      0.0000000
              H      0.7574256      0.5217723      0.0000000",
         ),
+        Test::new(
+            "hmgnc",
+            matrix![
+            1.00000000, 0.00000000, 0.00000000;
+            0.00000000, 1.00000000, 0.00000000;
+            0.00000000, 0.00000000, -1.00000000;
+                ],
+            "H      0.0000000000      0.0000000000      2.8963283000
+	    Mg      0.0000000000      0.0000000000      1.2199359000
+	     N      0.0000000000      0.0000000000     -0.6943715000
+	     C      0.0000000000      0.0000000000     -1.8713225000",
+        ),
     ];
 
     for test in tests {
@@ -97,6 +109,7 @@ fn test_load_fc2() {
     let tests = [
         //
         Test::new("h2o_sic", 9),
+        Test::new("hmgnc", 12),
     ];
 
     for test in tests {
@@ -107,28 +120,31 @@ fn test_load_fc2() {
 }
 
 #[test]
-fn test_rot2nd() {
+fn rot2nd() {
     #[derive(Clone)]
     struct Test {
         infile: PathBuf,
         fort15: PathBuf,
         want: Dmat,
+        eps: f64,
     }
 
     impl Test {
-        fn new(dir: &'static str, n3n: usize) -> Self {
+        fn new(dir: &'static str, n3n: usize, eps: f64) -> Self {
             let start = Path::new("testfiles");
             Self {
                 infile: start.join(dir).join("spectro.in"),
                 fort15: start.join(dir).join("fort.15"),
                 want: load_dmat(start.join(dir).join("step_rot2nd"), n3n, n3n),
+                eps,
             }
         }
     }
 
     let tests = [
         //
-        Test::new("h2o_sic", 9),
+        Test::new("h2o_sic", 9, 4e-13),
+        Test::new("hmgnc", 12, 4.7e-13),
     ];
 
     for test in tests {
@@ -136,7 +152,7 @@ fn test_rot2nd() {
         let fc2 = load_fc2(test.fort15, s.n3n);
         let fc2 = s.rot2nd(fc2);
         let got = FACT2 * fc2;
-        check_mat!(&got, &test.want, 4e-13, &test.infile.display());
+        check_mat!(&got, &test.want, test.eps, &test.infile.display());
     }
 }
 
@@ -164,6 +180,7 @@ fn fxm() {
         //
         Test::new("h2o_sic", 9),
         Test::new("c2h-", 9),
+        Test::new("hmgnc", 12),
     ];
 
     for test in tests {

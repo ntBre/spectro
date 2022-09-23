@@ -195,7 +195,8 @@ impl Spectro {
                         let d3 = freq[(k)] + freq[(l)] - freq[(m)];
                         let d4 = -freq[(k)] + freq[(l)] + freq[(m)];
 
-                        if ifrm2.check((l, k), m) {
+                        // how many more of these should be check_either?
+                        if ifrm2.check_either((l, k), m) {
                             let delta = 1.0 / d1 + 1.0 / d2 + 1.0 / d4;
                             -(f3qcm[(k, l, m)].powi(2)) * delta / 16.0
                         } else if ifrm2.check((m, l), k) {
@@ -227,10 +228,10 @@ impl Spectro {
                         let d4 = -freq[(k)] + freq[(l)] + freq[(m)];
 
                         let klm = (k, l, m);
-                        if ifrm2.check((l, m), k) {
+                        if l == m && ifrm2.check((l, m), k) {
                             let delta = 8.0 * (2.0 * freq[(l)] + freq[(k)]);
                             -(f3qcm[(klm)].powi(2)) / delta
-                        } else if ifrm2.check((k, m), l) {
+                        } else if k == m && ifrm2.check((k, m), l) {
                             let delta = 8.0 * (2.0 * freq[(k)] + freq[(l)]);
                             -(f3qcm[(klm)].powi(2)) / delta
                         } else if ifrm2.check((k, l), m) {
@@ -305,7 +306,8 @@ impl Spectro {
                         let d4 = -freq[(k)] + freq[(l)] + freq[(m)];
 
                         let klm = (k, l, m);
-                        if ifrm2.check((l, k), m) {
+                        // TODO should more be check_either?
+                        if ifrm2.check_either((l, k), m) {
                             let delta = 1.0 / d1 + 1.0 / d2 + 1.0 / d4;
                             -(f3qcm[(klm)].powi(2)) * delta / 8.0
                         } else if ifrm2.check((m, l), k) {
@@ -460,7 +462,9 @@ impl Spectro {
                     let d3 = freq[(k)] + freq[(l)] - freq[(m)];
                     let d4 = -freq[(k)] + freq[(l)] + freq[(m)];
 
-                    if ifrm2.check((l, m), k) {
+                    // ifrm2a checks mean both elements of the key are the same,
+                    // really more of an ifrm1 check
+                    if l == m && ifrm2.check((l, m), k) {
                         let delta = 8.0 * (2.0 * freq[(l)] + freq[(k)]);
                         valu -= (f3qcm[(klm)].powi(2)) / delta;
                     } else if ifrm2.check((k, l), m) {

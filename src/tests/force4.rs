@@ -67,6 +67,7 @@ fn sym() {
         Test::new("nh3", 2.2e-6),
         Test::new("ph3", 2.2e-6),
         Test::new("bipy", 2.2e-6),
+        Test::new("hmgnc", 2.2e-6),
     ];
     for test in tests {
         let s = Spectro::load(&test.infile);

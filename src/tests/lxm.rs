@@ -192,6 +192,7 @@ fn sym() {
         Test::new("ph3", (12, 6), 2e-9),
         Test::new("bipy", (21, 21), 2e-9),
         Test::new("c2h-", (9, 9), 2e-9),
+        Test::new("hmgnc", (12, 12), 2e-9),
     ];
 
     for test in Vec::from(&tests[..]) {

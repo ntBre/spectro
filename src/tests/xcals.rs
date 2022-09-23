@@ -134,8 +134,9 @@ fn nondeg_nondeg() {
         Test::new("ph3", 6, 20.748849036017717, 1e-11, 0.0),
         Test::new("bipy", 15, 32.906_770_783_666_87, 1e-11, 0.0),
         Test::new("c2h-", 4, -1.0534319575869713, 1e-11, 6e-12),
+        Test::new("hmgnc", 7, -0.12246977241439683, 1e-11, 6e-12),
     ];
-    for test in Vec::from(&tests[3..]) {
+    for test in Vec::from(&tests[..]) {
         let s = Spectro::load(&test.infile);
         let (freq, zmat, wila, f3qcm, f4qcm, fermi1, fermi2, modes) =
             setup(&test, &s);
@@ -163,6 +164,7 @@ fn nondeg_deg() {
         Test::new("nh3", 6, 24.716378286389887, 4e-10, 0.0),
         Test::new("ph3", 6, 20.748849036017717, 1e-11, 0.0),
         Test::new("bipy", 15, 32.906_770_783_666_87, 1e-11, 0.0),
+        Test::new("hmgnc", 7, -0.12246977241439683, 1e-11, 6e-12),
     ];
     for test in Vec::from(&tests[..]) {
         let s = Spectro::load(&test.infile);
@@ -198,6 +200,7 @@ fn deg_deg1() {
         Test::new("nh3", 6, 24.716378286389887, 5e-10, 0.0),
         Test::new("ph3", 6, 20.748849036017717, 1e-11, 0.0),
         Test::new("bipy", 15, 32.906_770_783_666_87, 1e-11, 0.0),
+        Test::new("hmgnc", 7, -0.12246977241439683, 1e-11, 6e-12),
     ];
     for test in Vec::from(&tests[..]) {
         let s = Spectro::load(&test.infile);
@@ -238,6 +241,7 @@ fn gcnst1() {
         Test::new("ph3", 6, 20.748849036017717, 1e-11, 6e-12),
         Test::new("bipy", 15, 32.906_770_783_666_87, 1e-11, 6e-12),
         Test::new("c2h-", 4, -1.0534319575869713, 1e-11, 6e-12),
+        Test::new("hmgnc", 7, -1.0534319575869713, 1e-11, 6e-12),
     ];
     for test in Vec::from(&tests[..]) {
         let s = Spectro::load(&test.infile);
@@ -280,6 +284,7 @@ fn sym() {
             Test::new("bipy", 15, 32.906_770_783_666_87, 1e-11, 1.01)
         },
         Test::new("c2h-", 4, -1.0534319575869713, 1e-11, 6e-12),
+        Test::new("hmgnc", 7, -0.12246977241439683, 1e-11, 6e-12),
     ];
     for test in Vec::from(&tests[..]) {
         let s = Spectro::load(&test.infile);

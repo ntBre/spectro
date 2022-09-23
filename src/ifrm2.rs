@@ -34,6 +34,17 @@ impl Ifrm2 {
         let tmp = self.get(&k);
         tmp.is_some() && *tmp.unwrap() == v
     }
+
+    /// like [check] but also check for the key with the elements in the other
+    /// order
+    pub(crate) fn check_either(&self, k: (usize, usize), v: usize) -> bool {
+        let tmp = self.get(&k);
+        if tmp.is_some() && *tmp.unwrap() == v {
+            return true;
+        }
+        let tmp = self.get(&(k.1, k.0));
+        tmp.is_some() && *tmp.unwrap() == v
+    }
 }
 
 impl std::fmt::Debug for Ifrm2 {

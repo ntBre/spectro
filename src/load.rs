@@ -158,6 +158,14 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
             D2h { axes: _, planes: _ } => todo!(),
         };
     }
+    // linear molecules should have the unique moi in the Z position. in case x
+    // and y got swapped (since their mois are equal), swap them back to keep
+    // the original order
+    if ret.rotor.is_linear() {
+        assert_eq!(ret.axes.column(2), nalgebra::vector![0.0, 0.0, -1.0]);
+        ret.axes.set_column(0, &nalgebra::vector![1.0, 0.0, 0.0]);
+        ret.axes.set_column(1, &nalgebra::vector![0.0, 1.0, 0.0]);
+    }
     ret.natom = ret.natoms();
     let n3n = 3 * ret.natoms();
     ret.n3n = n3n;

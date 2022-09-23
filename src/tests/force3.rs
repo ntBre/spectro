@@ -54,7 +54,7 @@ fn inner(tests: &[Test]) {
 }
 
 #[test]
-pub(crate) fn asym() {
+fn asym() {
     let tests = [
         Test::new("h2o", 4e-6),
         Test::new("h2co", 3e-6),
@@ -66,12 +66,13 @@ pub(crate) fn asym() {
 }
 
 #[test]
-pub(crate) fn sym() {
+fn sym() {
     let tests = [
         Test::new("nh3", 5e-6),
         Test::new("ph3", 3e-6),
         Test::new("bipy", 3e-6),
         Test::new("c2h-", 3e-6),
+        Test::new("hmgnc", 3e-6),
     ];
     for test in tests {
         let s = Spectro::load(&test.infile);

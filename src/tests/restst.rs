@@ -622,6 +622,30 @@ fn sym() {
                 ],
             },
         ),
+        Test::new(
+            "hmgnc",
+            Restst {
+                coriolis: vec![],
+                fermi1: vec![Fermi1::new(3, 2)],
+                fermi2: vec![
+                    Fermi2::new(2, 3, 3),
+                    Fermi2::new(2, 3, 5),
+                    Fermi2::new(2, 5, 3),
+                    Fermi2::new(5, 3, 2),
+                    Fermi2::new(5, 3, 2),
+                ],
+                darling: vec![],
+                states: include!("../../testfiles/hmgnc/states.rs"),
+                // I just copied these from the output
+                modes: vec![I2(3, 4), I2(5, 6), I1(0), I1(1), I1(2)],
+                ifunda: vec![1, 2, 3, 4, 4, 5, 5],
+                iovrtn: vec![6, 7, 8, 9, 9, 10, 10],
+                icombn: vec![
+                    0, 11, 0, 12, 15, 0, 13, 16, 18, 0, 13, 16, 18, 0, 0, 14,
+                    17, 19, 20, 20, 0, 14, 17, 19, 20, 20, 0, 0,
+                ],
+            },
+        ),
     ];
     inner(&tests[..]);
 }
