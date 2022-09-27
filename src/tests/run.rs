@@ -320,3 +320,30 @@ fn lin() {
     }
     inner!(&tests);
 }
+
+#[test]
+#[ignore]
+fn sphere() {
+    use State::*;
+    let states = [include!("../../testfiles/tdrane/states.rs")];
+    // can't be detected as a spherical top here or in fortran version.
+    // currently failing with "big problem in xcals" because spherical tops
+    // should actually run through wcals. but I can't decide to use wcals
+    // without detecting a true spherical top. in the fortran version it fails
+    // at restst.f:1244 because the size of i3[xyz]st wasn't set properly at
+    // mains.f:429 because isphtp isn't set from dist.f, so the root issue is
+    // the same as I'm having. see if methane has the same issue, and then
+    // potentially lower the threshold for the third moi. if two of them are the
+    // same to the rigorous threshold and one differs by a slightly larger
+    // amount, it might still be worth using the spherical top routines. in
+    // fortran I can just set n3sz to nvib even for a symmetric top and then
+    // trust the user's degmode input, but that should then hit the wcals vs
+    // xcals issue I'm having here.
+    let mut tests = [Test::new("tdrane", true)];
+    for (i, test) in tests.iter_mut().enumerate() {
+        for j in 0..test.want.rots.len() {
+            test.want.rots[j].state = states[i][j].clone();
+        }
+    }
+    inner!(&tests);
+}

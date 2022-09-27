@@ -51,7 +51,7 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
         } else if close(pr[1], pr[2], TOL) {
             1
         } else {
-            panic!("not a symmetric top");
+            panic!("not a symmetric top: {:.8}", pr);
         };
 
         if iaxis == 1 {
