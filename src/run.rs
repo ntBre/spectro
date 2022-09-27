@@ -9,7 +9,7 @@ use crate::{consts::FACT2, quartic::Quartic, resonance::Restst};
 use std::path::Path;
 
 impl Spectro {
-    pub fn run<P>(self, fort15: P, fort30: P, fort40: P) -> Output
+    pub fn run<P>(&self, fort15: P, fort30: P, fort40: P) -> Output
     where
         P: AsRef<Path> + std::fmt::Debug,
     {
@@ -46,7 +46,7 @@ impl Spectro {
 
         let (zmat, wila) = self.zeta(&lxm, &w);
 
-        let restst = Restst::new(&self, &zmat, &f3qcm, &freq);
+        let restst = Restst::new(self, &zmat, &f3qcm, &freq);
         let Restst {
             coriolis,
             fermi1,
@@ -110,7 +110,7 @@ impl Spectro {
 
         // print_vib_states(&eng, &states);
 
-        let quartic = Quartic::new(&self, &freq, &wila);
+        let quartic = Quartic::new(self, &freq, &wila);
         let rots = if self.rotor.is_sym_top() {
             if self.rotor.is_spherical_top() {
                 panic!("don't know what to do with a spherical top here");
@@ -120,7 +120,7 @@ impl Spectro {
             self.rota(&rotnst, states, &quartic)
         };
 
-        let sextic = Sextic::new(&self, &wila, &zmat, &freq, &f3qcm);
+        let sextic = Sextic::new(self, &wila, &zmat, &freq, &f3qcm);
 
         Output {
             harms,

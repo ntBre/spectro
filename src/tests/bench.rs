@@ -57,3 +57,14 @@ fn bench_force4(b: &mut test::Bencher) {
         force4(s.n3n, &f4x, &lx, s.nvib, &freq);
     });
 }
+
+#[bench]
+fn run(b: &mut test::Bencher) {
+    let s = Spectro::load("testfiles/h2o/spectro.in");
+    let fort15 = "testfiles/h2o/fort.15";
+    let fort30 = "testfiles/h2o/fort.30";
+    let fort40 = "testfiles/h2o/fort.40";
+    b.iter(|| {
+        s.run(fort15, fort30, fort40);
+    });
+}

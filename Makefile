@@ -5,6 +5,9 @@ TESTFLAGS = -- --nocapture --test-threads=1
 test:
 	cargo test ${TESTFLAGS} ${ARGS}
 
+bench:
+	cargo bench ${TESTFLAGS} ${ARGS}
+
 %.pdf : %.gv
 	dot -Tpdf $< -o $@
 
