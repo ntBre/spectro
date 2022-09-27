@@ -339,6 +339,12 @@ fn sphere() {
     // fortran I can just set n3sz to nvib even for a symmetric top and then
     // trust the user's degmode input, but that should then hit the wcals vs
     // xcals issue I'm having here.
+
+    // I can already tell ch4 is going to have the same issue. molpro optimized
+    // the geometry in Cs symmetry and already shows that it has two different
+    // rotational constants. How then do you ever get a true symmetric top? I
+    // guess you must have to use a larger tolerance on the third rotational
+    // constant
     let mut tests = [Test::new("tdrane", true)];
     for (i, test) in tests.iter_mut().enumerate() {
         for j in 0..test.want.rots.len() {
