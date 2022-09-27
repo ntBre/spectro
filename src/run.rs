@@ -120,7 +120,11 @@ impl Spectro {
             self.rota(&rotnst, states, &quartic)
         };
 
-        let sextic = Sextic::new(self, &wila, &zmat, &freq, &f3qcm);
+        let sextic = if !self.rotor.is_linear() {
+            Sextic::new(self, &wila, &zmat, &freq, &f3qcm)
+        } else {
+            Sextic::default()
+        };
 
         Output {
             harms,
