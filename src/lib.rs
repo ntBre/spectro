@@ -19,7 +19,7 @@ use nalgebra::DMatrix;
 use quartic::Quartic;
 use resonance::{Coriolis, Fermi1, Fermi2};
 use rot::Rot;
-use rotor::{Rotor, ROTOR_EPS};
+use rotor::Rotor;
 use state::State;
 use symm::{Axis, Molecule};
 use tensor::Tensor4;
@@ -446,12 +446,12 @@ impl Spectro {
     /// already been normalized and reordered. These tests are taken from the
     /// [Crawford Programming
     /// Projects](https://github.com/CrawfordGroup/ProgrammingProjects/blob/master/Project%2301/hints/step7-solution.md)
-    fn rotor_type(&self, moms: &nalgebra::Vector3<f64>) -> Rotor {
+    fn rotor_type(&self, moms: &nalgebra::Vector3<f64>, eps: f64) -> Rotor {
         if self.geom.atoms.len() == 2 {
             return Rotor::Diatomic;
         }
-        let close = |a, b| f64::abs(a - b) < ROTOR_EPS;
-        if moms[0] < ROTOR_EPS {
+        let close = |a, b| f64::abs(a - b) < eps;
+        if moms[0] < eps {
             Rotor::Linear
         } else if close(moms[0], moms[1]) && close(moms[1], moms[2]) {
             Rotor::SphericalTop

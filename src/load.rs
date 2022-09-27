@@ -41,9 +41,9 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
         .iter()
         .map(|m| if *m > 1e-2 { CONST / m } else { 0.0 })
         .collect();
-    ret.rotor = ret.rotor_type(&pr);
+    const TOL: f64 = 1e-5;
+    ret.rotor = ret.rotor_type(&pr, TOL);
     if ret.rotor.is_sym_top() {
-        const TOL: f64 = 1e-5;
         let iaxis = if close(pr[0], pr[1], TOL) {
             3
         } else if close(pr[0], pr[2], TOL) {
@@ -51,7 +51,7 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
         } else if close(pr[1], pr[2], TOL) {
             1
         } else {
-            panic!("not a symmetric top: {:.8}", pr);
+            panic!("not a symmetric top: {:.8}, {}", pr, ret.rotor);
         };
 
         if iaxis == 1 {

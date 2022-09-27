@@ -6,10 +6,6 @@ use crate::{mode::Mode, Dvec};
 use std::fmt::Display;
 type Tensor3 = tensor::tensor3::Tensor3<f64>;
 
-/// cutoff for determining if moments of inertia are equal for rotor
-/// classification
-pub(crate) const ROTOR_EPS: f64 = 1.0e-4;
-
 // TODO probably need to get rid of default here. it will complicate the spectro
 // usage a little bit but then I don't have to have the None variant and keep
 // checking for it
