@@ -214,6 +214,7 @@ fn asym() {
         Test::new("hoof", false),
         Test::new("hosh", false),
         Test::new("hssh", false),
+        Test::new("nosym_tdrane", false),
     ];
     inner!(&tests);
 }
