@@ -1,4 +1,5 @@
 use super::{make_sym_funds, resona, Output, Spectro};
+use crate::sextic::Sextic;
 use crate::utils::{
     force3, force4, linalg::symm_eigen_decomp, load_fc2, load_fc3, load_fc4,
     make_funds, to_wavenumbers,
@@ -119,11 +120,15 @@ impl Spectro {
             self.rota(&rotnst, states, &quartic)
         };
 
+        let sextic = Sextic::new(&self, &wila, &zmat, &freq, &f3qcm);
+
         Output {
             harms,
             funds,
-            rots,
             corrs,
+            rots,
+            quartic,
+            sextic,
         }
     }
 }

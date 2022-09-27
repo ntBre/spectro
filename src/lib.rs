@@ -20,6 +20,7 @@ use quartic::Quartic;
 use resonance::{Coriolis, Fermi1, Fermi2};
 use rot::Rot;
 use rotor::Rotor;
+use sextic::Sextic;
 use state::State;
 use symm::{Axis, Molecule};
 use tensor::Tensor4;
@@ -1054,4 +1055,10 @@ pub struct Output {
 
     /// vibrationally averaged rotational constants
     pub rots: Vec<Rot>,
+
+    /// quartic distortion coefficients
+    pub quartic: Quartic,
+
+    /// sextic distortion coefficients
+    pub sextic: Sextic,
 }

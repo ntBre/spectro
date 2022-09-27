@@ -32,6 +32,8 @@ fn load_want(filename: PathBuf, sym: bool) -> Output {
         funds: want.funds,
         corrs: want.corrs,
         rots,
+        quartic: Quartic::default(),
+        sextic: Sextic::default(),
     }
 }
 
