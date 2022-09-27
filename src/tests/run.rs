@@ -298,8 +298,10 @@ fn lin() {
         lin_tri.clone(),
         lin_tri.clone(),
         lin_tri.clone(),
+        lin_tri.clone(),
         lin_tri,
         // tetraatomics
+        include!("../../testfiles/hmgnc/states.rs"),
         include!("../../testfiles/hmgnc/states.rs"),
     ];
     let mut tests = [
@@ -307,7 +309,9 @@ fn lin() {
         Test::new("hcn", true),
         Test::new("hco+", true),
         Test::new("hnc", true),
+        Test::new("h2o+", true),
         Test::new("hmgnc", true),
+        Test::new("alnco", true),
     ];
     for (i, test) in tests.iter_mut().enumerate() {
         for j in 0..test.want.rots.len() {
