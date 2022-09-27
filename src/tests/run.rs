@@ -271,11 +271,13 @@ fn sym() {
                 (0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0),
             ]),
         ],
+        // include!("../../testfiles/c3h3+/states.rs"),
     ];
     let mut tests = [
         Test::new("nh3", true),
         Test::new("ph3", true),
         Test::new("bipy", true),
+        // Test::new("c3h3+", true),
     ];
     for (i, test) in tests.iter_mut().enumerate() {
         for j in 0..test.want.rots.len() {
