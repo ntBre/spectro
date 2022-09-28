@@ -75,6 +75,8 @@ fn asym() {
 fn sym() {
     let tests = [
         //
+        Test::new("nh3"),
+        Test::new("ph3"),
         Test::new("bipy"),
     ];
     for test in Vec::from(&tests[..]) {
@@ -92,13 +94,18 @@ fn sym() {
         let (_zmat, wila) = s.zeta(&lxm, &w);
         let got = Quartic::new(&s, &freq, &wila);
 
-        let (g1, g2, g3) = got.srots();
-        let (w1, w2, w3) = test.want.srots();
-
-        assert_abs_diff_eq!(
-            nalgebra::dvector![g1, g2, g3],
-            nalgebra::dvector![w1, w2, w3],
-            epsilon = 2e-5
-        );
+        // sigma is so crazy that its epsilon is much higher. this would be a
+        // good use for the approx relative difference
+        assert_abs_diff_eq!(got.sigma, test.want.sigma, epsilon = 1.0);
+        let got = Quartic {
+            sigma: test.want.sigma,
+            ..got.clone()
+        };
+        if abs_diff_ne!(got, test.want, epsilon = 2e-5) {
+            println!("got\n{}", got);
+            println!("want\n{}", test.want);
+            println!("diff\n{}", got - test.want.clone());
+            panic!("{} failed", test.infile);
+        }
     }
 }

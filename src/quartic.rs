@@ -3,6 +3,7 @@ use std::{fmt::Display, ops::Sub};
 use approx::AbsDiffEq;
 
 use crate::{
+    rotor::Rotor,
     utils::{make_tau, princ_cart, tau_prime},
     Dmat, Dvec, Spectro,
 };
@@ -170,7 +171,8 @@ impl Quartic {
     /// calculate the quartic centrifugal distortion constants
     pub(crate) fn new(s: &Spectro, freq: &Dvec, wila: &Dmat) -> Self {
         // the only thing spectro computes for a linear molecule is "De" which I
-        // don't think is used anywhere else.
+        // don't think is used anywhere else. TODO diatomics are probably linear
+        // too. that might be handled in is_linear though
         if s.is_linear() {
             return Self::default();
         }
@@ -178,37 +180,17 @@ impl Quartic {
         let tau = make_tau(maxcor, s.nvib, freq, &s.primat, wila);
         let taupcm = tau_prime(maxcor, &tau);
         // NOTE: pretty sure this is always the case
-        let irep = if s.rotor.is_sym_top() { 5 } else { 0 };
-        let (ic, id) = princ_cart(irep);
-
-        // TODO try to match this
-        let (rkappa, sigma) = if s.rotor.is_sym_top()
-            && !s.rotor.is_linear()
-            && !s.rotor.is_spherical_top()
-        {
-            let rkappa =
-                (2.0 * s.rotcon[id[0]] - s.rotcon[id[1]] - s.rotcon[id[2]])
-                    / (s.rotcon[id[1]] - s.rotcon[id[2]]);
-            if rkappa < 0.0 {
-                // prolate
-                let sigma = -9999999999999.0;
-                (rkappa, sigma)
-            } else {
-                // oblate
-                let bo = (rkappa - 1.0) / (rkappa + 3.0);
-                let sigma = 1.0 / bo;
-                (rkappa, sigma)
-            }
-        } else if s.rotor.is_asymm_top() {
-            let sigma =
-                (2.0 * s.rotcon[id[2]] - s.rotcon[id[0]] - s.rotcon[id[1]])
-                    / (s.rotcon[id[0]] - s.rotcon[id[1]]);
-            let rkappa = (2.0 * s.rotcon[1] - s.rotcon[0] - s.rotcon[2])
-                / (s.rotcon[0] - s.rotcon[2]);
-            (rkappa, sigma)
-        } else {
-            panic!("didn't expect that kind");
+        let mut irep = match s.rotor {
+            Rotor::Diatomic => todo!(),
+            Rotor::Linear => unreachable!("we already returned"),
+            Rotor::SphericalTop => todo!(),
+            Rotor::OblateSymmTop => 5,
+            Rotor::ProlateSymmTop => 0,
+            Rotor::AsymmTop => 0,
+            Rotor::None => todo!(),
         };
+
+        let (ic, id) = princ_cart(irep);
 
         let mut t = Dmat::zeros(maxcor, maxcor);
         for ixyz in 0..maxcor {
@@ -225,18 +207,51 @@ impl Quartic {
         let t022 = (t[(0, 2)] - t[(1, 2)]) / 2.0e0 - t202;
         let t004 = (t[(0, 0)] + t[(1, 1)] - 2.0e0 * t[(0, 1)]) / 16.0e0;
 
+        let mut ret = Quartic::default();
+
+        let (rkappa, sigma) = if s.rotor.is_sym_top()
+            && !s.rotor.is_linear()
+            && !s.rotor.is_spherical_top()
+        {
+            let rkappa =
+                (2.0 * s.rotcon[id[0]] - s.rotcon[id[1]] - s.rotcon[id[2]])
+                    / (s.rotcon[id[1]] - s.rotcon[id[2]]);
+            if rkappa < 0.0 {
+                // prolate
+                irep = 2;
+                let sigma = -9999999999999.0;
+                (rkappa, sigma)
+            } else {
+                // oblate
+                let bo = (rkappa - 1.0) / (rkappa + 3.0);
+                let sigma = 1.0 / bo;
+                (rkappa, sigma)
+            }
+        } else if s.rotor.is_asymm_top() {
+            let sigma =
+                (2.0 * s.rotcon[id[2]] - s.rotcon[id[0]] - s.rotcon[id[1]])
+                    / (s.rotcon[id[0]] - s.rotcon[id[1]]);
+            let rkappa = (2.0 * s.rotcon[1] - s.rotcon[0] - s.rotcon[2])
+                / (s.rotcon[0] - s.rotcon[2]);
+            ret.delj = -t400 - 2.0 * t004;
+            ret.delk = -t040 - 10.0 * t004;
+            ret.deljk = -t220 + 12.0 * t004;
+            ret.sdelk = -t022 - 4.0 * sigma * t004;
+            ret.sdelj = -t202;
+            ret.bxa = s.rotcon[id[0]] - 8.0 * (sigma + 1.0) * t004;
+            ret.bya = s.rotcon[id[1]] + 8.0 * (sigma - 1.0) * t004;
+            ret.bza = s.rotcon[id[2]] + 16.0 * t004;
+            (rkappa, sigma)
+        } else {
+            panic!("didn't expect that kind");
+        };
+
+        let (ic, id) = princ_cart(irep);
+
         let djw = -taupcm[(ic[0], ic[0])] / 4.0;
         Quartic {
             // coefficients in the Watson A reduction
-            delj: -t400 - 2.0 * t004,
-            delk: -t040 - 10.0 * t004,
-            deljk: -t220 + 12.0 * t004,
-            sdelk: -t022 - 4.0 * sigma * t004,
-            sdelj: -t202,
             // effective rotational constants
-            bxa: s.rotcon[id[0]] - 8.0 * (sigma + 1.0) * t004,
-            bya: s.rotcon[id[1]] + 8.0 * (sigma - 1.0) * t004,
-            bza: s.rotcon[id[2]] + 16.0 * t004,
             // nielsen centrifugal distortion constants
             djn: -t400,
             djkn: -t220,
@@ -261,6 +276,7 @@ impl Quartic {
                 + taupcm[(ic[0], ic[2])] / 2.0,
             sigma,
             rkappa,
+            ..ret
         }
     }
 }
