@@ -16,7 +16,7 @@ use crate::{
 /// values in Watson S. djw, djkw, and dkw are Wilson's centrifugal distortion
 /// constants. djn, djkn, dkn, sdjn, r5, and r6 are Nielsen distortion constants
 #[cfg_attr(test, derive(serde::Deserialize))]
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize)]
 pub struct Quartic {
     pub sigma: f64,
     pub rkappa: f64,

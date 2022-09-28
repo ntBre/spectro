@@ -3,7 +3,7 @@ use std::fmt::Display;
 use crate::{quartic::Quartic, rot::Rot, sextic::Sextic};
 
 /// contains all of the output data from running Spectro
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize)]
 pub struct Output {
     /// harmonic frequencies
     pub harms: Vec<f64>,

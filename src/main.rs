@@ -1,21 +1,35 @@
 use std::path::Path;
 
+use clap::Parser;
 use spectro::Spectro;
 
+#[derive(Debug, Parser)]
+#[command(author, version, about, long_about = None)]
+struct Config {
+    /// Optional name to operate on
+    #[arg(value_parser)]
+    infile: String,
+
+    /// Writes the output in JSON format for use by other programs
+    #[arg(short, long, value_parser, default_value_t = false)]
+    json: bool,
+}
+
 fn main() -> Result<(), std::io::Error> {
-    let args: Vec<_> = std::env::args().collect();
-    let infile = match args.get(1) {
-        Some(f) => f,
-        // in this case, dir also just becomes .
-        None => todo!("need to read from stdin"),
-    };
-    let spectro = Spectro::load(infile);
-    let infile = Path::new(infile);
+    let cfg = Config::parse();
+    let spectro = Spectro::load(&cfg.infile);
+    let infile = Path::new(&cfg.infile);
     let dir = infile.parent().unwrap_or_else(|| Path::new("."));
     let (got, _) = spectro.run(
         dir.join("fort.15"),
         dir.join("fort.30"),
         dir.join("fort.40"),
     );
-    spectro.write_output(&mut std::io::stdout(), got)
+    if cfg.json {
+        let data = serde_json::to_string_pretty(&got)?;
+        println!("{}", data);
+    } else {
+        spectro.write_output(&mut std::io::stdout(), got)?;
+    }
+    Ok(())
 }

@@ -17,8 +17,8 @@ use crate::{
 /// struct holding the sextic distortion constants. For an asymmetric top, the
 /// field names are correct. For a symmetric top, phi->H and sphij->h1,
 /// sphijk->h2, and sphik->h3. TODO make this an enum to get rid of this comment
-#[cfg_attr(test, derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(test, derive(serde::Deserialize))]
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize)]
 pub struct Sextic {
     pub(crate) phij: f64,
     pub(crate) phijk: f64,
