@@ -7,5 +7,5 @@ fn main() {
         "testfiles/c3h2/fort.30",
         "testfiles/c3h2/fort.40",
     );
-    dbg!(got);
+    println!("{}", got);
 }

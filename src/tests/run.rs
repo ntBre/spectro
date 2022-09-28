@@ -6,7 +6,7 @@ use std::{
 use approx::abs_diff_eq;
 use serde::Deserialize;
 
-use crate::*;
+use crate::{output::Output, sextic::Sextic, *};
 
 use na::DVector;
 use nalgebra as na;

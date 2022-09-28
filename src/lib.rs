@@ -16,11 +16,11 @@ use f4qcm::F4qcm;
 use ifrm1::Ifrm1;
 use ifrm2::Ifrm2;
 use nalgebra::DMatrix;
+pub use output::*;
 use quartic::Quartic;
 use resonance::{Coriolis, Fermi1, Fermi2};
 use rot::Rot;
 use rotor::Rotor;
-use sextic::Sextic;
 use state::State;
 use symm::{Axis, Molecule};
 use tensor::Tensor4;
@@ -36,6 +36,7 @@ mod ifrm1;
 mod ifrm2;
 mod load;
 mod mode;
+pub mod output;
 mod quartic;
 mod resonance;
 mod rot;
@@ -1039,26 +1040,4 @@ fn make_resin(
     }
     let data: Vec<_> = data.iter().flatten().cloned().collect();
     DMatrix::<usize>::from_row_slice(data.len() / n1dm, n1dm, &data)
-}
-
-/// contains all of the output data from running Spectro
-#[derive(Clone, Debug)]
-pub struct Output {
-    /// harmonic frequencies
-    pub harms: Vec<f64>,
-
-    /// partially resonance-corrected anharmonic frequencies
-    pub funds: Vec<f64>,
-
-    /// fully resonance-corrected anharmonic frequencies
-    pub corrs: Vec<f64>,
-
-    /// vibrationally averaged rotational constants
-    pub rots: Vec<Rot>,
-
-    /// quartic distortion coefficients
-    pub quartic: Quartic,
-
-    /// sextic distortion coefficients
-    pub sextic: Sextic,
 }
