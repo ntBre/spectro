@@ -9,7 +9,7 @@ use crate::{consts::FACT2, quartic::Quartic, resonance::Restst};
 use std::path::Path;
 
 impl Spectro {
-    pub fn run<P>(&self, fort15: P, fort30: P, fort40: P) -> Output
+    pub fn run<P>(&self, fort15: P, fort30: P, fort40: P) -> (Output, Restst)
     where
         P: AsRef<Path> + std::fmt::Debug,
     {
@@ -126,13 +126,16 @@ impl Spectro {
             Sextic::default()
         };
 
-        Output {
-            harms,
-            funds,
-            corrs,
-            rots,
-            quartic,
-            sextic,
-        }
+        (
+            Output {
+                harms,
+                funds,
+                corrs,
+                rots,
+                quartic,
+                sextic,
+            },
+            restst,
+        )
     }
 }

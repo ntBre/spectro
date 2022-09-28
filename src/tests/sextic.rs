@@ -1,4 +1,4 @@
-use std::{fmt::Display, path::Path};
+use std::path::Path;
 
 use crate::{consts::FACT2, sextic::Sextic, *};
 
@@ -29,12 +29,6 @@ impl Test {
             ),
             want,
         }
-    }
-}
-
-impl Display for Sextic {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", serde_json::to_string_pretty(self).unwrap())
     }
 }
 

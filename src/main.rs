@@ -12,7 +12,7 @@ fn main() -> Result<(), std::io::Error> {
     let spectro = Spectro::load(infile);
     let infile = Path::new(infile);
     let dir = infile.parent().unwrap_or_else(|| Path::new("."));
-    let got = spectro.run(
+    let (got, _) = spectro.run(
         dir.join("fort.15"),
         dir.join("fort.30"),
         dir.join("fort.40"),

@@ -580,6 +580,14 @@ fn make_phi(
     phi
 }
 
+#[cfg(test)]
+impl Display for Sextic {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", serde_json::to_string_pretty(self).unwrap())
+    }
+}
+
+#[cfg(not(test))]
 impl Display for Sextic {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Watson A Reduction (S for symmetric tops)")?;
