@@ -428,6 +428,11 @@ impl Sextic {
         f3qcm: &F3qcm,
     ) -> Self {
         let mut ret = Self::default();
+        // the only thing we can compute for linear molecules is He, which is
+        // phi(1, 1, 1) in fortran
+        if s.rotor.is_linear() {
+            return ret;
+        }
         let nvib = s.nvib;
         let maxcor = if s.is_linear() { 2 } else { 3 };
         let c = c_mat(maxcor, nvib, freq, &s.primat, wila);
@@ -437,7 +442,7 @@ impl Sextic {
         let scc = scc(maxcor, tau, &s.rotcon, nvib, freq, cc, f3qcm, &c, s);
         // says this is the default representation and sets it to 1 if it was
         // originally 0. NOTE my 0 is fortran 1
-        let irep = 0;
+        let irep = if s.rotor.is_sym_top() { 5 } else { 0 };
         let (ic, id) = princ_cart(irep);
         let mut t = Dmat::zeros(maxcor, maxcor);
         for ixyz in 0..maxcor {
@@ -465,15 +470,10 @@ impl Sextic {
             - 2.0 * phi420
             - 3.0 * phi600;
         let phi060 = phi[(3 - 1, 3 - 1, 3 - 1)] - phi240 - phi420 - phi600;
-        let phi402 = 15.0 * (phi[(0, 0, 0)] - phi[(2 - 1, 2 - 1, 2 - 1)])
-            / 64.0
-            + (phi[(0, 0, 2 - 1)] - phi[(2 - 1, 2 - 1, 0)]) / 32.0;
-        let phi222 = (phi[(0, 0, 3 - 1)] - phi[(2 - 1, 2 - 1, 3 - 1)]) / 2.0
-            - 2.0 * phi402;
-        let phi042 = (phi[(3 - 1, 3 - 1, 0)] - phi[(3 - 1, 3 - 1, 2 - 1)])
-            / 2.0
-            - phi222
-            - phi402;
+        let phi402 = 15.0 * (phi[(0, 0, 0)] - phi[(1, 1, 1)]) / 64.0
+            + (phi[(0, 0, 1)] - phi[(1, 1, 0)]) / 32.0;
+        let phi222 = (phi[(0, 0, 2)] - phi[(1, 1, 2)]) / 2.0 - 2.0 * phi402;
+        let phi042 = (phi[(2, 2, 0)] - phi[(2, 2, 1)]) / 2.0 - phi222 - phi402;
         let phi204 = 3.0 * (phi[(0, 0, 0)] + phi[(2 - 1, 2 - 1, 2 - 1)]) / 32.0
             - (phi[(0, 0, 2 - 1)] + phi[(2 - 1, 2 - 1, 0)]) / 16.0;
         let phi024 = (phi[(0, 0, 3 - 1)] + phi[(2 - 1, 2 - 1, 3 - 1)]
