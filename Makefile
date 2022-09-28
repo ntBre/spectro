@@ -2,6 +2,8 @@ ARGS =
 
 TESTFLAGS = -- --nocapture --test-threads=1
 
+TARGET = x86_64-unknown-linux-gnu
+
 test:
 	cargo test ${TESTFLAGS} ${ARGS}
 
@@ -15,6 +17,12 @@ bench:
 	dot -Tsvg $< -o $@
 
 flow: flow/asym.pdf
+
+deploy:
+	RUSTFLAGS='-C target-feature=+crt-static' cargo build --release \
+                --target $(TARGET)
+	scp -C ${BASE}/target/$(TARGET)/release/spectro \
+                'woods:Programs/rspectro/rspectro'
 
 #############
 # PROFILING #

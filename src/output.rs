@@ -55,7 +55,7 @@ impl Display for Output {
             self.quartic
         )?;
 
-        writeln!(f, "Sextic Distortion Constants (cm-1)\n{}", self.sextic)?;
+        writeln!(f, "Sextic Distortion Constants (cm-1):\n{}", self.sextic)?;
 
         Ok(())
     }
