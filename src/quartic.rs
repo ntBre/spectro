@@ -123,6 +123,7 @@ impl Sub for Quartic {
     }
 }
 
+#[cfg(test)]
 impl Display for Quartic {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "sigma: {:20.12}", self.sigma)?;
@@ -152,6 +153,26 @@ impl Display for Quartic {
         writeln!(f, "djw: {:20.12}", self.djw)?;
         writeln!(f, "djkw: {:20.12}", self.djkw)?;
         writeln!(f, "dkw: {:20.12}", self.dkw)
+    }
+}
+
+#[cfg(not(test))]
+impl Display for Quartic {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Watson A Reduction")?;
+        writeln!(f, "Delta  J: {:20.12}", self.delj)?;
+        writeln!(f, "Delta  K: {:20.12}", self.delk)?;
+        writeln!(f, "Delta JK: {:20.12}", self.deljk)?;
+        writeln!(f, "delta  J: {:20.12}", self.sdelj)?;
+        writeln!(f, "delta  k: {:20.12}", self.sdelk)?;
+
+        writeln!(f, "\nWatson S Reduction")?;
+        writeln!(f, "D J : {:20.12}", self.dj)?;
+        writeln!(f, "D JK: {:20.12}", self.djk)?;
+        writeln!(f, "D K : {:20.12}", self.dk)?;
+        writeln!(f, "d 1 : {:20.12}", self.sd1)?;
+        writeln!(f, "d 2 : {:20.12}", self.sd2)?;
+        Ok(())
     }
 }
 

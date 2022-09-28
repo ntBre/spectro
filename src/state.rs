@@ -22,6 +22,18 @@ pub enum State {
 }
 
 impl State {
+    pub fn len(&self) -> usize {
+        match self {
+            State::I1st(v) => v.len(),
+            State::I2st(v) => v.len(),
+            State::I3st(v) => v.len(),
+            State::I12st { i1st, i2st } => {
+                assert_eq!(i1st.len(), i2st.len());
+                i1st.len()
+            }
+        }
+    }
+
     /// return vectors of the separated singly-degenerate, doubly-degenerate,
     /// and triply-degenerate states. these are referrred to in the Fortran code
     /// as `i1sts`, `i2sts`, and `i3sts`.

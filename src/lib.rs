@@ -107,6 +107,24 @@ pub struct Spectro {
 }
 
 impl Spectro {
+    pub fn write_output(
+        &self,
+        mut w: impl std::io::Write,
+        got: Output,
+    ) -> std::io::Result<()> {
+        writeln!(w, "\nTransformed Geometry (Å):")?;
+        writeln!(w, "{:.8}", self.geom)?;
+        writeln!(w, "\nEquilibrium Rotational Constants (cm-1):")?;
+        writeln!(w, "{:^20}{:^20}{:^20}", "A", "B", "C")?;
+        writeln!(
+            w,
+            "{:20.12}{:20.12}{:20.12}\n",
+            self.rotcon[0], self.rotcon[1], self.rotcon[2]
+        )?;
+        writeln!(w, "{}", got)?;
+        Ok(())
+    }
+
     /// helper method for alpha matrix in `alphaa`
     fn alpha(
         &self,

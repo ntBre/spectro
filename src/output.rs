@@ -14,8 +14,6 @@ pub struct Output {
     /// fully resonance-corrected anharmonic frequencies
     pub corrs: Vec<f64>,
 
-    // /// equilibrium rotational constants
-    // pub rot_eq: Rot,
     /// vibrationally averaged rotational constants
     pub rots: Vec<Rot>,
 
@@ -30,7 +28,7 @@ impl Display for Output {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(
             f,
-            "Frequency Summary:\n{:>5}{:>8}{:>8}{:>8}",
+            "Vibrational Frequencies (cm-1):\n{:>5}{:>8}{:>8}{:>8}",
             "Mode", "Harm", "Fund", "Corr"
         )?;
         for i in 0..self.harms.len() {
@@ -44,10 +42,21 @@ impl Display for Output {
             )?;
         }
 
-        writeln!(f, "\nRotational Constants:")?;
+        writeln!(f, "\nRotational Constants (cm-1):")?;
+        let width = 5 * self.rots[0].state.len();
+        writeln!(f, "{:^width$}{:^12}{:^12}{:^12}", "State", "A", "B", "C")?;
         for rot in &self.rots {
             writeln!(f, "{}", rot)?;
         }
-        writeln!(f, "{:?}", self)
+
+        writeln!(
+            f,
+            "\nQuartic Distortion Constants (cm-1):\n{}",
+            self.quartic
+        )?;
+
+        writeln!(f, "Sextic Distortion Constants (cm-1)\n{}", self.sextic)?;
+
+        Ok(())
     }
 }

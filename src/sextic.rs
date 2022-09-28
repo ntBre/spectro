@@ -1,4 +1,7 @@
-use std::cmp::{max, min};
+use std::{
+    cmp::{max, min},
+    fmt::Display,
+};
 
 use approx::AbsDiffEq;
 use tensor::Tensor4;
@@ -575,4 +578,19 @@ fn make_phi(
         }
     }
     phi
+}
+
+impl Display for Sextic {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Watson A Reduction (S for symmetric tops)")?;
+        writeln!(f, "Phi  J: {:20.12e}", self.phij)?;
+        writeln!(f, "Phi  K: {:20.12e}", self.phik)?;
+        writeln!(f, "Phi JK: {:20.12e}", self.phijk)?;
+        writeln!(f, "Phi KJ: {:20.12e}", self.phikj)?;
+        writeln!(f, "phi  J: {:20.12e}", self.sphij)?;
+        writeln!(f, "phi JK: {:20.12e}", self.sphijk)?;
+        writeln!(f, "phi  k: {:20.12e}", self.sphik)?;
+
+        Ok(())
+    }
 }
