@@ -12,7 +12,7 @@ use crate::{
     consts::CONST,
     dummy::{Dummy, DummyVal},
 };
-use symm::Atom;
+use symm::{Atom, Molecule};
 
 impl Spectro {
     pub fn load<P>(filename: P) -> Self
@@ -20,6 +20,17 @@ impl Spectro {
         P: AsRef<Path> + Debug + Clone,
     {
         let mut ret = read(filename);
+        process_geom(&mut ret);
+        ret
+    }
+}
+
+impl From<Molecule> for Spectro {
+    fn from(geom: Molecule) -> Self {
+        let mut ret = Self {
+            geom,
+            ..Self::default()
+        };
         process_geom(&mut ret);
         ret
     }
