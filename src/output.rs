@@ -1,5 +1,7 @@
 use std::fmt::Display;
 
+use symm::Irrep;
+
 use crate::{quartic::Quartic, rot::Rot, sextic::Sextic};
 
 /// contains all of the output data from running Spectro
@@ -17,6 +19,8 @@ pub struct Output {
     /// vibrationally averaged rotational constants
     pub rots: Vec<Rot>,
 
+    pub irreps: Vec<Irrep>,
+
     /// quartic distortion coefficients
     pub quartic: Quartic,
 
@@ -28,14 +32,15 @@ impl Display for Output {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(
             f,
-            "Vibrational Frequencies (cm-1):\n{:>5}{:>8}{:>8}{:>8}",
-            "Mode", "Harm", "Fund", "Corr"
+            "Vibrational Frequencies (cm-1):\n{:>5}{:>8}{:>8}{:>8}{:>8}",
+            "Mode", "Symm", "Harm", "Fund", "Corr"
         )?;
         for i in 0..self.harms.len() {
             writeln!(
                 f,
-                "{:5}{:8.1}{:8.1}{:8.1}",
+                "{:5}{:>8}{:8.1}{:8.1}{:8.1}",
                 i + 1,
+                self.irreps[i],
                 self.harms[i],
                 self.funds[i],
                 self.corrs[i]

@@ -34,6 +34,7 @@ fn load_want(filename: PathBuf, sym: bool) -> Output {
         rots,
         quartic: Quartic::default(),
         sextic: Sextic::default(),
+        irreps: Default::default(),
     }
 }
 

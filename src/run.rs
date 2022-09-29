@@ -126,16 +126,51 @@ impl Spectro {
             Sextic::default()
         };
 
+        let irreps = compute_irreps(&self.geom, &lxm, self.nvib, 1e-4);
+
         (
             Output {
                 harms,
                 funds,
                 corrs,
                 rots,
+                irreps,
                 quartic,
                 sextic,
             },
             restst,
         )
     }
+}
+
+/// helper function for computing the irreps corresponding to `lxm`
+pub fn compute_irreps(
+    geom: &symm::Molecule,
+    lxm: &crate::Dmat,
+    nvib: usize,
+    eps: f64,
+) -> Vec<symm::Irrep> {
+    let pg = geom.point_group_approx(eps);
+    let mut irreps = Vec::new();
+    for (i, disp) in lxm.column_iter().take(nvib).enumerate() {
+        let mol = geom.clone() + disp.as_slice().to_vec();
+        let mut irrep = mol.irrep_approx(&pg, eps);
+        let mut eps = eps;
+        while let Err(e) = irrep {
+            if eps >= 0.1 {
+                eprintln!(
+                    "failed to compute irrep {i} for\n{}\nin {} with {e:?}",
+                    mol, pg
+                );
+                // give up and give A
+                irrep = Ok(symm::Irrep::A);
+                break;
+            }
+            eps *= 10.0;
+            eprintln!("warning: raising epsilon to {:.1e}", eps);
+            irrep = mol.irrep_approx(&pg, eps);
+        }
+        irreps.push(irrep.unwrap());
+    }
+    irreps
 }
