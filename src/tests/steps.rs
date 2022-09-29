@@ -14,8 +14,7 @@
 //! to the correct secular equations
 
 use crate::{
-    check_mat, consts::FACT2, tests::load_dmat, utils::load_fc2, Dmat, Mat3,
-    Spectro,
+    check_mat, consts::FACT2, load_fc2, tests::load_dmat, Dmat, Mat3, Spectro,
 };
 use approx::assert_abs_diff_eq;
 use nalgebra::matrix;

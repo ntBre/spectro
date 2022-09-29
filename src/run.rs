@@ -3,11 +3,10 @@ use tensor::Tensor4;
 use super::{make_sym_funds, resona, Output, Spectro};
 use crate::sextic::Sextic;
 use crate::utils::{
-    force3, force4, linalg::symm_eigen_decomp, load_fc2, load_fc3, load_fc4,
-    make_funds, to_wavenumbers,
+    force3, force4, linalg::symm_eigen_decomp, make_funds, to_wavenumbers,
 };
 use crate::{consts::FACT2, quartic::Quartic, resonance::Restst};
-use crate::{Dmat, Mode, Tensor3};
+use crate::{load_fc2, load_fc3, load_fc4, Dmat, Mode, Tensor3};
 use std::path::Path;
 
 impl Spectro {

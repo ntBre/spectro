@@ -25,6 +25,8 @@ use crate::f4qcm;
 
 use self::linalg::symm_eigen_decomp;
 
+pub mod linalg;
+
 impl Display for Spectro {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use crate::Curvil::*;
@@ -140,102 +142,6 @@ pub fn to_wavenumbers(freqs: &Dvec) -> Dvec {
             }
         }),
     )
-}
-
-pub mod linalg;
-
-pub fn load_fc2<P>(infile: P, n3n: usize) -> Dmat
-where
-    P: AsRef<Path>,
-{
-    let data = read_to_string(infile).unwrap();
-    Dmat::from_iterator(
-        n3n,
-        n3n,
-        data.split_whitespace().map(|s| s.parse().unwrap()),
-    )
-}
-
-/// load a Tensor3 from `file` in SPECTRO format
-pub fn load_fc3<P>(infile: P, n3n: usize) -> Tensor3
-where
-    P: AsRef<Path> + std::fmt::Debug,
-{
-    let f33 = load_vec(infile);
-    new_fc3(n3n, &f33)
-}
-
-/// create a Tensor3 ready to use in `run` from a slice of cubic force
-/// constants
-pub fn new_fc3(n3n: usize, f33: &[f64]) -> tensor::Tensor3<f64> {
-    let mut f3x = Tensor3::zeros(n3n, n3n, n3n);
-    let mut labc = 0;
-    for iabc in 0..n3n {
-        for jabc in 0..=iabc {
-            for kabc in 0..=jabc {
-                let val = f33[labc];
-                f3x[(iabc, jabc, kabc)] = val;
-                f3x[(iabc, kabc, jabc)] = val;
-                f3x[(jabc, iabc, kabc)] = val;
-                f3x[(jabc, kabc, iabc)] = val;
-                f3x[(kabc, iabc, jabc)] = val;
-                f3x[(kabc, jabc, iabc)] = val;
-                labc += 1;
-            }
-        }
-    }
-    f3x
-}
-
-/// load a Tensor4 from `file` in SPECTRO format
-pub fn load_fc4<P>(infile: P, n3n: usize) -> Tensor4
-where
-    P: AsRef<Path> + std::fmt::Debug,
-{
-    let f44 = load_vec(infile);
-    new_fc4(n3n, &f44)
-}
-
-/// create a Tensor4 ready to use in `run` from a slice of quartic force
-/// constants
-pub fn new_fc4(n3n: usize, f44: &[f64]) -> Tensor4 {
-    let mut f4x = Tensor4::zeros(n3n, n3n, n3n, n3n);
-    let mut mabc = 0;
-    for iabc in 0..n3n {
-        for jabc in 0..=iabc {
-            for kabc in 0..=jabc {
-                for labc in 0..=kabc {
-                    let val = f44[mabc];
-                    f4x[(iabc, jabc, kabc, labc)] = val;
-                    f4x[(iabc, jabc, labc, kabc)] = val;
-                    f4x[(iabc, kabc, jabc, labc)] = val;
-                    f4x[(iabc, kabc, labc, jabc)] = val;
-                    f4x[(iabc, labc, jabc, kabc)] = val;
-                    f4x[(iabc, labc, kabc, jabc)] = val;
-                    f4x[(jabc, iabc, kabc, labc)] = val;
-                    f4x[(jabc, iabc, labc, kabc)] = val;
-                    f4x[(jabc, kabc, iabc, labc)] = val;
-                    f4x[(jabc, kabc, labc, iabc)] = val;
-                    f4x[(jabc, labc, iabc, kabc)] = val;
-                    f4x[(jabc, labc, kabc, iabc)] = val;
-                    f4x[(kabc, iabc, jabc, labc)] = val;
-                    f4x[(kabc, iabc, labc, jabc)] = val;
-                    f4x[(kabc, jabc, iabc, labc)] = val;
-                    f4x[(kabc, jabc, labc, iabc)] = val;
-                    f4x[(kabc, labc, iabc, jabc)] = val;
-                    f4x[(kabc, labc, jabc, iabc)] = val;
-                    f4x[(labc, iabc, jabc, kabc)] = val;
-                    f4x[(labc, iabc, kabc, jabc)] = val;
-                    f4x[(labc, jabc, iabc, kabc)] = val;
-                    f4x[(labc, jabc, kabc, iabc)] = val;
-                    f4x[(labc, kabc, iabc, jabc)] = val;
-                    f4x[(labc, kabc, jabc, iabc)] = val;
-                    mabc += 1;
-                }
-            }
-        }
-    }
-    f4x
 }
 
 pub(crate) fn load_vec<P>(infile: P) -> Vec<f64>
@@ -595,7 +501,7 @@ mod tests {
     use approx::assert_abs_diff_eq;
     use nalgebra::dmatrix;
 
-    use crate::consts::FACT2;
+    use crate::{consts::FACT2, load_fc2};
 
     #[test]
     fn test_find3r() {
