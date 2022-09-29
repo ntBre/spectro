@@ -11,7 +11,7 @@ use crate::{Dmat, Mode, Tensor3};
 use std::path::Path;
 
 impl Spectro {
-    fn run_inner(
+    pub fn run(
         &self,
         fc2: Dmat,
         f3x: Tensor3,
@@ -143,7 +143,12 @@ impl Spectro {
         )
     }
 
-    pub fn run<P>(&self, fort15: P, fort30: P, fort40: P) -> (Output, Restst)
+    pub fn run_files<P>(
+        &self,
+        fort15: P,
+        fort30: P,
+        fort40: P,
+    ) -> (Output, Restst)
     where
         P: AsRef<Path> + std::fmt::Debug,
     {
@@ -151,7 +156,7 @@ impl Spectro {
         let f3x = load_fc3(fort30, self.n3n);
         let f4x = load_fc4(fort40, self.n3n);
 
-        self.run_inner(fc2, f3x, f4x)
+        self.run(fc2, f3x, f4x)
     }
 }
 

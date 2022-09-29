@@ -65,6 +65,6 @@ fn run(b: &mut test::Bencher) {
     let fort30 = "testfiles/h2o/fort.30";
     let fort40 = "testfiles/h2o/fort.40";
     b.iter(|| {
-        s.run(fort15, fort30, fort40);
+        s.run_files(fort15, fort30, fort40);
     });
 }

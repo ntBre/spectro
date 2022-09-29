@@ -20,7 +20,7 @@ fn main() -> Result<(), std::io::Error> {
     let spectro = Spectro::load(&cfg.infile);
     let infile = Path::new(&cfg.infile);
     let dir = infile.parent().unwrap_or_else(|| Path::new("."));
-    let (got, _) = spectro.run(
+    let (got, _) = spectro.run_files(
         dir.join("fort.15"),
         dir.join("fort.30"),
         dir.join("fort.40"),

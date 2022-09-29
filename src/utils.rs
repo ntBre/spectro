@@ -156,12 +156,19 @@ where
     )
 }
 
+/// load a Tensor3 from `file` in SPECTRO format
 pub fn load_fc3<P>(infile: P, n3n: usize) -> Tensor3
 where
     P: AsRef<Path> + std::fmt::Debug,
 {
-    let mut f3x = Tensor3::zeros(n3n, n3n, n3n);
     let f33 = load_vec(infile);
+    new_fc3(n3n, &f33)
+}
+
+/// create a Tensor3 ready to use in `run` from a slice of cubic force
+/// constants
+pub fn new_fc3(n3n: usize, f33: &[f64]) -> tensor::Tensor3<f64> {
+    let mut f3x = Tensor3::zeros(n3n, n3n, n3n);
     let mut labc = 0;
     for iabc in 0..n3n {
         for jabc in 0..=iabc {
@@ -180,12 +187,19 @@ where
     f3x
 }
 
+/// load a Tensor4 from `file` in SPECTRO format
 pub fn load_fc4<P>(infile: P, n3n: usize) -> Tensor4
 where
     P: AsRef<Path> + std::fmt::Debug,
 {
-    let mut f4x = Tensor4::zeros(n3n, n3n, n3n, n3n);
     let f44 = load_vec(infile);
+    new_fc4(n3n, &f44)
+}
+
+/// create a Tensor4 ready to use in `run` from a slice of quartic force
+/// constants
+pub fn new_fc4(n3n: usize, f44: &[f64]) -> Tensor4 {
+    let mut f4x = Tensor4::zeros(n3n, n3n, n3n, n3n);
     let mut mabc = 0;
     for iabc in 0..n3n {
         for jabc in 0..=iabc {
