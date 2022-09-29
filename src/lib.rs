@@ -435,13 +435,13 @@ impl Spectro {
         let (ic, _) = princ_cart(irep);
         // use the nstop determined earlier
         let (nstop, _) = rotnst.shape();
-        let nderiv = self.header[7];
+        let nderiv = self.header.get(7).unwrap_or(&4);
         // this is a 600 line loop fml
         let mut ret = Vec::new();
         for nst in 0..nstop {
             // this is inside a conditional in the fortran code, but it
             // would be really annoying to return these from inside it here
-            assert!(nderiv > 2);
+            assert!(*nderiv > 2);
             let vib1 = rotnst[(nst, 0)] - self.rotcon[(0)];
             let vib2 = rotnst[(nst, 1)] - self.rotcon[(1)];
             let vib3 = rotnst[(nst, 2)] - self.rotcon[(2)];
