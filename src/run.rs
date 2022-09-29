@@ -1,21 +1,24 @@
+use tensor::Tensor4;
+
 use super::{make_sym_funds, resona, Output, Spectro};
 use crate::sextic::Sextic;
 use crate::utils::{
     force3, force4, linalg::symm_eigen_decomp, load_fc2, load_fc3, load_fc4,
     make_funds, to_wavenumbers,
 };
-use crate::Mode;
 use crate::{consts::FACT2, quartic::Quartic, resonance::Restst};
+use crate::{Dmat, Mode, Tensor3};
 use std::path::Path;
 
 impl Spectro {
-    pub fn run<P>(&self, fort15: P, fort30: P, fort40: P) -> (Output, Restst)
-    where
-        P: AsRef<Path> + std::fmt::Debug,
-    {
-        // load the force constants, rotate them to the new axes, and convert
-        // them to the proper units
-        let fc2 = load_fc2(fort15, self.n3n);
+    fn run_inner(
+        &self,
+        fc2: Dmat,
+        f3x: Tensor3,
+        f4x: Tensor4,
+    ) -> (Output, Restst) {
+        // rotate the harmonic force constants to the new axes, and convert them
+        // to the proper units
         let fc2 = self.rot2nd(fc2);
         let fc2 = FACT2 * fc2;
 
@@ -35,12 +38,10 @@ impl Spectro {
         }
 
         // start of cubic analysis
-        let f3x = load_fc3(fort30, self.n3n);
         let mut f3x = self.rot3rd(f3x);
         let f3qcm = force3(self.n3n, &mut f3x, &lx, self.nvib, &freq);
 
         // start of quartic analysis
-        let f4x = load_fc4(fort40, self.n3n);
         let f4x = self.rot4th(f4x);
         let f4qcm = force4(self.n3n, &f4x, &lx, self.nvib, &freq);
 
@@ -140,6 +141,17 @@ impl Spectro {
             },
             restst,
         )
+    }
+
+    pub fn run<P>(&self, fort15: P, fort30: P, fort40: P) -> (Output, Restst)
+    where
+        P: AsRef<Path> + std::fmt::Debug,
+    {
+        let fc2 = load_fc2(fort15, self.n3n);
+        let f3x = load_fc3(fort30, self.n3n);
+        let f4x = load_fc4(fort40, self.n3n);
+
+        self.run_inner(fc2, f3x, f4x)
     }
 }
 
