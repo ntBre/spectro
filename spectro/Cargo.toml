@@ -1,0 +1,19 @@
+[package]
+name = "spectro"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+nalgebra = "0.31.1"
+symm = { path = "/home/brent/Projects/symm" }
+tensor = { path = "/home/brent/Projects/tensor" }
+serde = { version = "1.0.144", features = ["derive"] }
+
+[dev-dependencies]
+serde_json = "1.0.85"
+approx = "0.5.1"
+
+[[bin]]
+name = "prof"

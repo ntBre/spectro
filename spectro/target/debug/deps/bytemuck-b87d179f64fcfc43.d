@@ -1,0 +1,14 @@
+/home/brent/Projects/spectro/target/debug/deps/bytemuck-b87d179f64fcfc43.rmeta: /home/brent/.cargo/registry/src/github.com-1ecc6299db9ec823/bytemuck-1.9.1/src/lib.rs /home/brent/.cargo/registry/src/github.com-1ecc6299db9ec823/bytemuck-1.9.1/src/anybitpattern.rs /home/brent/.cargo/registry/src/github.com-1ecc6299db9ec823/bytemuck-1.9.1/src/checked.rs /home/brent/.cargo/registry/src/github.com-1ecc6299db9ec823/bytemuck-1.9.1/src/internal.rs /home/brent/.cargo/registry/src/github.com-1ecc6299db9ec823/bytemuck-1.9.1/src/zeroable.rs /home/brent/.cargo/registry/src/github.com-1ecc6299db9ec823/bytemuck-1.9.1/src/pod.rs /home/brent/.cargo/registry/src/github.com-1ecc6299db9ec823/bytemuck-1.9.1/src/no_uninit.rs /home/brent/.cargo/registry/src/github.com-1ecc6299db9ec823/bytemuck-1.9.1/src/contiguous.rs /home/brent/.cargo/registry/src/github.com-1ecc6299db9ec823/bytemuck-1.9.1/src/offset_of.rs /home/brent/.cargo/registry/src/github.com-1ecc6299db9ec823/bytemuck-1.9.1/src/transparent.rs
+
+/home/brent/Projects/spectro/target/debug/deps/bytemuck-b87d179f64fcfc43.d: /home/brent/.cargo/registry/src/github.com-1ecc6299db9ec823/bytemuck-1.9.1/src/lib.rs /home/brent/.cargo/registry/src/github.com-1ecc6299db9ec823/bytemuck-1.9.1/src/anybitpattern.rs /home/brent/.cargo/registry/src/github.com-1ecc6299db9ec823/bytemuck-1.9.1/src/checked.rs /home/brent/.cargo/registry/src/github.com-1ecc6299db9ec823/bytemuck-1.9.1/src/internal.rs /home/brent/.cargo/registry/src/github.com-1ecc6299db9ec823/bytemuck-1.9.1/src/zeroable.rs /home/brent/.cargo/registry/src/github.com-1ecc6299db9ec823/bytemuck-1.9.1/src/pod.rs /home/brent/.cargo/registry/src/github.com-1ecc6299db9ec823/bytemuck-1.9.1/src/no_uninit.rs /home/brent/.cargo/registry/src/github.com-1ecc6299db9ec823/bytemuck-1.9.1/src/contiguous.rs /home/brent/.cargo/registry/src/github.com-1ecc6299db9ec823/bytemuck-1.9.1/src/offset_of.rs /home/brent/.cargo/registry/src/github.com-1ecc6299db9ec823/bytemuck-1.9.1/src/transparent.rs
+
+/home/brent/.cargo/registry/src/github.com-1ecc6299db9ec823/bytemuck-1.9.1/src/lib.rs:
+/home/brent/.cargo/registry/src/github.com-1ecc6299db9ec823/bytemuck-1.9.1/src/anybitpattern.rs:
+/home/brent/.cargo/registry/src/github.com-1ecc6299db9ec823/bytemuck-1.9.1/src/checked.rs:
+/home/brent/.cargo/registry/src/github.com-1ecc6299db9ec823/bytemuck-1.9.1/src/internal.rs:
+/home/brent/.cargo/registry/src/github.com-1ecc6299db9ec823/bytemuck-1.9.1/src/zeroable.rs:
+/home/brent/.cargo/registry/src/github.com-1ecc6299db9ec823/bytemuck-1.9.1/src/pod.rs:
+/home/brent/.cargo/registry/src/github.com-1ecc6299db9ec823/bytemuck-1.9.1/src/no_uninit.rs:
+/home/brent/.cargo/registry/src/github.com-1ecc6299db9ec823/bytemuck-1.9.1/src/contiguous.rs:
+/home/brent/.cargo/registry/src/github.com-1ecc6299db9ec823/bytemuck-1.9.1/src/offset_of.rs:
+/home/brent/.cargo/registry/src/github.com-1ecc6299db9ec823/bytemuck-1.9.1/src/transparent.rs:
