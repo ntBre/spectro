@@ -3,7 +3,6 @@ use std::{
     fmt::Display,
 };
 
-use approx::AbsDiffEq;
 use tensor::Tensor4;
 type Tensor3 = tensor::tensor3::Tensor3<f64>;
 
@@ -29,7 +28,8 @@ pub struct Sextic {
     pub(crate) sphik: f64,
 }
 
-impl AbsDiffEq for Sextic {
+#[cfg(test)]
+impl approx::AbsDiffEq for Sextic {
     type Epsilon = f64;
 
     fn default_epsilon() -> Self::Epsilon {

@@ -5,7 +5,7 @@ TESTFLAGS = -- --nocapture --test-threads=1
 TARGET = x86_64-unknown-linux-gnu
 
 test:
-	cargo test ${TESTFLAGS} ${ARGS}
+	cargo test -p spectro ${TESTFLAGS} ${ARGS}
 
 bench:
 	cargo bench ${TESTFLAGS} ${ARGS}
@@ -19,9 +19,9 @@ bench:
 flow: flow/asym.pdf
 
 deploy:
-	RUSTFLAGS='-C target-feature=+crt-static' cargo build --release \
-                --target $(TARGET)
-	scp -C ${BASE}/target/$(TARGET)/release/spectro \
+	RUSTFLAGS='-C target-feature=+crt-static' cargo build -p spectro_bin \
+		    --release --target $(TARGET)
+	scp -C ${BASE}/target/$(TARGET)/release/spectro_bin \
                 'woods:Programs/rspectro/rspectro'
 
 #############
@@ -33,7 +33,7 @@ BASE = .
 profile = RUSTFLAGS='-g' cargo build --release --bin $(1); \
         valgrind --tool=callgrind --callgrind-out-file=callgrind.out    \
                 --collect-jumps=yes --simulate-cache=yes                \
-                ${BASE}/target/release/$(1)
+                ${BASE}/target/release/$(1) spectro/testfiles/c3h2/spectro.in
 
 profile:
-	$(call profile,spectro)
+	$(call profile,prof)

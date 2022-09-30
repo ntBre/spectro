@@ -1,7 +1,5 @@
 use std::fmt::Display;
 
-use approx::AbsDiffEq;
-
 use crate::state::State;
 
 /// a rotational constant. eventually this will probably be an enum depending on
@@ -20,7 +18,8 @@ impl Rot {
     }
 }
 
-impl AbsDiffEq for Rot {
+#[cfg(test)]
+impl approx::AbsDiffEq for Rot {
     type Epsilon = f64;
 
     fn default_epsilon() -> Self::Epsilon {

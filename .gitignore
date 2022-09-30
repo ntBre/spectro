@@ -1,5 +1,8 @@
-/target
+*/target
+*/Cargo.lock
+*/callgrind.out
+*.svg
+*/flow/*.pdf
+/target/
 /Cargo.lock
 /callgrind.out
-*.svg
-/flow/*.pdf

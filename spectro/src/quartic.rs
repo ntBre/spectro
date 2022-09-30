@@ -1,7 +1,5 @@
 use std::{fmt::Display, ops::Sub};
 
-use approx::AbsDiffEq;
-
 use crate::{
     rotor::Rotor,
     utils::{make_tau, princ_cart, tau_prime},
@@ -49,7 +47,8 @@ pub struct Quartic {
     pub dkw: f64,
 }
 
-impl AbsDiffEq for Quartic {
+#[cfg(test)]
+impl approx::AbsDiffEq for Quartic {
     type Epsilon = f64;
 
     fn default_epsilon() -> Self::Epsilon {
