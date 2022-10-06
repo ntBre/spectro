@@ -18,9 +18,10 @@ bench:
 
 flow: flow/asym.pdf
 
-deploy:
+build:
 	RUSTFLAGS='-C target-feature=+crt-static' cargo build -p spectro_bin \
 		    --release --target $(TARGET)
+deploy: build
 	scp -C ${BASE}/target/$(TARGET)/release/spectro_bin \
                 'woods:Programs/rspectro/rspectro'
 
