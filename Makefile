@@ -25,6 +25,10 @@ deploy: build
 	scp -C ${BASE}/target/$(TARGET)/release/spectro_bin \
                 'woods:Programs/rspectro/rspectro'
 
+eland: build
+	scp -C ${BASE}/target/$(TARGET)/release/spectro_bin \
+                'eland:bin/rspectro'
+
 #############
 # PROFILING #
 #############
