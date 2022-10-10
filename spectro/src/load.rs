@@ -15,7 +15,7 @@ use crate::{
     utils::{linalg::symm_eigen_decomp3, *},
     Dmat, Tensor3,
 };
-use symm::{Atom, Molecule};
+use symm::{Atom, Axis, Molecule, Plane};
 use tensor::Tensor4;
 
 impl Spectro {
@@ -114,28 +114,36 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
         const TOL: f64 = 1e-6;
         let pg = ret.geom.point_group_approx(TOL);
         use symm::PointGroup::*;
+        fn x3x_helper(ret: &mut Spectro, axis: Axis, plane: Plane) -> usize {
+            // axis perpendicular to plane
+            let p = plane.perp();
+            // axis in plane but not principal axis
+            let o = plane ^ axis;
+
+            ret.axis_order = 3;
+            ret.geom
+                .atoms
+                .iter()
+                .position(|a| {
+                    let v = [a.x, a.y, a.z];
+                    v[p as usize].abs() < TOL && v[o as usize].abs() > TOL
+                })
+                .unwrap()
+        }
         let iatl = match pg {
             C1 => todo!(),
             C2 { axis: _ } => todo!(),
             Cs { plane: _ } => todo!(),
             C2v { axis: _, planes: _ } => todo!(),
-            C3v { axis, plane } => {
-                // axis perpendicular to plane
-                let p = plane.perp();
-                // axis in plane but not principal axis
-                let o = plane ^ axis;
-
-                ret.axis_order = 3;
-                ret.geom
-                    .atoms
-                    .iter()
-                    .position(|a| {
-                        let v = [a.x, a.y, a.z];
-                        v[p as usize].abs() < TOL && v[o as usize].abs() > TOL
-                    })
-                    .unwrap()
-            }
+            C3v { axis, plane } => x3x_helper(ret, axis, plane),
             D2h { axes: _, planes: _ } => todo!(),
+            // assume that these are in the right order
+            D3h {
+                c3,
+                c2: _,
+                sh: _,
+                sv,
+            } => x3x_helper(ret, c3, sv),
         };
         let mut egr = nalgebra::Matrix3::zeros();
         let x = ret.geom.atoms[iatl].x;
@@ -171,6 +179,12 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
             C2v { axis: _, planes: _ } => todo!(),
             C3v { axis, plane: _ } => axis,
             D2h { axes: _, planes: _ } => todo!(),
+            D3h {
+                c3,
+                c2: _,
+                sh: _,
+                sv: _,
+            } => c3,
         };
     }
     // linear molecules should have the unique moi in the Z position. in case x
