@@ -200,7 +200,7 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
     ret.n3n = n3n;
     ret.i3n3n = n3n * (n3n + 1) * (n3n + 2) / 6;
     ret.i4n3n = n3n * (n3n + 1) * (n3n + 2) * (n3n + 3) / 24;
-    let nvib = n3n - 6 + if ret.is_linear() { 1 } else { 0 };
+    let nvib = n3n - 6 + usize::from(ret.is_linear());
     ret.nvib = nvib;
     ret.i2vib = ioff(nvib + 1);
     ret.i3vib = nvib * (nvib + 1) * (nvib + 2) / 6;
