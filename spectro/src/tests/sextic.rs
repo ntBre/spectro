@@ -82,6 +82,18 @@ impl Sub<Sextic> for Sextic {
     }
 }
 
+macro_rules! check {
+    ($got:expr, $test:ident) => {
+        if abs_diff_ne!($got, $test.want, epsilon = 2e-10) {
+            println!("\n{}", $test.infile);
+            println!("got\n{}", $got);
+            println!("want\n{}", $test.want);
+            println!("diff\n{}", $got - $test.want);
+            panic!("failed, {}", $test.infile);
+        }
+    };
+}
+
 #[test]
 fn asym() {
     let tests = [
@@ -107,10 +119,8 @@ fn asym() {
         let mut f3x = s.rot3rd(f3x);
         let f3qcm = force3(s.n3n, &mut f3x, &lx, s.nvib, &freq);
         let got = Sextic::new(&s, &wila, &zmat, &freq, &f3qcm);
-        // println!("\n{}", test.infile);
-        // println!("got\n{}", got);
-        // println!("want\n{}", test.want);
-        assert_abs_diff_eq!(got, test.want, epsilon = 2e-10);
+
+        check!(got, test);
     }
 }
 
@@ -144,12 +154,6 @@ fn sym() {
 
         let got = Sextic::new(&s, &wila, &zmat, &freq, &f3qcm);
 
-        if abs_diff_ne!(got, test.want, epsilon = 2e-10) {
-            println!("\n{}", test.infile);
-            println!("got\n{}", got);
-            println!("want\n{}", test.want);
-            println!("diff\n{}", got - test.want);
-            panic!("failed, {}", test.infile);
-        }
+        check!(got, test);
     }
 }
