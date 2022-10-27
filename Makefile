@@ -23,7 +23,7 @@ build:
 		    --release --target $(TARGET)
 woods: build
 	scp -C ${BASE}/target/$(TARGET)/release/spectro_bin \
-                'woods:Programs/rspectro/rspectro'
+                'woods:bin/rspectro'
 
 eland: build
 	scp -C ${BASE}/target/$(TARGET)/release/spectro_bin \
