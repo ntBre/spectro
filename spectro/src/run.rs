@@ -127,7 +127,6 @@ impl Spectro {
         let (r, c) = lxm.shape();
         assert_eq!(r, c);
         let vlxm: Vec<Vec<f64>> = lxm
-            .transpose()
             .as_slice()
             .chunks(r)
             .map(|r| r.to_owned())
