@@ -13,7 +13,9 @@ use crate::{
 /// rotational constants in Watson A, while bxs, bys, bzs are the corresponding
 /// values in Watson S. djw, djkw, and dkw are Wilson's centrifugal distortion
 /// constants. djn, djkn, dkn, sdjn, r5, and r6 are Nielsen distortion constants
-#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize,
+)]
 pub struct Quartic {
     pub sigma: f64,
     pub rkappa: f64,
@@ -44,6 +46,9 @@ pub struct Quartic {
     pub djw: f64,
     pub djkw: f64,
     pub dkw: f64,
+    // linear molecules
+    #[serde(default)]
+    pub de: f64,
 }
 
 #[cfg(test)]
@@ -117,6 +122,7 @@ impl Sub for Quartic {
             djw: self.djw - rhs.djw,
             djkw: self.djkw - rhs.djkw,
             dkw: self.dkw - rhs.dkw,
+            de: self.de - rhs.de,
         }
     }
 }
@@ -170,6 +176,9 @@ impl Display for Quartic {
         writeln!(f, "D K : {:20.12}", self.dk)?;
         writeln!(f, "d 1 : {:20.12}", self.sd1)?;
         writeln!(f, "d 2 : {:20.12}", self.sd2)?;
+
+        writeln!(f, "\nLinear Molecules")?;
+        writeln!(f, "De  : {:20.12}", self.de)?;
         Ok(())
     }
 }
@@ -189,19 +198,12 @@ impl Quartic {
 
     /// calculate the quartic centrifugal distortion constants
     pub(crate) fn new(s: &Spectro, freq: &Dvec, wila: &Dmat) -> Self {
-        // the only thing spectro computes for a linear molecule is "De" which I
-        // don't think is used anywhere else. TODO diatomics are probably linear
-        // too. that might be handled in is_linear though
-        if s.is_linear() {
-            return Self::default();
-        }
         let maxcor = if s.is_linear() { 2 } else { 3 };
         let tau = make_tau(maxcor, s.nvib, freq, &s.primat, wila);
         let taupcm = tau_prime(maxcor, &tau);
-        // NOTE: pretty sure this is always the case
         let mut irep = match s.rotor {
             Rotor::Diatomic => todo!(),
-            Rotor::Linear => unreachable!("we already returned"),
+            Rotor::Linear => 2,
             Rotor::SphericalTop => todo!(),
             Rotor::OblateSymmTop => 5,
             Rotor::ProlateSymmTop => 0,
@@ -218,6 +220,13 @@ impl Quartic {
             }
         }
 
+        let mut ret = Quartic::default();
+
+        if s.is_linear() {
+	    ret.de = -t[(0, 0)];
+            return ret;
+        }
+
         let t400 =
             (3.0e0 * t[(0, 0)] + 3.0e0 * t[(1, 1)] + 2.0e0 * t[(0, 1)]) / 8.0e0;
         let t220 = t[(0, 2)] + t[(1, 2)] - 2.0e0 * t400;
@@ -225,8 +234,6 @@ impl Quartic {
         let t202 = (t[(0, 0)] - t[(1, 1)]) / 4.0e0;
         let t022 = (t[(0, 2)] - t[(1, 2)]) / 2.0e0 - t202;
         let t004 = (t[(0, 0)] + t[(1, 1)] - 2.0e0 * t[(0, 1)]) / 16.0e0;
-
-        let mut ret = Quartic::default();
 
         let (rkappa, sigma) = if s.rotor.is_sym_top()
             && !s.rotor.is_linear()
