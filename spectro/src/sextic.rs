@@ -16,16 +16,39 @@ use crate::{
 /// struct holding the sextic distortion constants. For an asymmetric top, the
 /// field names are correct. For a symmetric top, phi->H and sphij->h1,
 /// sphijk->h2, and sphik->h3. TODO make this an enum to get rid of this comment
-#[cfg_attr(test, derive(serde::Deserialize))]
-#[derive(Clone, Debug, Default, PartialEq, serde::Serialize)]
+#[derive(
+    Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize,
+)]
 pub struct Sextic {
-    pub(crate) phij: f64,
-    pub(crate) phijk: f64,
-    pub(crate) phikj: f64,
-    pub(crate) phik: f64,
-    pub(crate) sphij: f64,
-    pub(crate) sphijk: f64,
-    pub(crate) sphik: f64,
+    // a reduced constants
+    pub phij: f64,
+    pub phijk: f64,
+    pub phikj: f64,
+    pub phik: f64,
+    pub sphij: f64,
+    pub sphijk: f64,
+    pub sphik: f64,
+    // s reduced constants
+    pub hj: f64,
+    pub hjk: f64,
+    pub hkj: f64,
+    pub hk: f64,
+    pub h1: f64,
+    pub h2: f64,
+    pub h3: f64,
+    // linear molecules
+    pub he: f64,
+}
+
+#[cfg(test)]
+macro_rules! impl_abs_diff {
+    ($lhs:ident, $rhs:ident, $eps:ident, $($field:ident$(,)?),*) => {
+	$(
+	    $lhs.$field.abs_diff_eq(&$rhs.$field, $eps) &&
+	)*
+	    // so I can have the trailing and
+	    true
+    };
 }
 
 #[cfg(test)]
@@ -37,13 +60,10 @@ impl approx::AbsDiffEq for Sextic {
     }
 
     fn abs_diff_eq(&self, other: &Self, epsilon: Self::Epsilon) -> bool {
-        self.phij.abs_diff_eq(&other.phij, epsilon)
-            && self.phijk.abs_diff_eq(&other.phijk, epsilon)
-            && self.phikj.abs_diff_eq(&other.phikj, epsilon)
-            && self.phik.abs_diff_eq(&other.phik, epsilon)
-            && self.sphij.abs_diff_eq(&other.sphij, epsilon)
-            && self.sphijk.abs_diff_eq(&other.sphijk, epsilon)
-            && self.sphik.abs_diff_eq(&other.sphik, epsilon)
+        impl_abs_diff!(
+            self, other, epsilon, phij, phijk, phikj, phik, sphij, sphijk,
+            sphik, hj, hjk, hkj, hk, h1, h2, h3, he,
+        )
     }
 }
 
@@ -549,13 +569,13 @@ impl Sextic {
                     * t022
                     / b020;
 
-            ret.phij = phi600 - lamda;
-            ret.phijk = phi420 + 6.0 * lamda - 3.0 * mu;
-            ret.phikj = phi240 - 5.0 * lamda + 10.0 * mu;
-            ret.phik = phi060 - 7.0 * mu;
-            ret.sphij = phi402 - nu;
-            ret.sphijk = phi204 + lamda / 2.0;
-            ret.sphik = phi006 + nu;
+            ret.hj = phi600 - lamda;
+            ret.hjk = phi420 + 6.0 * lamda - 3.0 * mu;
+            ret.hkj = phi240 - 5.0 * lamda + 10.0 * mu;
+            ret.hk = phi060 - 7.0 * mu;
+            ret.h1 = phi402 - nu;
+            ret.h2 = phi204 + lamda / 2.0;
+            ret.h3 = phi006 + nu;
         };
 
         // TODO linear molecule case and spherical top case
@@ -590,7 +610,7 @@ impl Display for Sextic {
 #[cfg(not(test))]
 impl Display for Sextic {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "Watson A Reduction (S for symmetric tops)")?;
+        writeln!(f, "Watson A Reduction")?;
         writeln!(f, "Phi  J: {:20.12e}", self.phij)?;
         writeln!(f, "Phi  K: {:20.12e}", self.phik)?;
         writeln!(f, "Phi JK: {:20.12e}", self.phijk)?;
@@ -598,6 +618,17 @@ impl Display for Sextic {
         writeln!(f, "phi  J: {:20.12e}", self.sphij)?;
         writeln!(f, "phi JK: {:20.12e}", self.sphijk)?;
         writeln!(f, "phi  k: {:20.12e}", self.sphik)?;
+
+        writeln!(f)?;
+
+        writeln!(f, "Watson S Reduction")?;
+        writeln!(f, "H  J: {:20.12e}", self.hj)?;
+        writeln!(f, "H  K: {:20.12e}", self.hk)?;
+        writeln!(f, "H JK: {:20.12e}", self.hjk)?;
+        writeln!(f, "H KJ: {:20.12e}", self.hkj)?;
+        writeln!(f, "h  1: {:20.12e}", self.h1)?;
+        writeln!(f, "h  2: {:20.12e}", self.h2)?;
+        writeln!(f, "h  3: {:20.12e}", self.h3)?;
 
         Ok(())
     }

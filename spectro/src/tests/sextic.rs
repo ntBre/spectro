@@ -1,5 +1,7 @@
 use std::path::Path;
 
+use summarize::{Summary, TO_MHZ};
+
 use crate::{consts::FACT2, sextic::Sextic, *};
 
 use super::*;
@@ -12,11 +14,35 @@ struct Test {
     want: Sextic,
 }
 
+impl From<summarize::phi::Phi> for Sextic {
+    fn from(value: summarize::phi::Phi) -> Self {
+        Self {
+            phij: value.big_phi_j.unwrap_or_default() / TO_MHZ,
+            phik: value.big_phi_k.unwrap_or_default() / TO_MHZ,
+            phijk: value.big_phi_jk.unwrap_or_default() / TO_MHZ,
+            phikj: value.big_phi_kj.unwrap_or_default() / TO_MHZ,
+            sphij: value.phi_j.unwrap_or_default() / TO_MHZ,
+            sphijk: value.phi_jk.unwrap_or_default() / TO_MHZ,
+            sphik: value.phi_k.unwrap_or_default() / TO_MHZ,
+            hj: value.h_j.unwrap_or_default() / TO_MHZ,
+            hk: value.h_k.unwrap_or_default() / TO_MHZ,
+            hjk: value.h_jk.unwrap_or_default() / TO_MHZ,
+            hkj: value.h_kj.unwrap_or_default() / TO_MHZ,
+            h1: value.h1.unwrap_or_default() / TO_MHZ,
+            h2: value.h2.unwrap_or_default() / TO_MHZ,
+            h3: value.h3.unwrap_or_default() / TO_MHZ,
+            he: value.he.unwrap_or_default() / TO_MHZ,
+        }
+    }
+}
+
 impl Test {
     fn new(dir: &'static str) -> Self {
         let start = Path::new("testfiles");
-        let data = read_to_string(start.join(dir).join("sextic.json")).unwrap();
-        let want: Sextic = serde_json::from_str(&data).unwrap();
+        let data = Summary::new(
+            start.join(dir).join("spectro2.out").to_str().unwrap(),
+        );
+        let want: Sextic = data.phis.into();
         Self {
             infile: String::from(
                 start.join(dir).join("spectro.in").to_str().unwrap(),
@@ -44,6 +70,14 @@ impl Sub<Sextic> for Sextic {
             sphij: self.sphij - rhs.sphij,
             sphijk: self.sphijk - rhs.sphijk,
             sphik: self.sphik - rhs.sphik,
+            hj: self.hj - rhs.hj,
+            hjk: self.hjk - rhs.hjk,
+            hkj: self.hkj - rhs.hkj,
+            hk: self.hk - rhs.hk,
+            h1: self.h1 - rhs.h1,
+            h2: self.h2 - rhs.h2,
+            h3: self.h3 - rhs.h3,
+            he: self.he - rhs.he,
         }
     }
 }

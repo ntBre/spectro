@@ -7,6 +7,6 @@ fn main() -> Result<(), std::io::Error> {
         "spectro/testfiles/c3h2/fort.30",
         "spectro/testfiles/c3h2/fort.40",
     );
-    spectro.write_output(&mut std::io::stdout(), got)?;
+    spectro.write_output(&mut std::io::stdout(), &got)?;
     Ok(())
 }

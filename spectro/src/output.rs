@@ -5,7 +5,7 @@ use symm::Irrep;
 use crate::{quartic::Quartic, rot::Rot, sextic::Sextic};
 
 /// contains all of the output data from running Spectro
-#[derive(Clone, Debug, serde::Serialize)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct Output {
     /// harmonic frequencies
     pub harms: Vec<f64>,
@@ -19,6 +19,9 @@ pub struct Output {
     /// vibrationally averaged rotational constants
     pub rots: Vec<Rot>,
 
+    /// equilibrium rotational constants
+    pub rot_equil: Vec<f64>,
+
     pub irreps: Vec<Irrep>,
 
     /// quartic distortion coefficients
@@ -26,6 +29,9 @@ pub struct Output {
 
     /// sextic distortion coefficients
     pub sextic: Sextic,
+
+    /// zero-point vibrational energy
+    pub zpt: f64,
 }
 
 impl Display for Output {

@@ -137,6 +137,8 @@ impl Spectro {
                 irreps,
                 quartic,
                 sextic,
+                rot_equil: self.rotcon.clone(),
+		zpt: eng[0],
             },
             restst,
         )

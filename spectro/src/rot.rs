@@ -4,7 +4,7 @@ use crate::state::State;
 
 /// a rotational constant. eventually this will probably be an enum depending on
 /// the Rotor type
-#[derive(Clone, Debug, PartialEq, serde::Serialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Rot {
     pub state: State,
     pub a: f64,

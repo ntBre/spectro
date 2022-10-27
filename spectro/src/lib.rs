@@ -38,7 +38,7 @@ pub mod load;
 pub use load::*;
 mod mode;
 pub mod output;
-mod quartic;
+pub mod quartic;
 mod resonance;
 mod rot;
 mod rotor;
@@ -111,7 +111,7 @@ impl Spectro {
     pub fn write_output(
         &self,
         mut w: impl std::io::Write,
-        got: Output,
+        got: &Output,
     ) -> std::io::Result<()> {
         writeln!(w, "\nTransformed Geometry (Å):")?;
         writeln!(w, "{:.8}", self.geom)?;
