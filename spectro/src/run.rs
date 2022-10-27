@@ -124,6 +124,15 @@ impl Spectro {
 
         let irreps = compute_irreps(&self.geom, &lxm, self.nvib, 1e-4);
 
+        let (r, c) = lxm.shape();
+        assert_eq!(r, c);
+        let vlxm: Vec<Vec<f64>> = lxm
+            .transpose()
+            .as_slice()
+            .chunks(r)
+            .map(|r| r.to_owned())
+            .collect();
+
         (
             Output {
                 harms,
@@ -134,7 +143,9 @@ impl Spectro {
                 quartic,
                 sextic,
                 rot_equil: self.rotcon.clone(),
-		zpt: eng[0],
+                zpt: eng[0],
+                geom: self.geom.clone(),
+                lxm: vlxm,
             },
             restst,
         )

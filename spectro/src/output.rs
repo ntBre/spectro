@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use symm::Irrep;
+use symm::{Irrep, Molecule};
 
 use crate::{quartic::Quartic, rot::Rot, sextic::Sextic};
 
@@ -32,6 +32,10 @@ pub struct Output {
 
     /// zero-point vibrational energy
     pub zpt: f64,
+
+    pub geom: Molecule,
+
+    pub lxm: Vec<Vec<f64>>,
 }
 
 impl Display for Output {

@@ -32,11 +32,14 @@ fn load_want(filename: PathBuf, sym: bool) -> Output {
         funds: want.funds,
         corrs: want.corrs,
         rots,
+        // these are all untested here
         quartic: Quartic::default(),
         sextic: Sextic::default(),
         irreps: Default::default(),
         rot_equil: vec![],
         zpt: 0.0,
+        geom: Molecule::default(),
+        lxm: vec![],
     }
 }
 
