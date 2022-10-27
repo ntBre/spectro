@@ -110,29 +110,30 @@ fn scc(
         }
         val3 /= 6.0;
 
-        if spectro.is_linear() {
-            todo!() // goto 510
-        };
-
-        let mut val4 = 0.0;
-        for jxyz in 1..=3 {
-            if ixyz != jxyz {
-                let div = rotcon[ixyz - 1] - rotcon[jxyz - 1];
-                if div.abs() > TOL {
-                    val4 += tau[(jxyz - 1, ixyz - 1, ixyz - 1, ixyz - 1)]
-                        .powi(2)
-                        / div;
+        let val4 = if spectro.is_linear() {
+            0.0
+        } else {
+            let mut val4 = 0.0;
+            for jxyz in 1..=3 {
+                if ixyz != jxyz {
+                    let div = rotcon[ixyz - 1] - rotcon[jxyz - 1];
+                    if div.abs() > TOL {
+                        val4 += tau[(jxyz - 1, ixyz - 1, ixyz - 1, ixyz - 1)]
+                            .powi(2)
+                            / div;
+                    }
                 }
             }
-        }
-        val4 *= 0.25;
+            val4 *= 0.25;
+            val4
+        };
 
         let value = val1 - val2 + val3 + val4;
         scc[(ixyz - 1, ixyz - 1, ixyz - 1)] = value;
     }
 
     if spectro.is_linear() {
-        todo!() // goto 900, return?
+        return scc;
     }
 
     for ixyz in 1..=3 {
@@ -451,11 +452,6 @@ impl Sextic {
         f3qcm: &F3qcm,
     ) -> Self {
         let mut ret = Self::default();
-        // the only thing we can compute for linear molecules is He, which is
-        // phi(1, 1, 1) in fortran
-        if s.rotor.is_linear() {
-            return ret;
-        }
         let nvib = s.nvib;
         let maxcor = if s.is_linear() { 2 } else { 3 };
         let c = c_mat(maxcor, nvib, freq, &s.primat, wila);
@@ -474,6 +470,10 @@ impl Sextic {
             }
         }
         let phi = make_phi(maxcor, ic, scc);
+        if s.rotor.is_linear() {
+            ret.he = phi[(0, 0, 0)];
+            return ret;
+        }
         let t400 =
             (3.0 * t[(0, 0)] + 3.0 * t[(2 - 1, 2 - 1)] + 2.0 * t[(0, 2 - 1)])
                 / 8.0;
@@ -637,6 +637,11 @@ impl Display for Sextic {
         writeln!(f, "h  1: {:20.12e}", self.h1)?;
         writeln!(f, "h  2: {:20.12e}", self.h2)?;
         writeln!(f, "h  3: {:20.12e}", self.h3)?;
+
+        writeln!(f)?;
+
+        writeln!(f, "Linear Molecule")?;
+        writeln!(f, "He  : {:20.12e}", self.he)?;
 
         Ok(())
     }

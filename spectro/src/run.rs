@@ -120,11 +120,7 @@ impl Spectro {
             self.rota(&rotnst, states, &quartic)
         };
 
-        let sextic = if !self.rotor.is_linear() {
-            Sextic::new(self, &wila, &zmat, &freq, &f3qcm)
-        } else {
-            Sextic::default()
-        };
+        let sextic = Sextic::new(self, &wila, &zmat, &freq, &f3qcm);
 
         let irreps = compute_irreps(&self.geom, &lxm, self.nvib, 1e-4);
 
