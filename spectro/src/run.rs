@@ -126,11 +126,8 @@ impl Spectro {
 
         let (r, c) = lxm.shape();
         assert_eq!(r, c);
-        let vlxm: Vec<Vec<f64>> = lxm
-            .as_slice()
-            .chunks(r)
-            .map(|r| r.to_owned())
-            .collect();
+        let vlxm: Vec<Vec<f64>> =
+            lxm.as_slice().chunks(r).map(|r| r.to_owned()).collect();
 
         (
             Output {
@@ -145,6 +142,7 @@ impl Spectro {
                 zpt: eng[0],
                 geom: self.geom.clone(),
                 lxm: vlxm,
+                linear: self.rotor.is_linear(),
             },
             restst,
         )

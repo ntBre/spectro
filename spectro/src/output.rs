@@ -36,6 +36,8 @@ pub struct Output {
     pub geom: Molecule,
 
     pub lxm: Vec<Vec<f64>>,
+
+    pub linear: bool,
 }
 
 impl Display for Output {
