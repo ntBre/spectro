@@ -463,28 +463,6 @@ impl Spectro {
         ret
     }
 
-    /// compute the type of molecular rotor in `self.geom` assuming it has
-    /// already been normalized and reordered. These tests are taken from the
-    /// [Crawford Programming
-    /// Projects](https://github.com/CrawfordGroup/ProgrammingProjects/blob/master/Project%2301/hints/step7-solution.md)
-    fn rotor_type(&self, moms: &nalgebra::Vector3<f64>, eps: f64) -> Rotor {
-        if self.geom.atoms.len() == 2 {
-            return Rotor::Diatomic;
-        }
-        let close = |a, b| f64::abs(a - b) < eps;
-        if moms[0] < eps {
-            Rotor::Linear
-        } else if close(moms[0], moms[1]) && close(moms[1], moms[2]) {
-            Rotor::SphericalTop
-        } else if close(moms[0], moms[1]) && !close(moms[1], moms[2]) {
-            Rotor::OblateSymmTop
-        } else if !close(moms[0], moms[1]) && close(moms[1], moms[2]) {
-            Rotor::ProlateSymmTop
-        } else {
-            Rotor::AsymmTop
-        }
-    }
-
     /// automatic alignment of the degenerate modes of symmetric tops, according
     /// to the convention given at the beginning of Papousek and Aliev. most
     /// vibrations are aligned so that the first component is symmetric under a

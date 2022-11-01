@@ -7,6 +7,7 @@ use std::{
 use crate::{
     f3qcm::F3qcm,
     mode::Mode,
+    rotor::{coriolis, darling, fermi1, fermi2},
     state::State,
     utils::{close, ioff},
     Dvec, Spectro, Tensor3,
@@ -178,10 +179,11 @@ impl Restst {
             }
         };
 
-        let coriolis = spectro.rotor.coriolis(&modes, freq, zmat);
-        let fermi1 = spectro.rotor.fermi1(&modes, freq, f3qcm);
-        let fermi2 = spectro.rotor.fermi2(&modes, freq, f3qcm);
-        let darling = spectro.rotor.darling(&modes, freq);
+        let r = &spectro.rotor;
+        let coriolis = coriolis(r, &modes, freq, zmat);
+        let fermi1 = fermi1(r, &modes, freq, f3qcm);
+        let fermi2 = fermi2(r, &modes, freq, f3qcm);
+        let darling = darling(r, &modes, freq);
 
         let (n1dm, n2dm, n3dm) = Mode::count(&modes);
         let (i1mode, i2mode, i3mode) = Mode::partition(&modes);

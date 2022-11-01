@@ -57,7 +57,7 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
         .map(|m| if *m > 1e-2 { CONST / m } else { 0.0 })
         .collect();
     const TOL: f64 = 1e-5;
-    ret.rotor = ret.rotor_type(&pr, TOL);
+    ret.rotor = ret.geom.rotor_type(&pr, TOL);
     if ret.rotor.is_sym_top() {
         let iaxis = if close(pr[0], pr[1], TOL) {
             3
