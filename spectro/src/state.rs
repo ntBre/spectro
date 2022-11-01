@@ -99,16 +99,15 @@ impl Display for I2states {
 
 impl Display for State {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f)?;
-        match self {
+        match &self {
             State::I1st(v) => {
-                for i in v {
-                    write!(f, "{:5}", i)?;
+                for s in v {
+                    write!(f, "{:5}", s)?
                 }
             }
             State::I2st(v) => {
-                for (i, _) in v {
-                    write!(f, "{:5}", i)?;
+                for (a, b) in v {
+                    write!(f, "({},{})", a, b)?
                 }
             }
             State::I3st(_) => todo!(),

@@ -116,12 +116,17 @@ impl Spectro {
         writeln!(w, "\nTransformed Geometry (Å):")?;
         writeln!(w, "{:.8}", self.geom)?;
         writeln!(w, "\nEquilibrium Rotational Constants (cm-1):")?;
-        writeln!(w, "{:^20}{:^20}{:^20}", "A", "B", "C")?;
-        writeln!(
-            w,
-            "{:20.12}{:20.12}{:20.12}\n",
-            self.rotcon[0], self.rotcon[1], self.rotcon[2]
-        )?;
+        if !got.linear {
+            writeln!(w, "{:^20}{:^20}{:^20}", "A", "B", "C")?;
+            writeln!(
+                w,
+                "{:20.12}{:20.12}{:20.12}\n",
+                self.rotcon[0], self.rotcon[1], self.rotcon[2]
+            )?;
+        } else {
+            writeln!(w, "{:^20}", "B")?;
+            writeln!(w, "{:20.12}\n", self.rotcon[1])?;
+        }
         writeln!(w, "{}", got)?;
         Ok(())
     }
