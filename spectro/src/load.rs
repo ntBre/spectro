@@ -11,10 +11,7 @@ use crate::{
     consts::CONST,
     dummy::{Dummy, DummyVal},
 };
-use crate::{
-    utils::{linalg::symm_eigen_decomp3, *},
-    Dmat, Tensor3,
-};
+use crate::{utils::*, Dmat, Tensor3};
 use symm::{Atom, Axis, Molecule, Plane};
 use tensor::Tensor4;
 
@@ -41,55 +38,18 @@ impl From<Molecule> for Spectro {
 }
 
 /// perform the geometry manipulations from dist.f on ret.geom and set the
-/// corresponding fields in `ret`
+/// corresponding fields in `ret`. assumes the input geometry is in bohr and
+/// immediately converts to angstroms
 pub(crate) fn process_geom(ret: &mut Spectro) {
     // assumes input geometry in bohr
     ret.geom.to_angstrom();
-    let com = ret.geom.com();
-    ret.geom.translate(-com);
-    let moi = ret.geom.moi();
-    let (pr, mut axes) = symm_eigen_decomp3(moi);
+    let (pr, axes, rotor) = ret.geom.normalize();
+    ret.rotor = rotor;
     ret.primat = Vec::from(pr.as_slice());
-    // this is what the fortran code does, rust was okay with making it INF, but
-    // this plays more nicely with the math we do later
     ret.rotcon = pr
         .iter()
         .map(|m| if *m > 1e-2 { CONST / m } else { 0.0 })
         .collect();
-    const TOL: f64 = 1e-5;
-    ret.rotor = ret.geom.rotor_type(&pr, TOL);
-    if ret.rotor.is_sym_top() {
-        let iaxis = if close(pr[0], pr[1], TOL) {
-            3
-        } else if close(pr[0], pr[2], TOL) {
-            2
-        } else if close(pr[1], pr[2], TOL) {
-            1
-        } else {
-            panic!("not a symmetric top: {:.8}, {}", pr, ret.rotor);
-        };
-
-        if iaxis == 1 {
-            let egr = nalgebra::matrix![
-            0.0, 0.0, -1.0;
-            0.0, 1.0,  0.0;
-            1.0, 0.0,  0.0;
-            ];
-            let atemp = axes * egr;
-            axes = atemp;
-            ret.primat[(0)] = pr[(2)];
-            ret.primat[(1)] = pr[(1)];
-            ret.primat[(2)] = pr[(0)];
-            ret.rotcon = ret
-                .primat
-                .iter()
-                .map(|m| if *m > 1e-2 { CONST / m } else { 0.0 })
-                .collect();
-        } else if iaxis == 2 {
-            todo!("dist.f:419");
-        }
-    }
-    ret.geom = ret.geom.transform(axes.transpose());
     ret.axes = axes;
 
     // center of mass again
