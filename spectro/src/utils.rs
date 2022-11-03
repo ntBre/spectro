@@ -38,7 +38,7 @@ impl Display for Spectro {
             writeln!(f)?;
         }
         writeln!(f, "# GEOM #############")?;
-        writeln!(f, "{:5}{:5}", self.geom.atoms.len() + self.dummies.len(), 1)?;
+        writeln!(f, "{:5}{:5}", self.geom.atoms.len() + self.dummies.len(), 0)?;
         for atom in &self.geom.atoms {
             writeln!(
                 f,
