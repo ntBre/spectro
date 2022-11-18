@@ -83,6 +83,7 @@ macro_rules! check {
 }
 
 /// setup for calling xcals
+#[allow(clippy::type_complexity)]
 fn setup(
     test: &Test,
     s: &Spectro,

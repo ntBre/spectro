@@ -10,6 +10,9 @@ test:
 bench:
 	cargo bench ${TESTFLAGS} ${ARGS}
 
+clippy:
+	cargo clippy --tests
+
 %.pdf : %.gv
 	dot -Tpdf $< -o $@
 

@@ -43,9 +43,9 @@ fn asym() {
     let tests = [
         Test::new("h2o", 3, 20.057563725859055),
         Test::new("h2co", 6, 11.49172492996696),
-        Test::new("c3h2", 9, 4.2142433303609623),
+        Test::new("c3h2", 9, 4.214_243_330_360_962),
         Test::new("c3hf", 9, -2.5183180568351426),
-        Test::new("c3hcn", 12, -5.6448536013927253),
+        Test::new("c3hcn", 12, -5.644_853_601_392_725),
     ];
     for test in Vec::from(&tests[..]) {
         let s = Spectro::load(&test.infile);

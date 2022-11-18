@@ -93,14 +93,10 @@ pub(crate) fn check_eigen<
                 println!("got\n{:.8}", got);
                 println!("want\n{:.8}", want);
                 let diff = got - want;
-                let diff2 = (g.clone() - w.clone()).abs().max();
+                let diff2 = (g - w).abs().max();
                 println!("diff\n{:.8}", diff);
                 println!("max diff = {:.2e}", diff1.min(diff2));
-                assert!(
-                    false,
-                    "{} failed on column {col} of {}",
-                    label, infile
-                );
+                panic!("{} failed on column {col} of {}", label, infile);
             }
         }
     }
@@ -266,16 +262,16 @@ fn bdegnl() {
     let mut lxm = load_dmat("testfiles/ph3/pre_bdegnl_lxm", 12, 12);
     let mut lx = load_dmat("testfiles/ph3/pre_bdegnl_lx", 12, 12);
     let freq = na::dvector![
-        2437.0024382429601,
-        2437.0020300169222,
+        2_437.002_438_242_96,
+        2_437.002_030_016_922,
         2428.1546959531433,
         1145.7614713948005,
         1145.7567008646774,
         1015.4828482214278,
-        0.046516934814435321,
-        0.025278773879589642,
+        0.046_516_934_814_435_32,
+        0.025_278_773_879_589_64,
         0.015292949295790762,
-        0.0077266799336841666,
+        0.007_726_679_933_684_167,
         0.011089653435072953,
         0.014380890514910207
     ];
