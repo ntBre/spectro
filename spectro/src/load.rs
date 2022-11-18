@@ -151,7 +151,6 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
     // and y got swapped (since their mois are equal), swap them back to keep
     // the original order
     if ret.rotor.is_linear() {
-        assert_eq!(ret.axes.column(2), nalgebra::vector![0.0, 0.0, -1.0]);
         ret.axes.set_column(0, &nalgebra::vector![1.0, 0.0, 0.0]);
         ret.axes.set_column(1, &nalgebra::vector![0.0, 1.0, 0.0]);
     }
