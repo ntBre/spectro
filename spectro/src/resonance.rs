@@ -188,7 +188,7 @@ impl Restst {
         let (n1dm, n2dm, n3dm) = Mode::count(&modes);
         let (i1mode, i2mode, i3mode) = Mode::partition(&modes);
         if n3dm > 0 {
-            todo!("untested");
+            eprintln!("triply degenerate modes are untested");
         }
 
         let mut states = Vec::new();
