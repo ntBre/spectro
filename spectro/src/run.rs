@@ -122,7 +122,7 @@ impl Spectro {
 
         let sextic = Sextic::new(self, &wila, &zmat, &freq, &f3qcm);
 
-        let irreps = compute_irreps(&self.geom, &lxm, self.nvib, 1e-4);
+        let irreps = compute_irreps(&self.geom, &lxm, harms.len(), 1e-4);
 
         let (r, c) = lxm.shape();
         assert_eq!(r, c);
