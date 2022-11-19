@@ -142,7 +142,10 @@ impl Restst {
                     let fj = freq[j];
                     for k in j + 1..spectro.nvib {
                         let fk = freq[k];
-                        if close(fi, fj, DEG_TOL) && close(fi, fk, DEG_TOL) {
+                        if close(fi, fj, DEG_TOL)
+                            && close(fi, fk, DEG_TOL)
+                            && [fi, fj, fk].iter().all(|f| f.abs() > DEG_TOL)
+                        {
                             triples.insert(i);
                             triples.insert(j);
                             triples.insert(k);
@@ -159,6 +162,7 @@ impl Restst {
                 for j in i + 1..spectro.nvib {
                     let fj = freq[j];
                     if close(fi, fj, DEG_TOL)
+                        && [fi, fj].iter().all(|f| f.abs() > DEG_TOL)
                         && !triples.contains(&i)
                         && !triples.contains(&j)
                     {
