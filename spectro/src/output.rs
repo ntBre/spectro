@@ -42,6 +42,7 @@ pub struct Output {
 
 impl Display for Output {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Geometry: {:.8}", self.geom)?;
         writeln!(
             f,
             "Vibrational Frequencies (cm-1):\n{:>5}{:>8}{:>8}{:>8}{:>8}",
