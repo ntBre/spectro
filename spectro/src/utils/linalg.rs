@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use crate::Dmat;
 use crate::Dvec;
 use nalgebra::SymmetricEigen;
@@ -13,9 +15,13 @@ pub fn symm_eigen_decomp(mat: Dmat, reverse: bool) -> (Dvec, Dmat) {
     } = SymmetricEigen::new(mat);
     let mut pairs: Vec<_> = vals.iter().enumerate().collect();
     if reverse {
-        pairs.sort_by(|(_, a), (_, b)| b.partial_cmp(a).unwrap());
+        pairs.sort_by(|(_, a), (_, b)| {
+            b.partial_cmp(a).unwrap_or(Ordering::Equal)
+        });
     } else {
-        pairs.sort_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap());
+        pairs.sort_by(|(_, a), (_, b)| {
+            a.partial_cmp(b).unwrap_or(Ordering::Equal)
+        });
     }
     let (rows, cols) = vecs.shape();
     let mut ret = Dmat::zeros(rows, cols);
