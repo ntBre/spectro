@@ -61,20 +61,27 @@ impl Display for Output {
         }
 
         writeln!(f, "\nRotational Constants (cm-1):")?;
-        let width = 5 * self.rots[0].state.len();
-        if !self.linear {
-            writeln!(
-                f,
-                "{:^width$}{:^12}{:^12}{:^12}",
-                "State", "A", "B", "C"
-            )?;
-            for rot in &self.rots {
-                writeln!(f, "{}", rot)?;
-            }
-        } else {
-            writeln!(f, "{:^width$}{:^12}", "State", "B")?;
-            for rot in &self.rots {
-                writeln!(f, "{}{:12.7}", rot.state, rot.b + self.rot_equil[1])?;
+        if !self.rots.is_empty() {
+            let width = 5 * self.rots[0].state.len();
+            if !self.linear {
+                writeln!(
+                    f,
+                    "{:^width$}{:^12}{:^12}{:^12}",
+                    "State", "A", "B", "C"
+                )?;
+                for rot in &self.rots {
+                    writeln!(f, "{}", rot)?;
+                }
+            } else {
+                writeln!(f, "{:^width$}{:^12}", "State", "B")?;
+                for rot in &self.rots {
+                    writeln!(
+                        f,
+                        "{}{:12.7}",
+                        rot.state,
+                        rot.b + self.rot_equil[1]
+                    )?;
+                }
             }
         }
 
