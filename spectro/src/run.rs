@@ -23,10 +23,27 @@ impl Spectro {
         let (harms, mut lxm) = symm_eigen_decomp(fxm, true);
         let freq = to_wavenumbers(&harms);
 
+        // form the LX matrix
+        let mut lx = self.make_lx(&sqm, &lxm);
+
+        if self.rotor.is_sym_top() {
+            self.bdegnl(&freq, &mut lxm, &w, &mut lx);
+        }
+
+        let irreps = compute_irreps(&self.geom, &lxm, self.nvib, 1e-4);
+        let (zmat, wila) = self.zeta(&lxm, &w);
+        let quartic = Quartic::new(self, &freq, &wila);
+
         if deriv.is_harmonic() {
             return (
                 Output {
                     harms: freq.as_slice()[..self.nvib].to_vec(),
+                    irreps,
+                    quartic,
+                    rot_equil: self.rotcon.clone(),
+                    geom: self.geom.clone(),
+                    lxm: to_vec(lxm),
+                    linear: self.rotor.is_linear(),
                     ..Default::default()
                 },
                 Restst::default(),
@@ -37,13 +54,6 @@ impl Spectro {
 	    panic!("can't handle cubics yet");
 	};
 
-        // form the LX matrix
-        let mut lx = self.make_lx(&sqm, &lxm);
-
-        if self.rotor.is_sym_top() {
-            self.bdegnl(&freq, &mut lxm, &w, &mut lx);
-        }
-
         // start of cubic analysis
         let mut f3x = self.rot3rd(f3x);
         let f3qcm = force3(self.n3n, &mut f3x, &lx, self.nvib, &freq);
@@ -51,8 +61,6 @@ impl Spectro {
         // start of quartic analysis
         let f4x = self.rot4th(f4x);
         let f4qcm = force4(self.n3n, &f4x, &lx, self.nvib, &freq);
-
-        let (zmat, wila) = self.zeta(&lxm, &w);
 
         let restst = Restst::new(self, &zmat, &f3qcm, &freq);
         let Restst {
@@ -118,7 +126,6 @@ impl Spectro {
 
         // print_vib_states(&eng, &states);
 
-        let quartic = Quartic::new(self, &freq, &wila);
         let rots = if self.rotor.is_sym_top() {
             if self.rotor.is_spherical_top() {
                 panic!("don't know what to do with a spherical top here");
@@ -129,13 +136,6 @@ impl Spectro {
         };
 
         let sextic = Sextic::new(self, &wila, &zmat, &freq, &f3qcm);
-
-        let irreps = compute_irreps(&self.geom, &lxm, harms.len(), 1e-4);
-
-        let (r, c) = lxm.shape();
-        assert_eq!(r, c);
-        let vlxm: Vec<Vec<f64>> =
-            lxm.as_slice().chunks(r).map(|r| r.to_owned()).collect();
 
         (
             Output {
@@ -149,7 +149,7 @@ impl Spectro {
                 rot_equil: self.rotcon.clone(),
                 zpt: eng[0],
                 geom: self.geom.clone(),
-                lxm: vlxm,
+                lxm: to_vec(lxm),
                 linear: self.rotor.is_linear(),
             },
             restst,
@@ -171,6 +171,21 @@ impl Spectro {
 
         self.run(Derivative::Quartic(fc2, f3x, f4x))
     }
+}
+
+fn to_vec(
+    lxm: nalgebra::Matrix<
+        f64,
+        nalgebra::Dynamic,
+        nalgebra::Dynamic,
+        nalgebra::VecStorage<f64, nalgebra::Dynamic, nalgebra::Dynamic>,
+    >,
+) -> Vec<Vec<f64>> {
+    let (r, c) = lxm.shape();
+    assert_eq!(r, c);
+    let vlxm: Vec<Vec<f64>> =
+        lxm.as_slice().chunks(r).map(|r| r.to_owned()).collect();
+    vlxm
 }
 
 /// helper function for computing the irreps corresponding to `lxm`
