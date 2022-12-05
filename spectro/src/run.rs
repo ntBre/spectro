@@ -1,21 +1,15 @@
-use tensor::Tensor4;
-
 use super::{make_sym_funds, resona, Output, Spectro};
 use crate::sextic::Sextic;
 use crate::utils::{
     force3, force4, linalg::symm_eigen_decomp, make_funds, to_wavenumbers,
 };
 use crate::{consts::FACT2, quartic::Quartic, resonance::Restst};
-use crate::{load_fc2, load_fc3, load_fc4, Dmat, Mode, Tensor3};
+use crate::{load_fc2, load_fc3, load_fc4, Derivative, Mode};
 use std::path::Path;
 
 impl Spectro {
-    pub fn run(
-        &self,
-        fc2: Dmat,
-        f3x: Tensor3,
-        f4x: Tensor4,
-    ) -> (Output, Restst) {
+    pub fn run(&self, deriv: Derivative) -> (Output, Restst) {
+        let fc2 = deriv.fc2();
         // rotate the harmonic force constants to the new axes, and convert them
         // to the proper units
         let fc2 = self.rot2nd(fc2);
@@ -28,6 +22,20 @@ impl Spectro {
         let fxm = self.form_sec(fc2, &sqm);
         let (harms, mut lxm) = symm_eigen_decomp(fxm, true);
         let freq = to_wavenumbers(&harms);
+
+        if deriv.is_harmonic() {
+            return (
+                Output {
+                    harms: freq.as_slice()[..self.nvib].to_vec(),
+                    ..Default::default()
+                },
+                Restst::default(),
+            );
+        }
+
+        let Derivative::Quartic(_, f3x, f4x) = deriv else {
+	    panic!("can't handle cubics yet");
+	};
 
         // form the LX matrix
         let mut lx = self.make_lx(&sqm, &lxm);
@@ -161,7 +169,7 @@ impl Spectro {
         let f3x = load_fc3(fort30, self.n3n);
         let f4x = load_fc4(fort40, self.n3n);
 
-        self.run(fc2, f3x, f4x)
+        self.run(Derivative::Quartic(fc2, f3x, f4x))
     }
 }
 

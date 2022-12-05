@@ -67,6 +67,30 @@ pub enum Curvil {
     Tors(usize, usize, usize, usize),
 }
 
+pub enum Derivative {
+    Harmonic(Dmat),
+    Cubic(Dmat, Tensor3),
+    Quartic(Dmat, Tensor3, Tensor4),
+}
+
+impl Derivative {
+    fn fc2(&self) -> &Dmat {
+        match self {
+            Derivative::Harmonic(fc2) => fc2,
+            Derivative::Cubic(fc2, _) => fc2,
+            Derivative::Quartic(fc2, _, _) => fc2,
+        }
+    }
+
+    /// Returns `true` if the derivative is [`Harmonic`].
+    ///
+    /// [`Harmonic`]: Derivative::Harmonic
+    #[must_use]
+    pub fn is_harmonic(&self) -> bool {
+        matches!(self, Self::Harmonic(..))
+    }
+}
+
 /// struct containing the fields to describe a Spectro input file:
 /// ```text
 /// header: Vec<usize>: the input options
@@ -309,7 +333,7 @@ impl Spectro {
 
     /// rotate the harmonic force constants in `fx` to align with the principal
     /// axes in `self.axes` used to align the geometry
-    pub fn rot2nd(&self, fx: Dmat) -> Dmat {
+    pub fn rot2nd(&self, fx: &Dmat) -> Dmat {
         let (a, b) = fx.shape();
         let mut ret = Dmat::zeros(a, b);
         let natom = self.natoms();

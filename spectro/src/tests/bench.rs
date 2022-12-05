@@ -24,7 +24,7 @@ fn bench_rot4th(b: &mut test::Bencher) {
 fn bench_force3(b: &mut test::Bencher) {
     let s = Spectro::load("testfiles/h2o/spectro.in");
     let fc2 = load_fc2("testfiles/h2o/fort.15", s.n3n);
-    let fc2 = s.rot2nd(fc2);
+    let fc2 = s.rot2nd(&fc2);
     let fc2 = FACT2 * fc2;
     let w = s.geom.weights();
     let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
@@ -43,7 +43,7 @@ fn bench_force3(b: &mut test::Bencher) {
 fn bench_force4(b: &mut test::Bencher) {
     let s = Spectro::load("testfiles/h2o/spectro.in");
     let fc2 = load_fc2("testfiles/h2o/fort.15", s.n3n);
-    let fc2 = s.rot2nd(fc2);
+    let fc2 = s.rot2nd(&fc2);
     let fc2 = FACT2 * fc2;
     let w = s.geom.weights();
     let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();

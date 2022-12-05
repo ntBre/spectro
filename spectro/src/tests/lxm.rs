@@ -116,7 +116,7 @@ fn asym() {
     for test in Vec::from(&tests[..]) {
         let s = Spectro::load(&test.infile);
         let fc2 = load_fc2(&test.fort15, s.n3n);
-        let fc2 = s.rot2nd(fc2);
+        let fc2 = s.rot2nd(&fc2);
         let fc2 = FACT2 * fc2;
         let w = s.geom.weights();
         let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
@@ -194,7 +194,7 @@ fn sym() {
     for test in Vec::from(&tests[..]) {
         let s = Spectro::load(&test.infile);
         let fc2 = load_fc2(&test.fort15, s.n3n);
-        let fc2 = s.rot2nd(fc2);
+        let fc2 = s.rot2nd(&fc2);
         let fc2 = FACT2 * fc2;
         let w = s.geom.weights();
         let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
@@ -233,7 +233,7 @@ fn sym() {
 fn pre_bdegnl() {
     let s = Spectro::load("testfiles/ph3/spectro.in");
     let fc2 = load_fc2("testfiles/ph3/fort.15", s.n3n);
-    let fc2 = s.rot2nd(fc2);
+    let fc2 = s.rot2nd(&fc2);
     let fc2 = FACT2 * fc2;
     let w = s.geom.weights();
     let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
@@ -330,7 +330,7 @@ H -0.59328292 -1.02759614  0.69757310
     };
     let fort15 = "testfiles/ph3/fort.15";
     let fc2 = load_fc2(fort15, s.n3n);
-    let fc2 = s.rot2nd(fc2);
+    let fc2 = s.rot2nd(&fc2);
     let fc2 = FACT2 * fc2;
     let w = s.geom.weights();
     let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
@@ -368,7 +368,7 @@ N     -2.2072758     -0.0095340      0.0000000
     };
     let fort15 = "testfiles/c3hcn/fort.15";
     let fc2 = load_fc2(fort15, s.n3n);
-    let fc2 = s.rot2nd(fc2);
+    let fc2 = s.rot2nd(&fc2);
     let fc2 = FACT2 * fc2;
     let w = s.geom.weights();
     let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
@@ -406,7 +406,7 @@ N     -2.2072758     -0.0095340      0.0000000
     };
     let fort15 = "testfiles/c3hcn/fort.15";
     let fc2 = load_fc2(fort15, s.n3n);
-    let fc2 = s.rot2nd(fc2);
+    let fc2 = s.rot2nd(&fc2);
     let fc2 = FACT2 * fc2;
     let w = s.geom.weights();
     let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
@@ -447,7 +447,7 @@ H -0.59328292 -1.02759614  0.69757310
     };
     let fort15 = "testfiles/ph3/fort.15";
     let fc2 = load_fc2(fort15, s.n3n);
-    let fc2 = s.rot2nd(fc2);
+    let fc2 = s.rot2nd(&fc2);
     let fc2 = FACT2 * fc2;
     let w = s.geom.weights();
     let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();

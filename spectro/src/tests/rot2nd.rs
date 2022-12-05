@@ -42,7 +42,7 @@ fn rot2nd() {
     for test in tests {
         let s = Spectro::load(&test.infile);
         let fc2 = load_fc2(test.fort15, s.n3n);
-        let got = s.rot2nd(fc2);
+        let got = s.rot2nd(&fc2);
         check_mat!(&got.abs(), &test.want.abs(), 1.08e-10, test.infile);
     }
 }

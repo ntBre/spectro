@@ -43,7 +43,7 @@ fn alpha() {
     for test in Vec::from(&tests[..]) {
         let s = Spectro::load(test.infile);
         let fc2 = load_fc2(test.fort15, s.n3n);
-        let fc2 = s.rot2nd(fc2);
+        let fc2 = s.rot2nd(&fc2);
         let fc2 = FACT2 * fc2;
         let w = s.geom.weights();
         let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
@@ -73,7 +73,7 @@ fn alpha() {
 fn test_alphaa() {
     let s = Spectro::load("testfiles/h2o/spectro.in");
     let fc2 = load_fc2("testfiles/fort.15", s.n3n);
-    let fc2 = s.rot2nd(fc2);
+    let fc2 = s.rot2nd(&fc2);
     let fc2 = FACT2 * fc2;
     let w = s.geom.weights();
     let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
