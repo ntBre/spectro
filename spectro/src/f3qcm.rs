@@ -1,4 +1,4 @@
-use std::ops::Index;
+use std::{ops::Index, fmt::Display};
 
 use crate::utils::find3;
 
@@ -32,5 +32,17 @@ impl Index<(usize, usize, usize)> for F3qcm {
 impl From<F3qcm> for nalgebra::DVector<f64> {
     fn from(v: F3qcm) -> Self {
         Self::from(v.0)
+    }
+}
+
+
+impl Display for F3qcm {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+	let width = f.width().unwrap_or(16);
+	let prec = f.precision().unwrap_or(8);
+	for v in &self.0 {
+	    writeln!(f, "{v:width$.prec$}")?;
+	}
+	Ok(())
     }
 }

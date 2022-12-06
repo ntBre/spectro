@@ -1,4 +1,7 @@
-use std::ops::{Index, IndexMut};
+use std::{
+    fmt::Display,
+    ops::{Index, IndexMut},
+};
 
 use crate::utils::find4;
 
@@ -42,5 +45,16 @@ impl IndexMut<(usize, usize, usize, usize)> for F4qcm {
 impl From<F4qcm> for nalgebra::DVector<f64> {
     fn from(v: F4qcm) -> Self {
         Self::from(v.0)
+    }
+}
+
+impl Display for F4qcm {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let width = f.width().unwrap_or(16);
+        let prec = f.precision().unwrap_or(8);
+        for v in &self.0 {
+            writeln!(f, "{v:width$.prec$}")?;
+        }
+        Ok(())
     }
 }
