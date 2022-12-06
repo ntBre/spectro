@@ -27,7 +27,7 @@ use tensor::Tensor4;
 use utils::*;
 
 mod alphas;
-mod consts;
+pub mod consts;
 mod dummy;
 mod enrgy;
 mod f3qcm;
@@ -45,7 +45,7 @@ mod rotor;
 mod run;
 pub mod sextic;
 mod state;
-mod utils;
+pub mod utils;
 mod xcals;
 
 pub use mode::*;
@@ -301,7 +301,7 @@ impl Spectro {
     }
 
     /// make the LX matrix
-    fn make_lx(&self, sqm: &[f64], lxm: &Dmat) -> Dmat {
+    pub fn make_lx(&self, sqm: &[f64], lxm: &Dmat) -> Dmat {
         let mut lx = Dmat::zeros(self.n3n, self.n3n);
         for i in 0..self.n3n {
             let ii = i / 3;

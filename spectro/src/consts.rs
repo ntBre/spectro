@@ -32,9 +32,9 @@ pub(crate) const PH: f64 = 6.626176;
 /// pre-computed sqrt of ALAM
 pub(crate) const SQLAM: f64 = 0.172_221_250_379_107_6;
 
-pub(crate) const FACT3: f64 = 1.0e6 / (SQLAM * SQLAM * SQLAM * PH * CL);
+pub const FACT3: f64 = 1.0e6 / (SQLAM * SQLAM * SQLAM * PH * CL);
 
-pub(crate) const FACT4: f64 = 1.0e6 / (ALAM * ALAM * PH * CL);
+pub const FACT4: f64 = 1.0e6 / (ALAM * ALAM * PH * CL);
 
 /// ALPHA_CONST IS THE PI*SQRT(C/H) FACTOR
 pub(crate) const ALPHA_CONST: f64 = 0.086112;

@@ -4,7 +4,7 @@ use crate::utils::{
     force3, force4, linalg::symm_eigen_decomp, make_funds, to_wavenumbers,
 };
 use crate::{consts::FACT2, quartic::Quartic, resonance::Restst};
-use crate::{load_fc2, load_fc3, load_fc4, Derivative, Mode};
+use crate::{load_fc2, load_fc3, load_fc4, Derivative, Dmat, Mode};
 use std::path::Path;
 
 impl Spectro {
@@ -173,14 +173,7 @@ impl Spectro {
     }
 }
 
-fn to_vec(
-    lxm: nalgebra::Matrix<
-        f64,
-        nalgebra::Dynamic,
-        nalgebra::Dynamic,
-        nalgebra::VecStorage<f64, nalgebra::Dynamic, nalgebra::Dynamic>,
-    >,
-) -> Vec<Vec<f64>> {
+fn to_vec(lxm: Dmat) -> Vec<Vec<f64>> {
     let (r, c) = lxm.shape();
     assert_eq!(r, c);
     let vlxm: Vec<Vec<f64>> =
