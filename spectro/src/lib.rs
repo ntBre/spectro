@@ -11,8 +11,8 @@ use std::{
 
 use consts::ALPHA_CONST;
 use dummy::Dummy;
-use f3qcm::F3qcm;
-use f4qcm::F4qcm;
+pub use f3qcm::F3qcm;
+pub use f4qcm::F4qcm;
 use ifrm1::Ifrm1;
 use ifrm2::Ifrm2;
 use nalgebra::DMatrix;

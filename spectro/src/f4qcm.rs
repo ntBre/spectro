@@ -9,7 +9,7 @@ use crate::utils::find4;
 pub struct F4qcm(Vec<f64>);
 
 impl F4qcm {
-    pub(crate) fn new(v: Vec<f64>) -> Self {
+    pub fn new(v: Vec<f64>) -> Self {
         Self(v)
     }
 }
