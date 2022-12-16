@@ -4,7 +4,7 @@ use crate::utils::{
     force3, force4, linalg::symm_eigen_decomp, make_funds, to_wavenumbers,
 };
 use crate::{consts::FACT2, quartic::Quartic, resonance::Restst};
-use crate::{load_fc2, load_fc3, load_fc4, Derivative, Dmat, Mode};
+use crate::{load_fc2, load_fc3, load_fc4, Derivative, Dmat, Dvec, Mode};
 use std::path::Path;
 
 impl Spectro {
@@ -31,15 +31,12 @@ impl Spectro {
         }
 
         let irreps = compute_irreps(&self.geom, &lxm, self.nvib, 1e-4);
-        let (zmat, wila) = self.zeta(&lxm, &w);
-        let quartic = Quartic::new(self, &freq, &wila);
 
         if deriv.is_harmonic() {
             return (
                 Output {
                     harms: freq.as_slice()[..self.nvib].to_vec(),
                     irreps,
-                    quartic,
                     rot_equil: self.rotcon.clone(),
                     geom: self.geom.clone(),
                     lxm: to_vec(lxm),
@@ -62,6 +59,30 @@ impl Spectro {
         let f4x = self.rot4th(f4x);
         let f4qcm = force4(self.n3n, &f4x, &lx, self.nvib, &freq);
 
+        self.finish(freq, f3qcm, f4qcm, irreps, lxm)
+    }
+
+    /// finish the spectro run from F3qcm and F4qcm
+    pub fn finish(
+        &self,
+        freq: Dvec,
+        f3qcm: crate::f3qcm::F3qcm,
+        f4qcm: crate::f4qcm::F4qcm,
+        irreps: Vec<symm::Irrep>,
+        mut lxm: Dmat,
+    ) -> (Output, Restst) {
+        let w = self.geom.weights();
+        let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
+
+        // form the LX matrix
+        let mut lx = self.make_lx(&sqm, &lxm);
+
+        if self.rotor.is_sym_top() {
+            self.bdegnl(&freq, &mut lxm, &w, &mut lx);
+        }
+
+        let (zmat, wila) = self.zeta(&lxm, &w);
+        let quartic = Quartic::new(self, &freq, &wila);
         let restst = Restst::new(self, &zmat, &f3qcm, &freq);
         let Restst {
             coriolis,
@@ -74,7 +95,6 @@ impl Spectro {
             iovrtn: _,
             icombn: _,
         } = &restst;
-
         let (xcnst, gcnst, e0) = if self.rotor.is_sym_top() {
             let (x, g, e) = self.xcals(
                 &f4qcm, &freq, &f3qcm, &zmat, fermi1, fermi2, modes, &wila,
@@ -85,7 +105,6 @@ impl Spectro {
                 self.xcalc(&f4qcm, &freq, &f3qcm, &zmat, modes, fermi1, fermi2);
             (x, None, e)
         };
-
         let (harms, funds) = if self.rotor.is_sym_top() {
             make_sym_funds(modes, &freq, &xcnst, &gcnst)
         } else {
@@ -94,17 +113,14 @@ impl Spectro {
                 make_funds(&freq, self.nvib, &xcnst),
             )
         };
-
         let rotnst = if self.rotor.is_sym_top() {
             self.alphas(&freq, &wila, &zmat, &f3qcm, modes, states, coriolis)
         } else {
             self.alphaa(&freq, &wila, &zmat, &f3qcm, modes, states, coriolis)
         };
-
         // this is worked on by resona and then enrgy so keep it out here
         let nstate = states.len();
         let mut eng = vec![0.0; nstate];
-
         if !self.rotor.is_sym_top() {
             resona(e0, modes, &freq, &xcnst, fermi1, fermi2, &mut eng);
         } else {
@@ -113,9 +129,7 @@ impl Spectro {
             //     "resonance polyads for symmetric tops not yet implemented"
             // );
         }
-
         self.enrgy(&freq, &xcnst, &gcnst, &restst, &f3qcm, e0, &mut eng);
-
         // it's not obvious that the states are in this proper order, but by
         // construction that seems to be the case
         let mut corrs = Vec::new();
@@ -123,9 +137,7 @@ impl Spectro {
         for i in 1..n1dm + n2dm + n3dm + 1 {
             corrs.push(eng[i] - eng[0]);
         }
-
         // print_vib_states(&eng, &states);
-
         let rots = if self.rotor.is_sym_top() {
             if self.rotor.is_spherical_top() {
                 panic!("don't know what to do with a spherical top here");
@@ -134,9 +146,7 @@ impl Spectro {
         } else {
             self.rota(&rotnst, states, &quartic)
         };
-
         let sextic = Sextic::new(self, &wila, &zmat, &freq, &f3qcm);
-
         (
             Output {
                 harms,
