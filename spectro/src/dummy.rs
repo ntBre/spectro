@@ -1,14 +1,15 @@
+use serde::{Deserialize, Serialize};
 use symm::Molecule;
 
 /// A `DummyVal` is either a literal `Value` or the index of the real `Atom` to
 /// take the value from
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub(crate) enum DummyVal {
     Value(f64),
     Atom(usize),
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Dummy {
     pub(crate) x: DummyVal,
     pub(crate) y: DummyVal,

@@ -21,6 +21,7 @@ use quartic::Quartic;
 use resonance::{Coriolis, Fermi1, Fermi2};
 use rot::Rot;
 use rotor::Rotor;
+use serde::{Deserialize, Serialize};
 use state::State;
 use symm::{Axis, Molecule};
 use tensor::Tensor4;
@@ -58,7 +59,7 @@ type Mat3 = nalgebra::Matrix3<f64>;
 type Dvec = nalgebra::DVector<f64>;
 type Dmat = nalgebra::DMatrix<f64>;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Curvil {
     Bond(usize, usize),
 
@@ -100,7 +101,7 @@ impl Derivative {
 /// degmodes: Vec<Vec<usize>>: degenerate modes
 /// dummies: Vec<Dummy>: dummy atoms
 /// ```
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct Spectro {
     pub header: Vec<usize>,
     pub geom: Molecule,
