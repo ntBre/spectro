@@ -152,7 +152,7 @@ impl Spectro {
             writeln!(w, "{:^20}", "B")?;
             writeln!(w, "{:20.12}\n", self.rotcon[1])?;
         }
-        writeln!(w, "{}", got)?;
+        writeln!(w, "{got}")?;
         Ok(())
     }
 
@@ -698,7 +698,7 @@ impl Spectro {
     pub fn write(&self, filename: &str) -> Result<()> {
         use std::io::Write;
         let mut f = File::create(filename)?;
-        writeln!(f, "{}", self)?;
+        writeln!(f, "{self}")?;
         Ok(())
     }
 

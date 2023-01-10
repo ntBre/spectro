@@ -174,7 +174,7 @@ where
     let f = match File::open(filename.clone()) {
         Ok(f) => f,
         Err(_) => {
-            eprintln!("failed to open infile '{:?}'", filename);
+            eprintln!("failed to open infile '{filename:?}'");
             std::process::exit(1);
         }
     };

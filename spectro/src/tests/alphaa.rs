@@ -58,7 +58,7 @@ fn alpha() {
         let r = Restst::new(&s, &zmat, &f3qcm, &freq);
         let got = s.alpha(&freq, &wila, &zmat, &f3qcm, &r.coriolis);
         if abs_diff_ne!(got, test.want, epsilon = 3e-6) {
-            println!("got\n{:.8}", got);
+            println!("got\n{got:.8}");
             println!("want\n{:.8}", test.want);
             println!("diff\n{:.8}", got.clone() - test.want.clone());
             println!(

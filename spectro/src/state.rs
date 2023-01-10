@@ -102,12 +102,12 @@ impl Display for State {
         match &self {
             State::I1st(v) => {
                 for s in v {
-                    write!(f, "{:5}", s)?
+                    write!(f, "{s:5}")?
                 }
             }
             State::I2st(v) => {
                 for (a, b) in v {
-                    write!(f, "({},{})", a, b)?
+                    write!(f, "({a},{b})")?
                 }
             }
             State::I3st(_) => todo!(),

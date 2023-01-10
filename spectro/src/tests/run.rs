@@ -132,7 +132,7 @@ fn check(got: Vec<f64>, want: Vec<f64>, msg: &str, label: &str) {
                 got[i] - want[i],
             );
         }
-        panic!("{} differ at {}", msg, label);
+        panic!("{msg} differ at {label}");
     }
 }
 
@@ -156,11 +156,11 @@ fn check_rots(got: Vec<Rot>, want: Vec<Rot>, infile: &str) {
     ) {
         println!("got");
         for g in &got {
-            println!("{}", g);
+            println!("{g}");
         }
         println!("want");
         for g in &want {
-            println!("{}", g);
+            println!("{g}");
         }
         println!("diff");
         let mut max = 0.0;
@@ -175,7 +175,7 @@ fn check_rots(got: Vec<Rot>, want: Vec<Rot>, infile: &str) {
             }
             println!("{}", Rot::new(got[g].state.clone(), a, b, c));
         }
-        panic!("rots differ by {max:.2e} at {}", infile);
+        panic!("rots differ by {max:.2e} at {infile}");
     }
 }
 

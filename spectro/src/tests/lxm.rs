@@ -90,13 +90,13 @@ pub(crate) fn check_eigen<
             // stupid nalgebra typing issue
             let w = 1.0 * w;
             if abs_diff_ne!(g, w, epsilon = eps) {
-                println!("got\n{:.8}", got);
-                println!("want\n{:.8}", want);
+                println!("got\n{got:.8}");
+                println!("want\n{want:.8}");
                 let diff = got - want;
                 let diff2 = (g - w).abs().max();
-                println!("diff\n{:.8}", diff);
+                println!("diff\n{diff:.8}");
                 println!("max diff = {:.2e}", diff1.min(diff2));
-                panic!("{} failed on column {col} of {}", label, infile);
+                panic!("{label} failed on column {col} of {infile}");
             }
         }
     }

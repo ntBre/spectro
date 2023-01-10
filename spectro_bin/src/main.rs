@@ -27,7 +27,7 @@ fn main() -> Result<(), std::io::Error> {
     );
     if cfg.json {
         let data = serde_json::to_string_pretty(&got)?;
-        println!("{}", data);
+        println!("{data}");
     } else {
         spectro.write_output(&mut std::io::stdout(), &got)?;
     }

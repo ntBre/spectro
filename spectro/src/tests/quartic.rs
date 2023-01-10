@@ -63,7 +63,7 @@ fn asym() {
         // rotational constant agreement is and b[xyz][as] are the largest
         // differences
         if abs_diff_ne!(got, test.want, epsilon = 2e-5) {
-            println!("got\n{}", got);
+            println!("got\n{got}");
             println!("want\n{}", test.want);
             println!("diff\n{}", got - test.want.clone());
             panic!("{} failed", test.infile);
@@ -103,7 +103,7 @@ fn sym() {
             ..got.clone()
         };
         if abs_diff_ne!(got, test.want, epsilon = 2e-5) {
-            println!("got\n{}", got);
+            println!("got\n{got}");
             println!("want\n{}", test.want);
             println!("diff\n{}", got - test.want.clone());
             panic!("{} failed", test.infile);

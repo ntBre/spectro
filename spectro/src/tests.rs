@@ -38,7 +38,7 @@ pub(crate) fn load_dmat<P: AsRef<Path> + Debug + Clone>(
     cols: usize,
 ) -> Dmat {
     let data = read_to_string(filename.clone())
-        .unwrap_or_else(|e| panic!("failed to read {:?} with `{e}`", filename));
+        .unwrap_or_else(|e| panic!("failed to read {filename:?} with `{e}`"));
     Dmat::from_iterator(
         cols,
         rows,
@@ -107,13 +107,13 @@ fn check_tens(
     infile: &str,
 ) {
     if abs_diff_ne!(got, want, epsilon = eps) {
-        println!("got\n{:.8}", got);
-        println!("want\n{:.8}", want);
+        println!("got\n{got:.8}");
+        println!("want\n{want:.8}");
         println!(
             "max diff = {:.2e}",
             (got.clone() - want.clone()).abs().max()
         );
-        panic!("{} failed on {}", label, infile);
+        panic!("{label} failed on {infile}");
     }
 }
 
@@ -146,12 +146,12 @@ pub(crate) fn check_mat<
     DefaultAllocator: Allocator<f64, R, C>,
 {
     if abs_diff_ne!(got, want, epsilon = eps) {
-        println!("got\n{:.8}", got);
-        println!("want\n{:.8}", want);
+        println!("got\n{got:.8}");
+        println!("want\n{want:.8}");
         let diff = got - want;
-        println!("diff\n{:.8}", diff);
+        println!("diff\n{diff:.8}");
         println!("max diff = {:.2e}", diff.abs().max());
-        panic!("failed on {}", infile);
+        panic!("failed on {infile}");
     }
 }
 

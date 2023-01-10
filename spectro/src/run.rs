@@ -207,15 +207,14 @@ pub fn compute_irreps(
         while let Err(e) = irrep {
             if eps >= 0.1 {
                 eprintln!(
-                    "failed to compute irrep {i} for\n{}\nin {} with {e:?}",
-                    mol, pg
+                    "failed to compute irrep {i} for\n{mol}\nin {pg} with {e:?}"
                 );
                 // give up and give A
                 irrep = Ok(symm::Irrep::A);
                 break;
             }
             eps *= 10.0;
-            eprintln!("warning: raising epsilon to {:.1e}", eps);
+            eprintln!("warning: raising epsilon to {eps:.1e}");
             irrep = mol.irrep_approx(&pg, eps);
         }
         irreps.push(irrep.unwrap());

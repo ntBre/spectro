@@ -71,7 +71,7 @@ impl Display for Output {
                     "State", "A", "B", "C"
                 )?;
                 for rot in &self.rots {
-                    writeln!(f, "{}", rot)?;
+                    writeln!(f, "{rot}")?;
                 }
             } else {
                 writeln!(f, "{:^width$}{:^12}", "State", "B")?;

@@ -33,7 +33,7 @@ impl Display for Spectro {
         writeln!(f, "# SPECTRO #############")?;
         for chunk in self.header.chunks(15) {
             for i in chunk {
-                write!(f, "{:5}", i)?;
+                write!(f, "{i:5}")?;
             }
             writeln!(f)?;
         }
@@ -62,9 +62,9 @@ impl Display for Spectro {
         writeln!(f, "# CURVIL #############")?;
         for curvil in &self.curvils {
             match curvil {
-                Bond(i, j) => write!(f, "{:5}{:5}", i, j)?,
-                Bend(i, j, k) => write!(f, "{:5}{:5}{:5}", i, j, k)?,
-                Tors(i, j, k, l) => write!(f, "{:5}{:5}{:5}{:5}", i, j, k, l)?,
+                Bond(i, j) => write!(f, "{i:5}{j:5}")?,
+                Bend(i, j, k) => write!(f, "{i:5}{j:5}{k:5}")?,
+                Tors(i, j, k, l) => write!(f, "{i:5}{j:5}{k:5}{l:5}")?,
             }
             writeln!(f)?;
         }
@@ -72,7 +72,7 @@ impl Display for Spectro {
             writeln!(f, "# DEGMODE #############")?;
             for curvil in &self.degmodes {
                 for i in curvil {
-                    write!(f, "{:5}", i)?;
+                    write!(f, "{i:5}")?;
                 }
                 writeln!(f)?;
             }
@@ -89,7 +89,7 @@ where
     line.split_whitespace()
         .map(|s| {
             s.parse::<T>()
-                .unwrap_or_else(|_| panic!("failed to parse {}", s))
+                .unwrap_or_else(|_| panic!("failed to parse {s}"))
         })
         .collect::<Vec<_>>()
 }
@@ -150,7 +150,7 @@ where
 {
     let data = match read_to_string(&infile) {
         Ok(data) => data,
-        Err(e) => panic!("failed to read {:?} with {e}", infile),
+        Err(e) => panic!("failed to read {infile:?} with {e}"),
     };
     data.split_ascii_whitespace()
         .map(|s| s.parse().unwrap())
@@ -368,7 +368,7 @@ pub(crate) fn print_vib_states(reng: &[f64], i1sts: &Vec<Vec<usize>>) {
         print!("{:5}{:20.4}{:20.4}", i + 1, energy, *energy - reng[0]);
         print!("{:>21}", "NON-DEG (Vs) :");
         for s in state {
-            print!("{:5}", s);
+            print!("{s:5}");
         }
         println!();
     }

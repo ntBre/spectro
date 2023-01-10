@@ -51,7 +51,7 @@ impl std::fmt::Debug for Ifrm2 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f)?;
         for ((a, b), v) in &self.0 {
-            writeln!(f, "({:5}, {:5}) => {:5}", a, b, v)?;
+            writeln!(f, "({a:5}, {b:5}) => {v:5}")?;
         }
         Ok(())
     }
