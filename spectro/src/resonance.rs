@@ -128,60 +128,7 @@ impl Restst {
         f3qcm: &F3qcm,
         freq: &Dvec,
     ) -> Self {
-        let mut modes = Vec::new();
-        // probably I could get rid of this if, but I guess it protects against
-        // accidental degmodes in asymmetric tops. is an accident still
-        // degenerate?
-        use Mode::*;
-        if spectro.rotor.is_sym_top() {
-            const DEG_TOL: f64 = 0.1;
-            let mut triples = HashSet::new();
-            for i in 0..spectro.nvib {
-                let fi = freq[i];
-                for j in i + 1..spectro.nvib {
-                    let fj = freq[j];
-                    for k in j + 1..spectro.nvib {
-                        let fk = freq[k];
-                        if close(fi, fj, DEG_TOL)
-                            && close(fi, fk, DEG_TOL)
-                            && [fi, fj, fk].iter().all(|f| f.abs() > DEG_TOL)
-                        {
-                            triples.insert(i);
-                            triples.insert(j);
-                            triples.insert(k);
-                            modes.push(I3(i, j, k));
-                        }
-                    }
-                }
-            }
-            // run these in two passes to avoid counting something as
-            // triply-degenerate AND doubly-degenerate
-            let mut doubles = HashSet::new();
-            for i in 0..spectro.nvib {
-                let fi = freq[i];
-                for j in i + 1..spectro.nvib {
-                    let fj = freq[j];
-                    if close(fi, fj, DEG_TOL)
-                        && [fi, fj].iter().all(|f| f.abs() > DEG_TOL)
-                        && !triples.contains(&i)
-                        && !triples.contains(&j)
-                    {
-                        doubles.insert(i);
-                        doubles.insert(j);
-                        modes.push(I2(i, j));
-                    }
-                }
-            }
-            for i in 0..spectro.nvib {
-                if !triples.contains(&i) && !doubles.contains(&i) {
-                    modes.push(I1(i));
-                }
-            }
-        } else {
-            for i in 0..spectro.nvib {
-                modes.push(I1(i));
-            }
-        };
+        let modes = deg_modes(spectro, freq);
 
         let r = &spectro.rotor;
         let coriolis = coriolis(r, &modes, freq, zmat);
@@ -323,4 +270,62 @@ impl Restst {
             icombn,
         }
     }
+}
+
+pub(crate) fn deg_modes(spectro: &Spectro, freq: &Dvec) -> Vec<Mode> {
+    let mut modes = Vec::new();
+    // probably I could get rid of this if, but I guess it protects against
+    // accidental degmodes in asymmetric tops. is an accident still
+    // degenerate?
+    use Mode::*;
+    if spectro.rotor.is_sym_top() {
+        const DEG_TOL: f64 = 0.1;
+        let mut triples = HashSet::new();
+        for i in 0..spectro.nvib {
+            let fi = freq[i];
+            for j in i + 1..spectro.nvib {
+                let fj = freq[j];
+                for k in j + 1..spectro.nvib {
+                    let fk = freq[k];
+                    if close(fi, fj, DEG_TOL)
+                        && close(fi, fk, DEG_TOL)
+                        && [fi, fj, fk].iter().all(|f| f.abs() > DEG_TOL)
+                    {
+                        triples.insert(i);
+                        triples.insert(j);
+                        triples.insert(k);
+                        modes.push(I3(i, j, k));
+                    }
+                }
+            }
+        }
+        // run these in two passes to avoid counting something as
+        // triply-degenerate AND doubly-degenerate
+        let mut doubles = HashSet::new();
+        for i in 0..spectro.nvib {
+            let fi = freq[i];
+            for j in i + 1..spectro.nvib {
+                let fj = freq[j];
+                if close(fi, fj, DEG_TOL)
+                    && [fi, fj].iter().all(|f| f.abs() > DEG_TOL)
+                    && !triples.contains(&i)
+                    && !triples.contains(&j)
+                {
+                    doubles.insert(i);
+                    doubles.insert(j);
+                    modes.push(I2(i, j));
+                }
+            }
+        }
+        for i in 0..spectro.nvib {
+            if !triples.contains(&i) && !doubles.contains(&i) {
+                modes.push(I1(i));
+            }
+        }
+    } else {
+        for i in 0..spectro.nvib {
+            modes.push(I1(i));
+        }
+    };
+    modes
 }
