@@ -106,15 +106,13 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
             Cs { plane: _ } => todo!(),
             C2v { axis: _, planes: _ } => todo!(),
             C3v { axis, plane } => helper(ret, axis, plane, 3),
-            C5v { axis, plane } => helper(ret, axis, plane, 5),
+            // for C5v, the axis is definitely not in the plane, so pick one of
+            // the plane ones to pass into helper so the xor works
+            C5v { plane, .. } => helper(ret, plane.0, plane, 5),
             D2h { axes: _, planes: _ } => todo!(),
             // assume that these are in the right order
-            D3h {
-                c3,
-                c2: _,
-                sh: _,
-                sv,
-            } => helper(ret, c3, sv, 3),
+            D3h { c3, sv, .. } => helper(ret, c3, sv, 3),
+            D5h { c5, sv, .. } => helper(ret, c5, sv, 5),
         };
         let mut egr = nalgebra::Matrix3::zeros();
         let x = ret.geom.atoms[iatl].x;
@@ -151,6 +149,7 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
             C3v { axis, .. } | C5v { axis, .. } => axis,
             D2h { axes: _, planes: _ } => todo!(),
             D3h { c3, .. } => c3,
+            D5h { c5, .. } => c5,
         };
     }
     // linear molecules should have the unique moi in the Z position. in case x
