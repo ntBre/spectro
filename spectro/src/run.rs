@@ -1,5 +1,4 @@
 use super::{make_sym_funds, resona, Output, Spectro};
-use crate::resonance::deg_modes;
 use crate::sextic::Sextic;
 use crate::utils::{
     force3, force4, linalg::symm_eigen_decomp, make_funds, to_wavenumbers,
@@ -32,12 +31,11 @@ impl Spectro {
         }
 
         let irreps = compute_irreps(&self.geom, &lxm, self.nvib, 1e-4);
-        let modes = deg_modes(self, &freq);
 
         if deriv.is_harmonic() {
             return (
                 Output {
-                    harms: freq.as_slice()[..modes.len()].to_vec(),
+                    harms: freq.as_slice()[..self.nvib].to_vec(),
                     irreps,
                     rot_equil: self.rotcon.clone(),
                     geom: self.geom.clone(),
