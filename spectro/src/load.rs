@@ -74,13 +74,23 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
         const TOL: f64 = 1e-6;
         let pg = ret.geom.point_group_approx(TOL);
         use symm::PointGroup::*;
-        fn x3x_helper(ret: &mut Spectro, axis: Axis, plane: Plane) -> usize {
+
+        /// find the first atom in `ret.geom` in the plane of the molecule and
+        /// extending along an axis other than the principle axis, but not
+        /// necessarily directly along this axis, just with a non-zero
+        /// component. also set `ret.axis_order` to order
+        fn helper(
+            ret: &mut Spectro,
+            axis: Axis,
+            plane: Plane,
+            order: usize,
+        ) -> usize {
             // axis perpendicular to plane
             let p = plane.perp();
             // axis in plane but not principal axis
             let o = plane ^ axis;
 
-            ret.axis_order = 3;
+            ret.axis_order = order;
             ret.geom
                 .atoms
                 .iter()
@@ -95,7 +105,8 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
             C2 { axis: _ } => todo!(),
             Cs { plane: _ } => todo!(),
             C2v { axis: _, planes: _ } => todo!(),
-            C3v { axis, plane } => x3x_helper(ret, axis, plane),
+            C3v { axis, plane } => helper(ret, axis, plane, 3),
+            C5v { axis, plane } => helper(ret, axis, plane, 5),
             D2h { axes: _, planes: _ } => todo!(),
             // assume that these are in the right order
             D3h {
@@ -103,7 +114,7 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
                 c2: _,
                 sh: _,
                 sv,
-            } => x3x_helper(ret, c3, sv),
+            } => helper(ret, c3, sv, 3),
         };
         let mut egr = nalgebra::Matrix3::zeros();
         let x = ret.geom.atoms[iatl].x;
@@ -137,14 +148,9 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
             C2 { axis: _ } => todo!(),
             Cs { plane: _ } => todo!(),
             C2v { axis: _, planes: _ } => todo!(),
-            C3v { axis, plane: _ } => axis,
+            C3v { axis, .. } | C5v { axis, .. } => axis,
             D2h { axes: _, planes: _ } => todo!(),
-            D3h {
-                c3,
-                c2: _,
-                sh: _,
-                sv: _,
-            } => c3,
+            D3h { c3, .. } => c3,
         };
     }
     // linear molecules should have the unique moi in the Z position. in case x
