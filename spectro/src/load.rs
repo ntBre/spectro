@@ -101,18 +101,14 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
                 .unwrap()
         }
         let iatl = match pg {
-            C1 => todo!(),
-            C2 { axis: _ } => todo!(),
-            Cs { plane: _ } => todo!(),
-            C2v { axis: _, planes: _ } => todo!(),
             C3v { axis, plane } => helper(ret, axis, plane, 3),
             // for C5v, the axis is definitely not in the plane, so pick one of
             // the plane ones to pass into helper so the xor works
             C5v { plane, .. } => helper(ret, plane.0, plane, 5),
-            D2h { axes: _, planes: _ } => todo!(),
             // assume that these are in the right order
             D3h { c3, sv, .. } => helper(ret, c3, sv, 3),
             D5h { c5, sv, .. } => helper(ret, c5, sv, 5),
+	    _ => panic!("todo! implement iatl for {pg}"),
         };
         let mut egr = nalgebra::Matrix3::zeros();
         let x = ret.geom.atoms[iatl].x;
