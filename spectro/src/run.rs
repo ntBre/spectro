@@ -40,6 +40,7 @@ impl Spectro {
                     rot_equil: self.rotcon.clone(),
                     geom: self.geom.clone(),
                     lxm: to_vec(lxm),
+                    lx: to_vec(lx),
                     linear: self.rotor.is_linear(),
                     ..Default::default()
                 },
@@ -59,7 +60,7 @@ impl Spectro {
         let f4x = self.rot4th(f4x);
         let f4qcm = force4(self.n3n, &f4x, &lx, self.nvib, &freq);
 
-        self.finish(freq, f3qcm, f4qcm, irreps, lxm)
+        self.finish(freq, f3qcm, f4qcm, irreps, lxm, lx)
     }
 
     /// finish the spectro run from F3qcm and F4qcm
@@ -69,17 +70,10 @@ impl Spectro {
         f3qcm: crate::f3qcm::F3qcm,
         f4qcm: crate::f4qcm::F4qcm,
         irreps: Vec<symm::Irrep>,
-        mut lxm: Dmat,
+        lxm: Dmat,
+        lx: Dmat,
     ) -> (Output, Restst) {
         let w = self.geom.weights();
-        let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
-
-        // form the LX matrix
-        let mut lx = self.make_lx(&sqm, &lxm);
-
-        if self.rotor.is_sym_top() {
-            self.bdegnl(&freq, &mut lxm, &w, &mut lx);
-        }
 
         let (zmat, wila) = self.zeta(&lxm, &w);
         let quartic = Quartic::new(self, &freq, &wila);
@@ -160,6 +154,7 @@ impl Spectro {
                 zpt: eng[0],
                 geom: self.geom.clone(),
                 lxm: to_vec(lxm),
+                lx: to_vec(lx),
                 linear: self.rotor.is_linear(),
             },
             restst,

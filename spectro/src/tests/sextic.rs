@@ -41,6 +41,7 @@ impl Test {
         let start = Path::new("testfiles");
         let data = Summary::new(
             start.join(dir).join("spectro2.out").to_str().unwrap(),
+            summarize::Recompute::No,
         );
         let want: Sextic = data.phis.into();
         Self {

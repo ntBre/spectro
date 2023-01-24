@@ -38,6 +38,8 @@ pub struct Output {
 
     pub lxm: Vec<Vec<f64>>,
 
+    pub lx: Vec<Vec<f64>>,
+
     pub linear: bool,
 }
 

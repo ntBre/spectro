@@ -6,7 +6,7 @@ use std::{
 use approx::abs_diff_eq;
 use serde::Deserialize;
 
-use crate::{output::Output, sextic::Sextic, *};
+use crate::*;
 
 use na::DVector;
 use nalgebra as na;
@@ -33,14 +33,7 @@ fn load_want(filename: PathBuf, sym: bool) -> Output {
         corrs: want.corrs,
         rots,
         // these are all untested here
-        quartic: Quartic::default(),
-        sextic: Sextic::default(),
-        irreps: Default::default(),
-        rot_equil: vec![],
-        zpt: 0.0,
-        geom: Molecule::default(),
-        lxm: vec![],
-        linear: false,
+        ..Output::default()
     }
 }
 
