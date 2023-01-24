@@ -38,10 +38,6 @@ pub struct Output {
 
     pub lxm: Vec<Vec<f64>>,
 
-    /// the columns of the LXM matrix corresponding to the harmonic frequencies.
-    /// only necessary for symmetric tops
-    pub lxm_ids: Vec<usize>,
-
     pub linear: bool,
 }
 

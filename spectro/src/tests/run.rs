@@ -41,7 +41,6 @@ fn load_want(filename: PathBuf, sym: bool) -> Output {
         geom: Molecule::default(),
         lxm: vec![],
         linear: false,
-        lxm_ids: vec![],
     }
 }
 

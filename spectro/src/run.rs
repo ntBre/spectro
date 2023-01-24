@@ -105,13 +105,12 @@ impl Spectro {
                 self.xcalc(&f4qcm, &freq, &f3qcm, &zmat, modes, fermi1, fermi2);
             (x, None, e)
         };
-        let (harms, funds, lxm_ids) = if self.rotor.is_sym_top() {
+        let (harms, funds) = if self.rotor.is_sym_top() {
             make_sym_funds(modes, &freq, &xcnst, &gcnst)
         } else {
             (
                 freq.as_slice()[..self.nvib].to_vec(),
                 make_funds(&freq, self.nvib, &xcnst),
-                (0..self.nvib).collect(),
             )
         };
         let rotnst = if self.rotor.is_sym_top() {
@@ -161,7 +160,6 @@ impl Spectro {
                 zpt: eng[0],
                 geom: self.geom.clone(),
                 lxm: to_vec(lxm),
-		lxm_ids,
                 linear: self.rotor.is_linear(),
             },
             restst,

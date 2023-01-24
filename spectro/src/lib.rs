@@ -911,19 +911,16 @@ impl Spectro {
     }
 }
 
-/// return vectors of the harmonic frequencies, anharmonic frequencies, and the
-/// indices into LXM corresponding to the harmonic frequencies
 fn make_sym_funds(
     modes: &[Mode],
     freq: &Dvec,
     xcnst: &Dmat,
     gcnst: &Option<Dmat>,
-) -> (Vec<f64>, Vec<f64>, Vec<usize>) {
+) -> (Vec<f64>, Vec<f64>) {
     let (n1dm, n2dm, _) = Mode::count(modes);
     let (i1mode, i2mode, _) = Mode::partition(modes);
     let mut harms = Vec::new();
     let mut funds = Vec::new();
-    let mut ids = Vec::new();
     for ii in 0..n1dm {
         let i = i1mode[ii];
         let mut val = freq[i] + xcnst[(i, i)] * 2.0;
@@ -937,7 +934,6 @@ fn make_sym_funds(
             let j = i2mode[jj].0;
             val += xcnst[(i, j)];
         }
-        ids.push(i);
         harms.push(freq[i]);
         funds.push(val);
     }
@@ -956,11 +952,10 @@ fn make_sym_funds(
                 val += xcnst[(i, j)]
             }
         }
-        ids.push(i);
         harms.push(freq[i]);
         funds.push(val);
     }
-    (harms, funds, ids)
+    (harms, funds)
 }
 
 /// Builds a HashMap of Coriolis resonances to their corresponding axes. NOTE
