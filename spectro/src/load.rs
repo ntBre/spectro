@@ -108,7 +108,7 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
             // assume that these are in the right order
             D3h { c3, sv, .. } => helper(ret, c3, sv, 3),
             D5h { c5, sv, .. } => helper(ret, c5, sv, 5),
-	    _ => panic!("todo! implement iatl for {pg}"),
+            _ => panic!("todo! implement iatl for {pg}"),
         };
         let mut egr = nalgebra::Matrix3::zeros();
         let x = ret.geom.atoms[iatl].x;
@@ -146,6 +146,7 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
             D2h { axes: _, planes: _ } => todo!(),
             D3h { c3, .. } => c3,
             D5h { c5, .. } => c5,
+            C2h { .. } => todo!(),
         };
     }
     // linear molecules should have the unique moi in the Z position. in case x
