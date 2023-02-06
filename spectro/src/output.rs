@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use symm::{Irrep, Molecule};
 
 use crate::{quartic::Quartic, rot::Rot, sextic::Sextic};

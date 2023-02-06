@@ -223,7 +223,7 @@ impl Quartic {
         let mut ret = Quartic::default();
 
         if s.is_linear() {
-	    ret.de = -t[(0, 0)];
+            ret.de = -t[(0, 0)];
             return ret;
         }
 

@@ -181,11 +181,11 @@ pub fn force3(
     let mut f3qcm =
         F3qcm::with_capacity(find3(nvib - 1, nvib - 1, nvib - 1) + 1);
     for i in 0..nvib {
-        let wi = freq[(i)];
+        let wi = freq[i];
         for j in 0..=i {
-            let wj = freq[(j)];
+            let wj = freq[j];
             for k in 0..=j {
-                let wk = freq[(k)];
+                let wk = freq[k];
                 let wijk = wi * wj * wk;
                 let fact = FACT3 / wijk.sqrt();
                 let mut val = 0.0;

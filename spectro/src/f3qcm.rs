@@ -1,4 +1,4 @@
-use std::{ops::Index, fmt::Display};
+use std::{fmt::Display, ops::Index};
 
 use crate::utils::find3;
 
@@ -35,14 +35,13 @@ impl From<F3qcm> for nalgebra::DVector<f64> {
     }
 }
 
-
 impl Display for F3qcm {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-	let width = f.width().unwrap_or(16);
-	let prec = f.precision().unwrap_or(8);
-	for v in &self.0 {
-	    writeln!(f, "{v:width$.prec$}")?;
-	}
-	Ok(())
+        let width = f.width().unwrap_or(16);
+        let prec = f.precision().unwrap_or(8);
+        for v in &self.0 {
+            writeln!(f, "{v:width$.prec$}")?;
+        }
+        Ok(())
     }
 }

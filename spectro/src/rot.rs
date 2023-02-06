@@ -36,6 +36,10 @@ impl approx::AbsDiffEq for Rot {
 
 impl Display for Rot {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}{:12.7}{:12.7}{:12.7}", self.state, self.a, self.b, self.c)
+        write!(
+            f,
+            "{}{:12.7}{:12.7}{:12.7}",
+            self.state, self.a, self.b, self.c
+        )
     }
 }

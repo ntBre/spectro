@@ -97,11 +97,11 @@ fn make_e3(
                     f3kst = 0.0;
                 } else {
                     let zval6 = f3qcm[(k, l, m)].powi(2);
-                    let xkst = freq[(k)] * freq[(l)] * freq[(m)];
-                    let d1 = freq[(k)] + freq[(l)] + freq[(m)];
-                    let d2 = freq[(k)] - freq[(l)] + freq[(m)];
-                    let d3 = freq[(k)] + freq[(l)] - freq[(m)];
-                    let d4 = freq[(k)] - freq[(l)] - freq[(m)];
+                    let xkst = freq[k] * freq[l] * freq[m];
+                    let d1 = freq[k] + freq[l] + freq[m];
+                    let d2 = freq[k] - freq[l] + freq[m];
+                    let d3 = freq[k] + freq[l] - freq[m];
+                    let d4 = freq[k] - freq[l] - freq[m];
                     if ifrm2.check((l, k), m) {
                         let delta6 = 1.0 / d1 + 1.0 / d2 + 1.0 / d4;
                         f3kst -= zval6 * delta6 / 8.0;
@@ -125,11 +125,11 @@ fn make_e3(
                     f3stu = 0.0;
                 } else {
                     let zval7 = f3qcm[(k, l, m)].powi(2);
-                    let xstu = freq[(k)] * freq[(l)] * freq[(m)];
-                    let d1 = freq[(k)] + freq[(l)] + freq[(m)];
-                    let d2 = freq[(k)] - freq[(l)] + freq[(m)];
-                    let d3 = freq[(k)] + freq[(l)] - freq[(m)];
-                    let d4 = freq[(k)] - freq[(l)] - freq[(m)];
+                    let xstu = freq[k] * freq[l] * freq[m];
+                    let d1 = freq[k] + freq[l] + freq[m];
+                    let d2 = freq[k] - freq[l] + freq[m];
+                    let d3 = freq[k] + freq[l] - freq[m];
+                    let d4 = freq[k] - freq[l] - freq[m];
                     // TODO these should be ifrm2 as well, I think, but we
                     // haven't had any issues here yet
                     if ifrmchk[(k, l, m)] != 0 {
@@ -190,10 +190,10 @@ impl Spectro {
                 let valu: f64 = i1mode
                     .iter()
                     .map(|&m| {
-                        let d1 = freq[(k)] + freq[(l)] + freq[(m)];
-                        let d2 = freq[(k)] - freq[(l)] + freq[(m)];
-                        let d3 = freq[(k)] + freq[(l)] - freq[(m)];
-                        let d4 = -freq[(k)] + freq[(l)] + freq[(m)];
+                        let d1 = freq[k] + freq[l] + freq[m];
+                        let d2 = freq[k] - freq[l] + freq[m];
+                        let d3 = freq[k] + freq[l] - freq[m];
+                        let d4 = -freq[k] + freq[l] + freq[m];
 
                         // how many more of these should be check_either?
                         if ifrm2.check_either((l, k), m) {
@@ -207,13 +207,10 @@ impl Spectro {
                             -(f3qcm[(k, l, m)].powi(2)) * delta / 16.0
                         } else {
                             let delta = -d1 * d2 * d3 * d4;
-                            let val3 = freq[(m)].powi(2)
-                                - freq[(k)].powi(2)
-                                - freq[(l)].powi(2);
-                            -0.25
-                                * (f3qcm[(k, l, m)].powi(2))
-                                * freq[(m)]
-                                * val3
+                            let val3 = freq[m].powi(2)
+                                - freq[k].powi(2)
+                                - freq[l].powi(2);
+                            -0.25 * (f3qcm[(k, l, m)].powi(2)) * freq[m] * val3
                                 / delta
                         }
                     })
@@ -222,42 +219,41 @@ impl Spectro {
                 let valus: f64 = i2mode
                     .iter()
                     .map(|&(m, _)| {
-                        let d1 = freq[(k)] + freq[(l)] + freq[(m)];
-                        let d2 = freq[(k)] - freq[(l)] + freq[(m)];
-                        let d3 = freq[(k)] + freq[(l)] - freq[(m)];
-                        let d4 = -freq[(k)] + freq[(l)] + freq[(m)];
+                        let d1 = freq[k] + freq[l] + freq[m];
+                        let d2 = freq[k] - freq[l] + freq[m];
+                        let d3 = freq[k] + freq[l] - freq[m];
+                        let d4 = -freq[k] + freq[l] + freq[m];
 
                         let klm = (k, l, m);
                         if l == m && ifrm2.check((l, m), k) {
-                            let delta = 8.0 * (2.0 * freq[(l)] + freq[(k)]);
-                            -(f3qcm[(klm)].powi(2)) / delta
+                            let delta = 8.0 * (2.0 * freq[l] + freq[k]);
+                            -(f3qcm[klm].powi(2)) / delta
                         } else if k == m && ifrm2.check((k, m), l) {
-                            let delta = 8.0 * (2.0 * freq[(k)] + freq[(l)]);
-                            -(f3qcm[(klm)].powi(2)) / delta
+                            let delta = 8.0 * (2.0 * freq[k] + freq[l]);
+                            -(f3qcm[klm].powi(2)) / delta
                         } else if ifrm2.check((k, l), m) {
                             let delta = 1.0 / d1 + 1.0 / d2 + 1.0 / d4;
-                            -(f3qcm[(klm)].powi(2)) * delta / 8.0
+                            -(f3qcm[klm].powi(2)) * delta / 8.0
                         } else if ifrm2.check((l, m), k) {
                             let delta = 1.0 / d1 + 1.0 / d2 + 1.0 / d3;
-                            -(f3qcm[(klm)].powi(2)) * delta / 8.0
+                            -(f3qcm[klm].powi(2)) * delta / 8.0
                         } else if ifrm2.check((k, m), l) {
                             let delta = 1.0 / d1 + 1.0 / d3 + 1.0 / d4;
-                            -(f3qcm[(klm)].powi(2)) * delta / 8.0
+                            -(f3qcm[klm].powi(2)) * delta / 8.0
                         } else {
                             let delta = -d1 * d2 * d3 * d4;
-                            let val3 = freq[(m)].powi(2)
-                                - freq[(k)].powi(2)
-                                - freq[(l)].powi(2);
-                            -0.5 * (f3qcm[(klm)].powi(2)) * freq[(m)] * val3
-                                / delta
+                            let val3 = freq[m].powi(2)
+                                - freq[k].powi(2)
+                                - freq[l].powi(2);
+                            -0.5 * (f3qcm[klm].powi(2)) * freq[m] * val3 / delta
                         }
                     })
                     .sum();
 
-                let val5 = freq[(k)] / freq[(l)];
-                let val6 = freq[(l)] / freq[(k)];
-                let val7 = 0.5 * self.rotcon[(ia)] * (zmat[(k, l2, 2)].powi(2))
-                    + self.rotcon[(ib)] * (zmat[(k, l, ixyz)].powi(2));
+                let val5 = freq[k] / freq[l];
+                let val6 = freq[l] / freq[k];
+                let val7 = 0.5 * self.rotcon[ia] * (zmat[(k, l2, 2)].powi(2))
+                    + self.rotcon[ib] * (zmat[(k, l, ixyz)].powi(2));
                 let val8 = (val5 + val6) * val7;
                 let value = val1 + val2 + valu + valus + val8;
                 let k2 = i2mode[kk].1;
@@ -300,26 +296,26 @@ impl Spectro {
                 let valu: f64 = i1mode
                     .iter()
                     .map(|&m| {
-                        let d1 = freq[(k)] + freq[(l)] + freq[(m)];
-                        let d2 = freq[(k)] - freq[(l)] + freq[(m)];
-                        let d3 = freq[(k)] + freq[(l)] - freq[(m)];
-                        let d4 = -freq[(k)] + freq[(l)] + freq[(m)];
+                        let d1 = freq[k] + freq[l] + freq[m];
+                        let d2 = freq[k] - freq[l] + freq[m];
+                        let d3 = freq[k] + freq[l] - freq[m];
+                        let d4 = -freq[k] + freq[l] + freq[m];
 
                         let klm = (k, l, m);
                         // TODO should more be check_either?
                         if ifrm2.check_either((l, k), m) {
                             let delta = 1.0 / d1 + 1.0 / d2 + 1.0 / d4;
-                            -(f3qcm[(klm)].powi(2)) * delta / 8.0
+                            -(f3qcm[klm].powi(2)) * delta / 8.0
                         } else if ifrm2.check((m, l), k) {
                             let delta = 1.0 / d1 + 1.0 / d2 - 1.0 / d3;
-                            -(f3qcm[(klm)].powi(2)) * delta / 8.0
+                            -(f3qcm[klm].powi(2)) * delta / 8.0
                         } else if ifrm2.check((m, k), l) {
                             let delta = 1.0 / d1 + 1.0 / d3 + 1.0 / d4;
-                            -(f3qcm[(klm)].powi(2)) * delta / 8.0
+                            -(f3qcm[klm].powi(2)) * delta / 8.0
                         } else {
                             let delta = -d1 * d2 * d3 * d4;
-                            let val3 = freq[(m)] * freq[(k)] * freq[(l)];
-                            0.5 * (f3qcm[(klm)].powi(2)) * val3 / delta
+                            let val3 = freq[m] * freq[k] * freq[l];
+                            0.5 * (f3qcm[klm].powi(2)) * val3 / delta
                         }
                     })
                     .sum();
@@ -327,40 +323,40 @@ impl Spectro {
                 let valus: f64 = i2mode
                     .iter()
                     .map(|&(m, _)| {
-                        let d1 = freq[(k)] + freq[(l)] + freq[(m)];
-                        let d2 = freq[(k)] - freq[(l)] + freq[(m)];
-                        let d3 = freq[(k)] + freq[(l)] - freq[(m)];
-                        let d4 = -freq[(k)] + freq[(l)] + freq[(m)];
+                        let d1 = freq[k] + freq[l] + freq[m];
+                        let d2 = freq[k] - freq[l] + freq[m];
+                        let d3 = freq[k] + freq[l] - freq[m];
+                        let d4 = -freq[k] + freq[l] + freq[m];
 
                         let klm = (k, l, m);
                         if ifrm2.check((l, m), k) {
-                            let delta = 8.0 * (2.0 * freq[(l)] + freq[(k)]);
-                            -(f3qcm[(klm)].powi(2)) / delta
+                            let delta = 8.0 * (2.0 * freq[l] + freq[k]);
+                            -(f3qcm[klm].powi(2)) / delta
                         } else if ifrm2.check((k, m), l) {
-                            let delta = 8.0 * (2.0 * freq[(k)] + freq[(l)]);
-                            -(f3qcm[(klm)].powi(2)) / delta
+                            let delta = 8.0 * (2.0 * freq[k] + freq[l]);
+                            -(f3qcm[klm].powi(2)) / delta
                         } else if ifrm2.check((l, k), m) {
                             let delta = 1.0 / d1 + 1.0 / d2 + 1.0 / d4;
-                            -(f3qcm[(klm)].powi(2)) * delta / 8.0
+                            -(f3qcm[klm].powi(2)) * delta / 8.0
                         } else if ifrm2.check((m, l), k) {
                             let delta = 1.0 / d1 + 1.0 / d2 - 1.0 / d3;
-                            -(f3qcm[(klm)].powi(2)) * delta / 8.0
+                            -(f3qcm[klm].powi(2)) * delta / 8.0
                         } else if ifrm2.check((m, k), l) {
                             let delta = 1.0 / d1 + 1.0 / d3 + 1.0 / d4;
-                            -(f3qcm[(klm)].powi(2)) * delta / 8.0
+                            -(f3qcm[klm].powi(2)) * delta / 8.0
                         } else {
                             let delta = -d1 * d2 * d3 * d4;
-                            let val3 = freq[(m)] * freq[(k)] * freq[(l)];
-                            -(f3qcm[(klm)].powi(2)) * val3 / delta
+                            let val3 = freq[m] * freq[k] * freq[l];
+                            -(f3qcm[klm].powi(2)) * val3 / delta
                         }
                     })
                     .sum();
 
                 let val7 =
-                    -2.0 * self.rotcon[(ib)] * (zmat[(k, l, ixyz)].powi(2))
-                        + self.rotcon[(ia)] * (zmat[(k, l222, 2)].powi(2))
+                    -2.0 * self.rotcon[ib] * (zmat[(k, l, ixyz)].powi(2))
+                        + self.rotcon[ia] * (zmat[(k, l222, 2)].powi(2))
                         + 2.0
-                            * self.rotcon[(ia)]
+                            * self.rotcon[ia]
                             * zmat[(k, k2, 2)]
                             * zmat[(l, l222, 2)];
                 let value = valu + valus + val7;
@@ -396,11 +392,11 @@ impl Spectro {
                 .map(|&l| {
                     let val2 = f3qcm[(k, k, l)].powi(2);
                     if ifrm1.check(k, l) {
-                        let val3 = 32.0 * (2.0 * freq[(k)] + freq[(l)]);
+                        let val3 = 32.0 * (2.0 * freq[k] + freq[l]);
                         val2 / val3
                     } else {
-                        let wl = freq[(l)] * freq[(l)];
-                        let val3 = val2 * freq[(l)];
+                        let wl = freq[l] * freq[l];
+                        let val3 = val2 * freq[l];
                         let val4 = 16.0 * (4.0 * wk - wl);
                         -val3 / val4
                     }
@@ -412,19 +408,19 @@ impl Spectro {
                 .map(|&(l, _)| {
                     let val2 = f3qcm[(k, k, l)].powi(2);
                     if ifrm1.check(k, l) {
-                        let val3 = 1.0 / (8.0 * freq[(l)]);
-                        let val4 = 1.0 / (32.0 * (2.0 * freq[(k)] + freq[(l)]));
+                        let val3 = 1.0 / (8.0 * freq[l]);
+                        let val4 = 1.0 / (32.0 * (2.0 * freq[k] + freq[l]));
                         -val2 * (val3 + val4)
                     } else {
-                        let wl = freq[(l)] * freq[(l)];
+                        let wl = freq[l] * freq[l];
                         let val3 = 8.0 * wk - wl;
-                        let val4 = 16.0 * freq[(l)] * (4.0 * wk - wl);
+                        let val4 = 16.0 * freq[l] * (4.0 * wk - wl);
                         val2 * val3 / val4
                     }
                 })
                 .sum();
 
-            let val7 = self.rotcon[(ia)] * (zmat[(k, k2, 2)].powi(2));
+            let val7 = self.rotcon[ia] * (zmat[(k, k2, 2)].powi(2));
             let value = val1 + valu + valus + val7;
             gcnst[(k, k)] = value;
             gcnst[(k2, k2)] = value;
@@ -457,37 +453,36 @@ impl Spectro {
                 let mut valu = 0.0;
                 for &(m, _) in i2mode {
                     let klm = (k, l, m);
-                    let d1 = freq[(k)] + freq[(l)] + freq[(m)];
-                    let d2 = freq[(k)] - freq[(l)] + freq[(m)];
-                    let d3 = freq[(k)] + freq[(l)] - freq[(m)];
-                    let d4 = -freq[(k)] + freq[(l)] + freq[(m)];
+                    let d1 = freq[k] + freq[l] + freq[m];
+                    let d2 = freq[k] - freq[l] + freq[m];
+                    let d3 = freq[k] + freq[l] - freq[m];
+                    let d4 = -freq[k] + freq[l] + freq[m];
 
                     // ifrm2a checks mean both elements of the key are the same,
                     // really more of an ifrm1 check
                     if l == m && ifrm2.check((l, m), k) {
-                        let delta = 8.0 * (2.0 * freq[(l)] + freq[(k)]);
-                        valu -= (f3qcm[(klm)].powi(2)) / delta;
+                        let delta = 8.0 * (2.0 * freq[l] + freq[k]);
+                        valu -= (f3qcm[klm].powi(2)) / delta;
                     } else if ifrm2.check((k, l), m) {
                         let delta = 1.0 / d1 + 1.0 / d2 + 1.0 / d4;
-                        valu -= (f3qcm[(klm)].powi(2)) * delta / 8.0;
+                        valu -= (f3qcm[klm].powi(2)) * delta / 8.0;
                     } else if ifrm2.check((l, m), k) {
                         let delta = 1.0 / d1 + 1.0 / d2 + 1.0 / d3;
-                        valu -= (f3qcm[(klm)].powi(2)) * delta / 8.0;
+                        valu -= (f3qcm[klm].powi(2)) * delta / 8.0;
                     } else if ifrm2.check((k, m), l) {
                         let delta = 1.0 / d1 + 1.0 / d3 + 1.0 / d4;
-                        valu -= (f3qcm[(klm)].powi(2)) * delta / 8.0;
+                        valu -= (f3qcm[klm].powi(2)) * delta / 8.0;
                     } else {
                         let delta = -d1 * d2 * d3 * d4;
-                        let val3 = freq[(m)].powi(2)
-                            - freq[(k)].powi(2)
-                            - freq[(l)].powi(2);
-                        valu -= 0.5 * (f3qcm[(klm)].powi(2)) * freq[(m)] * val3
-                            / delta;
+                        let val3 =
+                            freq[m].powi(2) - freq[k].powi(2) - freq[l].powi(2);
+                        valu -=
+                            0.5 * (f3qcm[klm].powi(2)) * freq[m] * val3 / delta;
                     }
                 }
-                let val5 = freq[(k)] / freq[(l)];
-                let val6 = freq[(l)] / freq[(k)];
-                let val7 = self.rotcon[(ib)]
+                let val5 = freq[k] / freq[l];
+                let val6 = freq[l] / freq[k];
+                let val7 = self.rotcon[ib]
                     * (zmat[(k, l, 0)].powi(2) + zmat[(k, l, 1)].powi(2));
                 let val8 = (val5 + val6) * val7;
                 let value = val1 + val2 + valu + val8;
@@ -558,10 +553,10 @@ impl Spectro {
                 let mut valu = 0.0;
                 for &m in i1mode {
                     let klm = (k, m, l);
-                    let d1 = freq[(k)] + freq[(l)] + freq[(m)];
-                    let d2 = freq[(k)] - freq[(l)] + freq[(m)];
-                    let d3 = freq[(k)] + freq[(l)] - freq[(m)];
-                    let d4 = -freq[(k)] + freq[(l)] + freq[(m)];
+                    let d1 = freq[k] + freq[l] + freq[m];
+                    let d2 = freq[k] - freq[l] + freq[m];
+                    let d3 = freq[k] + freq[l] - freq[m];
+                    let d4 = -freq[k] + freq[l] + freq[m];
 
                     if ifrm2.check((l, m), k) {
                         let delta = 8.0 * (2.0 * freq[l] + freq[k]);
@@ -703,13 +698,13 @@ pub(crate) fn deg_deg1(
         for &l in i1mode {
             let val2 = f3qcm[(k, k, l)].powi(2);
             if ifrm1.check(k, l) {
-                let val3 = 1.0 / (8.0 * freq[(l)]);
-                let val4 = 1.0 / (32.0 * (2.0 * freq[(k)] + freq[(l)]));
+                let val3 = 1.0 / (8.0 * freq[l]);
+                let val4 = 1.0 / (32.0 * (2.0 * freq[k] + freq[l]));
                 valu -= val2 * (val3 + val4);
             } else {
-                let wl = freq[(l)] * freq[(l)];
+                let wl = freq[l] * freq[l];
                 let val3 = 8.0 * wk - 3.0 * wl;
-                let val4 = 16.0 * freq[(l)] * (4.0 * wk - wl);
+                let val4 = 16.0 * freq[l] * (4.0 * wk - wl);
                 valu -= val2 * val3 / val4;
             }
         }
@@ -718,13 +713,13 @@ pub(crate) fn deg_deg1(
         for &(l, _) in i2mode {
             let val2 = f3qcm[(k, k, l)].powi(2);
             if ifrm1.check(k, l) {
-                let val3 = 1.0 / (8.0 * freq[(l)]);
-                let val4 = 1.0 / (32.0 * (2.0 * freq[(k)] + freq[(l)]));
+                let val3 = 1.0 / (8.0 * freq[l]);
+                let val4 = 1.0 / (32.0 * (2.0 * freq[k] + freq[l]));
                 valus -= val2 * (val3 + val4);
             } else {
-                let wl = freq[(l)] * freq[(l)];
+                let wl = freq[l] * freq[l];
                 let val3 = 8.0 * wk - 3.0 * wl;
-                let val4 = 16.0 * freq[(l)] * (4.0 * wk - wl);
+                let val4 = 16.0 * freq[l] * (4.0 * wk - wl);
                 valus -= val2 * val3 / val4;
             }
         }

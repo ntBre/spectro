@@ -472,9 +472,9 @@ impl Spectro {
             // this is inside a conditional in the fortran code, but it
             // would be really annoying to return these from inside it here
             assert!(*nderiv > 2);
-            let vib1 = rotnst[(nst, 0)] - self.rotcon[(0)];
-            let vib2 = rotnst[(nst, 1)] - self.rotcon[(1)];
-            let vib3 = rotnst[(nst, 2)] - self.rotcon[(2)];
+            let vib1 = rotnst[(nst, 0)] - self.rotcon[0];
+            let vib2 = rotnst[(nst, 1)] - self.rotcon[1];
+            let vib3 = rotnst[(nst, 2)] - self.rotcon[2];
             let mut vibr = [0.0; 3];
             vibr[ic[0]] = vib1;
             vibr[ic[1]] = vib2;
@@ -892,9 +892,9 @@ impl Spectro {
             //     (bxs, bys, bzs)
             // } else {
             // only difference is order of vibr indices here
-            let bxs = b1s + vibr[(2)];
-            let mut bys = b2s + vibr[(0)];
-            let mut bzs = b3s + vibr[(1)];
+            let bxs = b1s + vibr[2];
+            let mut bys = b2s + vibr[0];
+            let mut bzs = b3s + vibr[1];
             if self.rotor.is_linear() {
                 (bys, bzs) = (bzs, bys);
             }
