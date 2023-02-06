@@ -15,16 +15,18 @@ use std::path::Path;
 
 #[derive(Serialize, Deserialize)]
 pub struct SpectroFinish {
-    freq: Dvec,
-    f3qcm: F3qcm,
-    f4qcm: F4qcm,
-    irreps: Vec<Irrep>,
-    lxm: Dmat,
-    lx: Dmat,
+    pub spectro: Spectro,
+    pub freq: Dvec,
+    pub f3qcm: F3qcm,
+    pub f4qcm: F4qcm,
+    pub irreps: Vec<Irrep>,
+    pub lxm: Dmat,
+    pub lx: Dmat,
 }
 
 impl SpectroFinish {
     pub fn new(
+        spectro: Spectro,
         freq: Dvec,
         f3qcm: F3qcm,
         f4qcm: F4qcm,
@@ -33,6 +35,7 @@ impl SpectroFinish {
         lx: Dmat,
     ) -> Self {
         Self {
+            spectro,
             freq,
             f3qcm,
             f4qcm,
@@ -109,20 +112,18 @@ impl Spectro {
         let f4x = self.rot4th(f4x);
         let f4qcm = force4(self.n3n, &f4x, &lx, self.nvib, &freq);
 
-        self.finish(SpectroFinish::new(freq, f3qcm, f4qcm, irreps, lxm, lx))
+        self.finish(freq, f3qcm, f4qcm, irreps, lxm, lx)
     }
 
     /// finish the spectro run from F3qcm and F4qcm
     pub fn finish(
         &self,
-        SpectroFinish {
-            freq,
-            f3qcm,
-            f4qcm,
-            irreps,
-            lxm,
-            lx,
-        }: SpectroFinish,
+        freq: Dvec,
+        f3qcm: crate::f3qcm::F3qcm,
+        f4qcm: crate::f4qcm::F4qcm,
+        irreps: Vec<symm::Irrep>,
+        lxm: Dmat,
+        lx: Dmat,
     ) -> (Output, Restst) {
         let w = self.geom.weights();
 
