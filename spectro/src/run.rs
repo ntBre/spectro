@@ -1,11 +1,60 @@
+use serde::{Deserialize, Serialize};
+use symm::Irrep;
+
 use super::{make_sym_funds, resona, Output, Spectro};
 use crate::sextic::Sextic;
 use crate::utils::{
     force3, force4, linalg::symm_eigen_decomp, make_funds, to_wavenumbers,
 };
 use crate::{consts::FACT2, quartic::Quartic, resonance::Restst};
-use crate::{load_fc2, load_fc3, load_fc4, Derivative, Dmat, Dvec, Mode};
+use crate::{
+    load_fc2, load_fc3, load_fc4, Derivative, Dmat, Dvec, F3qcm, F4qcm, Mode,
+};
+use std::error::Error;
 use std::path::Path;
+
+#[derive(Serialize, Deserialize)]
+pub struct SpectroFinish {
+    freq: Dvec,
+    f3qcm: F3qcm,
+    f4qcm: F4qcm,
+    irreps: Vec<Irrep>,
+    lxm: Dmat,
+    lx: Dmat,
+}
+
+impl SpectroFinish {
+    pub fn new(
+        freq: Dvec,
+        f3qcm: F3qcm,
+        f4qcm: F4qcm,
+        irreps: Vec<Irrep>,
+        lxm: Dmat,
+        lx: Dmat,
+    ) -> Self {
+        Self {
+            freq,
+            f3qcm,
+            f4qcm,
+            irreps,
+            lxm,
+            lx,
+        }
+    }
+
+    /// serialize `self` to JSON and write it to `filename`
+    pub fn dump(&self, filename: &str) -> Result<(), Box<dyn Error>> {
+        let f = std::fs::File::create(filename)?;
+        serde_json::to_writer(f, self)?;
+        Ok(())
+    }
+
+    /// load a [SpectroFinish] from the JSON file in `filename`
+    pub fn load(filename: &str) -> Result<Self, Box<dyn Error>> {
+        let r = std::fs::File::open(filename)?;
+        Ok(serde_json::from_reader(r)?)
+    }
+}
 
 impl Spectro {
     pub fn run(&self, deriv: Derivative) -> (Output, Restst) {
@@ -60,18 +109,20 @@ impl Spectro {
         let f4x = self.rot4th(f4x);
         let f4qcm = force4(self.n3n, &f4x, &lx, self.nvib, &freq);
 
-        self.finish(freq, f3qcm, f4qcm, irreps, lxm, lx)
+        self.finish(SpectroFinish::new(freq, f3qcm, f4qcm, irreps, lxm, lx))
     }
 
     /// finish the spectro run from F3qcm and F4qcm
     pub fn finish(
         &self,
-        freq: Dvec,
-        f3qcm: crate::f3qcm::F3qcm,
-        f4qcm: crate::f4qcm::F4qcm,
-        irreps: Vec<symm::Irrep>,
-        lxm: Dmat,
-        lx: Dmat,
+        SpectroFinish {
+            freq,
+            f3qcm,
+            f4qcm,
+            irreps,
+            lxm,
+            lx,
+        }: SpectroFinish,
     ) -> (Output, Restst) {
         let w = self.geom.weights();
 

@@ -27,6 +27,8 @@ use symm::{Axis, Molecule};
 use tensor::Tensor4;
 use utils::*;
 
+pub use run::SpectroFinish;
+
 mod alphas;
 pub mod consts;
 mod dummy;
