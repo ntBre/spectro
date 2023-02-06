@@ -13,6 +13,10 @@ struct Config {
     /// Writes the output in JSON format for use by other programs
     #[arg(short, long, value_parser, default_value_t = false)]
     json: bool,
+
+    /// finish a run by loading a [SpectroFinish] from a JSON file
+    #[arg(short, long, value_parser, default_value_t = false)]
+    finish: bool,
 }
 
 fn main() -> Result<(), std::io::Error> {
