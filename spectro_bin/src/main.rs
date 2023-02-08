@@ -5,7 +5,7 @@ use spectro::Spectro;
 
 #[derive(Debug, Parser)]
 #[command(author, version, about, long_about = None)]
-struct Config {
+struct Args {
     /// Optional name to operate on
     #[arg(value_parser)]
     infile: String,
@@ -20,7 +20,7 @@ struct Config {
 }
 
 fn main() -> Result<(), std::io::Error> {
-    let cfg = Config::parse();
+    let cfg = Args::parse();
     let spectro = Spectro::load(&cfg.infile);
     let infile = Path::new(&cfg.infile);
     let dir = infile.parent().unwrap_or_else(|| Path::new("."));
