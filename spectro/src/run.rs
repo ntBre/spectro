@@ -246,6 +246,17 @@ pub fn compute_irreps(
     eps: f64,
 ) -> Vec<symm::Irrep> {
     let pg = geom.point_group_approx(eps);
+    compute_irreps_in(geom, lxm, nvib, eps, pg)
+}
+
+/// compute irreps of vibrational modes in `pg`
+pub fn compute_irreps_in(
+    geom: &symm::Molecule,
+    lxm: &Dmat,
+    nvib: usize,
+    eps: f64,
+    pg: symm::PointGroup,
+) -> Vec<Irrep> {
     let mut irreps = Vec::new();
     for (i, disp) in lxm.column_iter().take(nvib).enumerate() {
         let mol = geom.clone() + disp.as_slice().to_vec();

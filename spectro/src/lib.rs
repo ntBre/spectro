@@ -27,7 +27,7 @@ use symm::{Axis, Molecule};
 use tensor::Tensor4;
 use utils::*;
 
-pub use run::SpectroFinish;
+pub use run::{compute_irreps, compute_irreps_in, SpectroFinish};
 
 mod alphas;
 pub mod consts;
