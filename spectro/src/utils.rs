@@ -463,22 +463,22 @@ pub(crate) fn make_tau(
     // convert to cm-1 from the biggest mess you've ever seen
     const CONST1: f64 = 3.833384078e04;
     let mut tau = Tensor4::zeros(maxcor, maxcor, maxcor, maxcor);
-    for ixyz in 0..maxcor {
-        for jxyz in 0..maxcor {
-            for kxyz in 0..maxcor {
-                for lxyz in 0..maxcor {
-                    let ijxyz = ioff(ixyz.max(jxyz) + 1) + ixyz.min(jxyz);
-                    let klxyz = ioff(kxyz.max(lxyz) + 1) + kxyz.min(lxyz);
+    for i in 0..maxcor {
+        for j in 0..maxcor {
+            for k in 0..maxcor {
+                for l in 0..maxcor {
+                    let x = ioff(i.max(j) + 1) + i.min(j);
+                    let y = ioff(k.max(l) + 1) + k.min(l);
                     let mut sum = 0.0;
-                    for k in 0..nvib {
-                        let div = freq[k].powi(2)
-                            * primat[ixyz]
-                            * primat[jxyz]
-                            * primat[kxyz]
-                            * primat[lxyz];
-                        sum += wila[(k, ijxyz)] * wila[(k, klxyz)] / div;
+                    for v in 0..nvib {
+                        let div = freq[v].powi(2)
+                            * primat[i]
+                            * primat[j]
+                            * primat[k]
+                            * primat[l];
+                        sum += wila[(v, x)] * wila[(v, y)] / div;
                     }
-                    tau[(ixyz, jxyz, kxyz, lxyz)] = -0.5 * CONST1 * sum;
+                    tau[(i, j, k, l)] = -0.5 * CONST1 * sum;
                 }
             }
         }
