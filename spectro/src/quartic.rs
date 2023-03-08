@@ -211,12 +211,12 @@ impl Quartic {
             Rotor::None => todo!(),
         };
 
-        let (ic, id) = princ_cart(irep);
+        let (c, d) = princ_cart(irep);
 
         let mut t = Dmat::zeros(maxcor, maxcor);
-        for ixyz in 0..maxcor {
-            for jxyz in 0..maxcor {
-                t[(ic[ixyz], ic[jxyz])] = taupcm[(ixyz, jxyz)] / 4.0;
+        for i in 0..maxcor {
+            for j in 0..maxcor {
+                t[(c[i], c[j])] = taupcm[(i, j)] / 4.0;
             }
         }
 
@@ -227,21 +227,20 @@ impl Quartic {
             return ret;
         }
 
-        let t400 =
-            (3.0e0 * t[(0, 0)] + 3.0e0 * t[(1, 1)] + 2.0e0 * t[(0, 1)]) / 8.0e0;
-        let t220 = t[(0, 2)] + t[(1, 2)] - 2.0e0 * t400;
+        let t400 = (3.0 * t[(0, 0)] + 3.0 * t[(1, 1)] + 2.0 * t[(0, 1)]) / 8.0;
+        let t220 = t[(0, 2)] + t[(1, 2)] - 2.0 * t400;
         let t040 = t[(2, 2)] - t220 - t400;
-        let t202 = (t[(0, 0)] - t[(1, 1)]) / 4.0e0;
-        let t022 = (t[(0, 2)] - t[(1, 2)]) / 2.0e0 - t202;
-        let t004 = (t[(0, 0)] + t[(1, 1)] - 2.0e0 * t[(0, 1)]) / 16.0e0;
+        let t202 = (t[(0, 0)] - t[(1, 1)]) / 4.0;
+        let t022 = (t[(0, 2)] - t[(1, 2)]) / 2.0 - t202;
+        let t004 = (t[(0, 0)] + t[(1, 1)] - 2.0 * t[(0, 1)]) / 16.0;
 
         let (rkappa, sigma) = if s.rotor.is_sym_top()
             && !s.rotor.is_linear()
             && !s.rotor.is_spherical_top()
         {
             let rkappa =
-                (2.0 * s.rotcon[id[0]] - s.rotcon[id[1]] - s.rotcon[id[2]])
-                    / (s.rotcon[id[1]] - s.rotcon[id[2]]);
+                (2.0 * s.rotcon[d[0]] - s.rotcon[d[1]] - s.rotcon[d[2]])
+                    / (s.rotcon[d[1]] - s.rotcon[d[2]]);
             if rkappa < 0.0 {
                 // prolate
                 irep = 2;
@@ -255,8 +254,8 @@ impl Quartic {
             }
         } else if s.rotor.is_asymm_top() {
             let sigma =
-                (2.0 * s.rotcon[id[2]] - s.rotcon[id[0]] - s.rotcon[id[1]])
-                    / (s.rotcon[id[0]] - s.rotcon[id[1]]);
+                (2.0 * s.rotcon[d[2]] - s.rotcon[d[0]] - s.rotcon[d[1]])
+                    / (s.rotcon[d[0]] - s.rotcon[d[1]]);
             let rkappa = (2.0 * s.rotcon[1] - s.rotcon[0] - s.rotcon[2])
                 / (s.rotcon[0] - s.rotcon[2]);
             ret.delj = -t400 - 2.0 * t004;
@@ -264,9 +263,9 @@ impl Quartic {
             ret.deljk = -t220 + 12.0 * t004;
             ret.sdelk = -t022 - 4.0 * sigma * t004;
             ret.sdelj = -t202;
-            ret.bxa = s.rotcon[id[0]] - 8.0 * (sigma + 1.0) * t004;
-            ret.bya = s.rotcon[id[1]] + 8.0 * (sigma - 1.0) * t004;
-            ret.bza = s.rotcon[id[2]] + 16.0 * t004;
+            ret.bxa = s.rotcon[d[0]] - 8.0 * (sigma + 1.0) * t004;
+            ret.bya = s.rotcon[d[1]] + 8.0 * (sigma - 1.0) * t004;
+            ret.bza = s.rotcon[d[2]] + 16.0 * t004;
             (rkappa, sigma)
         } else {
             panic!("didn't expect that kind");
