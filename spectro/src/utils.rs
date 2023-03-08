@@ -441,12 +441,11 @@ pub(crate) fn rsfrm1(
 /// convert tau to tau prime in wavenumbers
 pub(crate) fn tau_prime(maxcor: usize, tau: &Tensor4) -> Dmat {
     let mut taupcm = Dmat::zeros(maxcor, maxcor);
-    for ijxyz in 0..maxcor {
-        for klxyz in 0..maxcor {
-            taupcm[(ijxyz, klxyz)] = tau[(ijxyz, ijxyz, klxyz, klxyz)];
-            if ijxyz != klxyz {
-                taupcm[(ijxyz, klxyz)] +=
-                    2.0 * tau[(ijxyz, klxyz, ijxyz, klxyz)];
+    for i in 0..maxcor {
+        for j in 0..maxcor {
+            taupcm[(i, j)] = tau[(i, i, j, j)];
+            if i != j {
+                taupcm[(i, j)] += 2.0 * tau[(i, j, i, j)];
             }
         }
     }
