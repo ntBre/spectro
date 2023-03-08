@@ -23,7 +23,7 @@ use rot::Rot;
 use rotor::Rotor;
 use serde::{Deserialize, Serialize};
 use state::State;
-use symm::{Axis, Molecule};
+use symm::{Atom, Axis, Molecule};
 use tensor::Tensor4;
 use utils::*;
 
@@ -814,35 +814,21 @@ impl Spectro {
         // symmetric
         let mut wila = Dmat::zeros(self.nvib, 6);
         for k in 0..self.nvib {
-            let mut valuxx = 0.0;
-            let mut valuyy = 0.0;
-            let mut valuzz = 0.0;
-            let mut valuxy = 0.0;
-            let mut valuxz = 0.0;
-            let mut valuyz = 0.0;
-            for i in 0..self.natom {
+            for (i, Atom { x, y, z, .. }) in self.geom.atoms.iter().enumerate()
+            {
                 let ix = 3 * i;
                 let iy = ix + 1;
                 let iz = iy + 1;
-                let xcm = self.geom.atoms[i].x;
-                let ycm = self.geom.atoms[i].y;
-                let zcm = self.geom.atoms[i].z;
-                let rmass = w[i].sqrt();
-                valuxx += rmass * (ycm * lxm[(iy, k)] + zcm * lxm[(iz, k)]);
-                valuyy += rmass * (xcm * lxm[(ix, k)] + zcm * lxm[(iz, k)]);
-                valuzz += rmass * (xcm * lxm[(ix, k)] + ycm * lxm[(iy, k)]);
-                valuxy -= rmass * xcm * lxm[(iy, k)];
-                valuxz -= rmass * xcm * lxm[(iz, k)];
-                valuyz -= rmass * ycm * lxm[(iz, k)];
+                let r = w[i].sqrt();
+                wila[(k, 0)] += r * (y * lxm[(iy, k)] + z * lxm[(iz, k)]); // xx
+                wila[(k, 2)] += r * (x * lxm[(ix, k)] + z * lxm[(iz, k)]); // yy
+                wila[(k, 5)] += r * (x * lxm[(ix, k)] + y * lxm[(iy, k)]); // zz
+                wila[(k, 1)] -= r * x * lxm[(iy, k)]; // xy
+                wila[(k, 3)] -= r * x * lxm[(iz, k)]; // xz
+                wila[(k, 4)] -= r * y * lxm[(iz, k)]; // yz
             }
-            wila[(k, 0)] = 2.0 * valuxx;
-            wila[(k, 1)] = 2.0 * valuxy;
-            wila[(k, 2)] = 2.0 * valuyy;
-            wila[(k, 3)] = 2.0 * valuxz;
-            wila[(k, 4)] = 2.0 * valuyz;
-            wila[(k, 5)] = 2.0 * valuzz;
         }
-        (zmat, wila)
+        (zmat, 2.0 * wila)
     }
 
     /// compute the rotational energy levels of a symmetric top
