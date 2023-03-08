@@ -258,17 +258,16 @@ impl Spectro {
     }
 
     /// formation of the secular equation
-    pub fn form_sec(&self, fx: Dmat, sqm: &[f64]) -> Dmat {
-        let mut fxm = fx.clone();
+    pub fn form_sec(&self, mut fx: Dmat, sqm: &[f64]) -> Dmat {
         for i in 0..self.n3n {
             let ii = i / 3;
             for j in i..self.n3n {
                 let jj = j / 3;
-                fxm[(i, j)] = sqm[ii] * fx[(i, j)] * sqm[jj];
+                fx[(i, j)] = sqm[ii] * fx[(i, j)] * sqm[jj];
             }
         }
-        fxm.fill_lower_triangle_with_upper_triangle();
-        fxm
+        fx.fill_lower_triangle_with_upper_triangle();
+        fx
     }
 
     pub fn is_linear(&self) -> bool {
