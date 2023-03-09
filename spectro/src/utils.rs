@@ -161,7 +161,7 @@ pub(crate) fn close(a: f64, b: f64, eps: f64) -> bool {
     (a - b).abs() < eps
 }
 
-/// freq is the vector of harmonic frequencies
+/// transform the cubic force constants in `f3x` to normal coordinates
 pub fn force3(
     n3n: usize,
     f3x: &mut Tensor3,
