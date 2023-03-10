@@ -301,25 +301,11 @@ pub fn fermi2(
                         let diff4 = freq[i] + freq[j] + freq[k];
                         let delta = diff1 * diff2 * diff3 * diff4;
                         let ijk = (i, j, k);
-                        // if we just reverse the order of the condition
-                        // checks, we can only check f3qcm once...
-                        if delta.abs() <= DLTOL {
-                            if f3qcm[ijk].abs() >= F3TOL {
-                                ret.push(Fermi2::new(i, j, k));
-                                continue;
-                            }
-                        } else if diff1.abs() <= DFTOL {
-                            if f3qcm[ijk].abs() >= F3TOL {
-                                ret.push(Fermi2::new(i, j, k));
-                                continue;
-                            }
-                        } else if diff2.abs() <= DFTOL {
-                            if f3qcm[ijk].abs() >= F3TOL {
-                                ret.push(Fermi2::new(i, j, k));
-                                continue;
-                            }
-                        } else if diff3.abs() <= DFTOL
-                            && f3qcm[ijk].abs() >= F3TOL
+                        if f3qcm[ijk].abs() >= F3TOL
+                            && (delta.abs() <= DLTOL
+                                || diff1.abs() <= DFTOL
+                                || diff2.abs() <= DFTOL
+                                || diff3.abs() <= DFTOL)
                         {
                             ret.push(Fermi2::new(i, j, k));
                             continue;
@@ -355,11 +341,8 @@ pub fn fermi2(
                     let j = i1mode[jj];
                     for kk in 0..jj {
                         let k = i1mode[kk];
-                        if i != j
-                            && j != k
-                            && i != k
-                            && ferm2_test(freq, i, j, k, f3qcm, &mut ret)
-                        {
+                        debug_assert!(i != j && j != k && i != k);
+                        if ferm2_test(freq, i, j, k, f3qcm, &mut ret) {
                             continue;
                         }
                     }
@@ -405,12 +388,9 @@ fn ferm2_test(
     let diff4 = freq[i] + freq[j] + freq[k];
     let delta = diff1 * diff2 * diff3 * diff4;
     let dalet = aminjm(diff1, diff2, diff3);
-    if delta.abs() <= DLTOL {
-        if f3qcm[(i, j, k)].abs() >= F3TOL {
-            ret.push(Fermi2::new(i, j, k));
-            return true;
-        }
-    } else if dalet.abs() <= DFTOL && f3qcm[(i, j, k)].abs() >= F3TOL {
+    if f3qcm[(i, j, k)].abs() >= F3TOL
+        && (delta.abs() <= DLTOL || dalet.abs() <= DFTOL)
+    {
         ret.push(Fermi2::new(i, j, k));
         return true;
     }
