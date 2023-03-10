@@ -49,8 +49,8 @@ fn inner(tests: &[Test]) {
         }
         let (zmat, _wila) = s.zeta(&lxm, &w);
         let f3x = load_fc3(&test.fort30, s.n3n);
-        let mut f3x = s.rot3rd(f3x);
-        let f3qcm = force3(s.n3n, &mut f3x, &lx, s.nvib, &freq);
+        let f3x = s.rot3rd(f3x);
+        let f3qcm = force3(s.n3n, f3x, &lx, s.nvib, &freq);
         let got = Restst::new(&s, &zmat, &f3qcm, &freq);
         assert_eq!(got.coriolis, test.want.coriolis, "{}", test.infile);
         assert_eq!(got.fermi1, test.want.fermi1, "{}", test.infile);

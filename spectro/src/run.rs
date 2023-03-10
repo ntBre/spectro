@@ -105,8 +105,8 @@ impl Spectro {
 	};
 
         // start of cubic analysis
-        let mut f3x = self.rot3rd(f3x);
-        let f3qcm = force3(self.n3n, &mut f3x, &lx, self.nvib, &freq);
+        let f3x = self.rot3rd(f3x);
+        let f3qcm = force3(self.n3n, f3x, &lx, self.nvib, &freq);
 
         // start of quartic analysis
         let f4x = self.rot4th(f4x);

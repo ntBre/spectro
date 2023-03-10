@@ -53,8 +53,8 @@ fn alpha() {
         let lx = s.make_lx(&sqm, &lxm);
         let (zmat, wila) = s.zeta(&lxm, &w);
         let f3x = load_fc3(test.fort30, s.n3n);
-        let mut f3x = s.rot3rd(f3x);
-        let f3qcm = force3(s.n3n, &mut f3x, &lx, s.nvib, &freq);
+        let f3x = s.rot3rd(f3x);
+        let f3qcm = force3(s.n3n, f3x, &lx, s.nvib, &freq);
         let r = Restst::new(&s, &zmat, &f3qcm, &freq);
         let got = s.alpha(&freq, &wila, &zmat, &f3qcm, &r.coriolis);
         if abs_diff_ne!(got, test.want, epsilon = 3e-6) {
@@ -83,8 +83,8 @@ fn test_alphaa() {
     let lx = s.make_lx(&sqm, &lxm);
     let (zmat, wila) = s.zeta(&lxm, &w);
     let f3x = load_fc3("testfiles/fort.30", s.n3n);
-    let mut f3x = s.rot3rd(f3x);
-    let f3qcm = force3(s.n3n, &mut f3x, &lx, s.nvib, &freq);
+    let f3x = s.rot3rd(f3x);
+    let f3qcm = force3(s.n3n, f3x, &lx, s.nvib, &freq);
     let Restst {
         coriolis,
         fermi1: _,

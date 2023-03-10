@@ -164,18 +164,18 @@ pub(crate) fn close(a: f64, b: f64, eps: f64) -> bool {
 /// transform the cubic force constants in `f3x` to normal coordinates
 pub fn force3(
     n3n: usize,
-    f3x: &mut Tensor3,
+    mut f3x: Tensor3,
     lx: &Dmat,
     nvib: usize,
     freq: &Dvec,
 ) -> F3qcm {
+    let start = (0, 0);
+    let end = (n3n, n3n - 1);
     for kabc in 0..n3n {
-        let start = (0, 0);
-        let end = (n3n, n3n - 1);
         let mut dd =
             Dmat::from_row_slice(n3n, n3n, f3x.submatrix(start, end, kabc));
         dd *= FUNIT3;
-        let ee = lx.clone().transpose() * dd.clone() * lx.clone();
+        let ee = lx.transpose() * dd * lx;
         f3x.set_submatrix(start, end, kabc, ee.data.as_slice());
     }
     let mut f3qcm =
