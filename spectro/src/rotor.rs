@@ -335,25 +335,11 @@ pub fn fermi2(
                         let diff4 = freq[i] + freq[j] + freq[k];
                         let delta = diff1 * diff2 * diff3 * diff4;
                         let ijk = (i, j, k);
-                        // if we just reverse the order of the condition
-                        // checks, we can only check f3qcm once...
-                        if delta.abs() <= DLTOL {
-                            if f3qcm[ijk].abs() >= F3TOL {
-                                ret.push(Fermi2::new(i, j, k));
-                                continue;
-                            }
-                        } else if diff1.abs() <= DFTOL {
-                            if f3qcm[ijk].abs() >= F3TOL {
-                                ret.push(Fermi2::new(i, j, k));
-                                continue;
-                            }
-                        } else if diff2.abs() <= DFTOL {
-                            if f3qcm[ijk].abs() >= F3TOL {
-                                ret.push(Fermi2::new(i, j, k));
-                                continue;
-                            }
-                        } else if diff3.abs() <= DFTOL
-                            && f3qcm[ijk].abs() >= F3TOL
+                        if f3qcm[ijk].abs() >= F3TOL
+                            && (delta.abs() <= DLTOL
+                                || diff1.abs() <= DFTOL
+                                || diff2.abs() <= DFTOL
+                                || diff3.abs() <= DFTOL)
                         {
                             ret.push(Fermi2::new(i, j, k));
                             continue;
