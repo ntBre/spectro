@@ -134,12 +134,9 @@ impl Spectro {
             coriolis,
             fermi1,
             fermi2,
-            darling: _,
             states,
             modes,
-            ifunda: _,
-            iovrtn: _,
-            icombn: _,
+            ..
         } = &restst;
         let (xcnst, gcnst, e0) = if self.rotor.is_sym_top() {
             let (x, g, e) = self.xcals(
