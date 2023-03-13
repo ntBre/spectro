@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use symm::Irrep;
 
-use super::{make_sym_funds, resona, Output, Spectro};
+use super::{make_sym_funds, Output, Spectro};
 use crate::sextic::Sextic;
 use crate::utils::{
     force3, force4, linalg::symm_eigen_decomp, make_funds, to_wavenumbers,
@@ -161,17 +161,8 @@ impl Spectro {
         } else {
             self.alphaa(&freq, &wila, &zmat, &f3qcm, modes, states, coriolis)
         };
-        // this is worked on by resona and then enrgy so keep it out here
         let nstate = states.len();
         let mut eng = vec![0.0; nstate];
-        if !self.rotor.is_sym_top() {
-            resona(e0, modes, &freq, &xcnst, fermi1, fermi2, &mut eng);
-        } else {
-            // straight from jan martin himself
-            // println!(
-            //     "resonance polyads for symmetric tops not yet implemented"
-            // );
-        }
         self.enrgy(&freq, &xcnst, &gcnst, &restst, &f3qcm, e0, &mut eng);
         // it's not obvious that the states are in this proper order, but by
         // construction that seems to be the case

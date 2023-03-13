@@ -2,11 +2,7 @@
 #![allow(clippy::too_many_arguments, clippy::needless_range_loop)]
 
 use std::{
-    collections::{HashMap, HashSet},
-    f64::consts::PI,
-    fmt::Debug,
-    fs::File,
-    io::Result,
+    collections::HashMap, f64::consts::PI, fmt::Debug, fs::File, io::Result,
 };
 
 use consts::ALPHA_CONST;
@@ -15,7 +11,6 @@ pub use f3qcm::F3qcm;
 pub use f4qcm::F4qcm;
 use ifrm1::Ifrm1;
 use ifrm2::Ifrm2;
-use nalgebra::DMatrix;
 pub use output::*;
 use quartic::Quartic;
 use resonance::{Coriolis, Fermi1, Fermi2};
@@ -978,76 +973,4 @@ fn make_zmat(nvib: usize, natom: usize, lxm: &Dmat) -> tensor::Tensor3<f64> {
         }
     }
     zmat
-}
-
-fn resona(
-    e0: f64,
-    modes: &[Mode],
-    freq: &Dvec,
-    xcnst: &Dmat,
-    fermi1: &Vec<Fermi1>,
-    fermi2: &Vec<Fermi2>,
-    eng: &mut [f64],
-) {
-    let (n1dm, _, _) = Mode::count(modes);
-    let (i1mode, _, _) = Mode::partition(modes);
-    let mut zpe = e0;
-    for ii in 0..n1dm {
-        let i = i1mode[ii];
-        zpe += freq[i] * 0.5;
-        for jj in 0..=ii {
-            let j = i1mode[jj];
-            zpe += xcnst[(i, j)] * 0.25;
-        }
-    }
-    let iirst = make_resin(fermi1, n1dm, fermi2);
-    let (nreson, _) = iirst.shape();
-    for ist in 0..nreson {
-        let mut e = e0;
-        for ii in 0..n1dm {
-            let i = i1mode[ii];
-            e += freq[i] * (iirst[(ist, ii)] as f64 + 0.5);
-            for jj in 0..=ii {
-                let j = i1mode[jj];
-                e += xcnst[(i, j)]
-                    * (iirst[(ist, ii)] as f64 + 0.5)
-                    * (iirst[(ist, jj)] as f64 + 0.5);
-            }
-        }
-        eng[ist] = e - zpe;
-    }
-}
-
-/// construct the RESIN Fermi polyad matrix. NOTE that the comments in resona.f
-/// mention multiple blocks for different symmetries. However, the only way we
-/// use it is with a single block, so I'm writing this code with that in mind.
-fn make_resin(
-    fermi1: &Vec<Fermi1>,
-    n1dm: usize,
-    fermi2: &Vec<Fermi2>,
-) -> DMatrix<usize> {
-    let mut data: HashSet<Vec<usize>> = HashSet::new();
-    for &Fermi1 { i, j } in fermi1 {
-        // 2wi
-        let mut tmp = vec![0; n1dm];
-        tmp[i] = 2;
-        data.insert(tmp);
-        // = wj
-        let mut tmp = vec![0; n1dm];
-        tmp[j] = 1;
-        data.insert(tmp);
-    }
-    for &Fermi2 { i, j, k } in fermi2 {
-        // wi + wj
-        let mut tmp = vec![0; n1dm];
-        tmp[i] = 1;
-        tmp[j] = 1;
-        data.insert(tmp);
-        // = wk
-        let mut tmp = vec![0; n1dm];
-        tmp[k] = 1;
-        data.insert(tmp);
-    }
-    let data: Vec<_> = data.into_iter().flatten().collect();
-    DMatrix::<usize>::from_row_slice(data.len() / n1dm, n1dm, &data)
 }
