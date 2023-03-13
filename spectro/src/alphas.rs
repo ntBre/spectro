@@ -6,7 +6,7 @@ use crate::consts::ALPHA_CONST;
 use crate::f3qcm::F3qcm;
 use crate::resonance::Coriolis;
 use crate::rotor::Rotor;
-use crate::state::State;
+use crate::state::{State, StatePartition};
 use crate::{make_icorol, mode::Mode, Dmat, Dvec, Spectro, Tensor3};
 
 impl Spectro {
@@ -48,7 +48,7 @@ impl Spectro {
         } else {
             vec![ia, ib]
         };
-        let (i1sts, i2sts, _) = State::partition(states);
+        let StatePartition { i1sts, i2sts, .. } = State::partition(states);
         for ax in axes {
             for ist in 0..nstop {
                 let mut suma = 0.0;

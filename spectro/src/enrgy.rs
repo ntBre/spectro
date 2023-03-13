@@ -1,6 +1,11 @@
 use super::{Dmat, Dvec, Spectro};
 use crate::{
-    f3qcm::F3qcm, ioff, resonance::Restst, rsfrm1, rsfrm2, state::State, Mode,
+    f3qcm::F3qcm,
+    ioff,
+    resonance::Restst,
+    rsfrm1, rsfrm2,
+    state::{State, StatePartition},
+    Mode,
 };
 use std::cmp::{max, min};
 
@@ -18,21 +23,20 @@ impl Spectro {
         eng: &mut [f64],
     ) {
         let Restst {
-            coriolis: _,
             fermi1,
             fermi2,
-            darling: _,
             states,
             modes,
             ifunda,
             iovrtn,
             icombn,
+            ..
         }: &Restst = restst;
 
         let nstate = states.len();
         let (n1dm, n2dm, _) = Mode::count(modes);
         let (i1mode, i2mode, _) = Mode::partition(modes);
-        let (i1sts, i2sts, _) = State::partition(states);
+        let StatePartition { i1sts, i2sts, .. } = State::partition(states);
 
         part1(
             nstate, &i1mode, freq, i1sts, &i2mode, i2sts, n1dm, xcnst, n2dm,

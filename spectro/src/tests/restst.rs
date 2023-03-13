@@ -3,7 +3,7 @@ use std::path::Path;
 use crate::{
     consts::FACT2,
     resonance::{Darling, Restst},
-    state::{I1states, I2states},
+    state::{I1states, I2states, StatePartition},
     *,
 };
 
@@ -61,8 +61,16 @@ fn inner(tests: &[Test]) {
         assert_eq!(got.fermi2, test.want.fermi2, "{}", test.infile);
         assert_eq!(got.darling, test.want.darling, "{}", test.infile);
         assert_eq!(got.states.len(), test.want.states.len(), "{}", test.infile);
-        let (i1sts, i2sts, i3sts) = State::partition(&got.states);
-        let (want_i1, want_i2, want_i3) = State::partition(&test.want.states);
+        let StatePartition {
+            i1sts,
+            i2sts,
+            i3sts,
+        } = State::partition(&got.states);
+        let StatePartition {
+            i1sts: want_i1,
+            i2sts: want_i2,
+            i3sts: want_i3,
+        } = State::partition(&test.want.states);
         assert_eq!(i1sts.len(), want_i1.len());
         assert_eq!(
             i1sts,

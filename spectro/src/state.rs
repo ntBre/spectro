@@ -21,6 +21,18 @@ pub enum State {
     },
 }
 
+#[derive(Default)]
+pub struct StatePartition {
+    /// singly-degenerate states
+    pub i1sts: Vec<Vec<usize>>,
+
+    /// doubly-degenerate states
+    pub i2sts: Vec<Vec<(usize, usize)>>,
+
+    /// triply-degenerate states
+    pub i3sts: Vec<Vec<usize>>,
+}
+
 impl State {
     pub fn len(&self) -> usize {
         match self {
@@ -37,35 +49,32 @@ impl State {
     /// return vectors of the separated singly-degenerate, doubly-degenerate,
     /// and triply-degenerate states. these are referrred to in the Fortran code
     /// as `i1sts`, `i2sts`, and `i3sts`.
-    #[allow(clippy::type_complexity)]
-    pub fn partition(
-        states: &[Self],
-    ) -> (Vec<Vec<usize>>, Vec<Vec<(usize, usize)>>, Vec<Vec<usize>>) {
-        let mut ret = (vec![], vec![], vec![]);
+    pub fn partition(states: &[Self]) -> StatePartition {
+        let mut ret = StatePartition::default();
         for s in states {
             match &s {
                 State::I1st(v) => {
-                    ret.0.push(v.clone());
+                    ret.i1sts.push(v.clone());
 
-                    ret.1.push(vec![(0, 0); v.len()]);
-                    ret.2.push(vec![0; v.len()]);
+                    ret.i2sts.push(vec![(0, 0); v.len()]);
+                    ret.i3sts.push(vec![0; v.len()]);
                 }
                 State::I2st(v) => {
-                    ret.1.push(v.clone());
+                    ret.i2sts.push(v.clone());
 
-                    ret.0.push(vec![0; v.len()]);
-                    ret.2.push(vec![0; v.len()]);
+                    ret.i1sts.push(vec![0; v.len()]);
+                    ret.i3sts.push(vec![0; v.len()]);
                 }
                 State::I3st(v) => {
-                    ret.2.push(v.clone());
+                    ret.i3sts.push(v.clone());
 
-                    ret.0.push(vec![0; v.len()]);
-                    ret.1.push(vec![(0, 0); v.len()]);
+                    ret.i1sts.push(vec![0; v.len()]);
+                    ret.i2sts.push(vec![(0, 0); v.len()]);
                 }
                 State::I12st { i1st, i2st } => {
-                    ret.0.push(i1st.clone());
-                    ret.1.push(i2st.clone());
-                    ret.2.push(vec![0; i1st.len()]);
+                    ret.i1sts.push(i1st.clone());
+                    ret.i2sts.push(i2st.clone());
+                    ret.i3sts.push(vec![0; i1st.len()]);
                 }
             }
         }

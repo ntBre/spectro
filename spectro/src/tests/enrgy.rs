@@ -2,6 +2,7 @@ use std::path::{Path, PathBuf};
 
 use crate::consts::FACT2;
 use crate::resonance::Restst;
+use crate::state::StatePartition;
 use crate::utils::linalg::symm_eigen_decomp;
 use crate::*;
 
@@ -98,7 +99,7 @@ fn part1() {
         let nstate = r.states.len();
         let (n1dm, n2dm, _) = Mode::count(&r.modes);
         let (i1mode, i2mode, _) = Mode::partition(&r.modes);
-        let (i1sts, i2sts, _) = State::partition(&r.states);
+        let StatePartition { i1sts, i2sts, .. } = State::partition(&r.states);
 
         crate::enrgy::part1(
             nstate, &i1mode, &freq, i1sts, &i2mode, i2sts, n1dm, &xcnst, n2dm,
