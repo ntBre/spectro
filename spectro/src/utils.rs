@@ -269,15 +269,17 @@ pub(crate) fn make_e0(
 ) -> f64 {
     // NOTE: took out some weird IA stuff here and reproduced their results.
     // maybe my signs are actually right and theirs are wrong.
-    let mut f3k = 0.0;
     let mut f3kkl = 0.0;
     let (n1dm, _, _) = Mode::count(modes);
     let (i1mode, _, _) = Mode::partition(modes);
+    let f3k: f64 = i1mode
+        .iter()
+        .map(|&k| -7.0 * f3qcm[(k, k, k)].powi(2) / (576.0 * freq[k]))
+        .sum();
     let f4k: f64 = i1mode.iter().map(|&k| f4qcm[(k, k, k, k)] / 64.0).sum();
     for kk in 0..n1dm {
         let k = i1mode[kk];
         // kkkk and kkk terms
-        f3k -= 7.0 * f3qcm[(k, k, k)].powi(2) / (576.0 * freq[k]);
         let wk = freq[k].powi(2);
 
         // kkl terms
