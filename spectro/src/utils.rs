@@ -269,52 +269,35 @@ pub(crate) fn make_e0(
 ) -> f64 {
     // NOTE: took out some weird IA stuff here and reproduced their results.
     // maybe my signs are actually right and theirs are wrong.
-    let mut f3kkl = 0.0;
-    let (n1dm, _, _) = Mode::count(modes);
     let (i1mode, _, _) = Mode::partition(modes);
     let f3k: f64 = i1mode
         .iter()
         .map(|&k| -7.0 * f3qcm[(k, k, k)].powi(2) / (576.0 * freq[k]))
         .sum();
     let f4k: f64 = i1mode.iter().map(|&k| f4qcm[(k, k, k, k)] / 64.0).sum();
-    for kk in 0..n1dm {
-        let k = i1mode[kk];
+    let mut f3kkl = 0.0;
+    for &k in &i1mode {
         // kkkk and kkk terms
         let wk = freq[k].powi(2);
-
         // kkl terms
-        for ll in 0..n1dm {
-            let l = i1mode[ll];
-            if k == l {
-                continue;
-            }
+        for &l in i1mode.iter().filter(|&&l| k != l) {
             let wl = freq[l].powi(2);
             let zval1 = f3qcm[(k, k, l)].powi(2);
             let res = ifrm1.get(&k);
             if res.is_some() && *res.unwrap() == l {
-                let delta = 2.0 * (2.0 * freq[k] + freq[l]);
-                f3kkl += 3.0 * zval1 / (64.0 * delta);
+                let delta = 2.0 * freq[k] + freq[l];
+                f3kkl += 3.0 * zval1 / (128.0 * delta);
             } else {
-                let znum1 = freq[l];
                 let delta = 4.0 * wk - wl;
-                f3kkl += 3.0 * zval1 * znum1 / (64.0 * delta);
+                f3kkl += 3.0 * zval1 * freq[l] / (64.0 * delta);
             }
         }
     }
     // klm terms
     let mut f3klm = 0.0;
-    for kk in 0..n1dm {
-        let k = i1mode[kk];
-        for ll in 0..n1dm {
-            let l = i1mode[ll];
-            if k <= l {
-                continue;
-            }
-            for mm in 0..n1dm {
-                let m = i1mode[mm];
-                if l <= m {
-                    continue;
-                }
+    for &k in &i1mode {
+        for &l in i1mode.iter().filter(|&&l| k > l) {
+            for &m in i1mode.iter().filter(|&&m| l > m) {
                 let zval3 = f3qcm[(k, l, m)].powi(2);
                 let xklm = freq[k] * freq[l] * freq[m];
                 let d1 = freq[k] + freq[l] + freq[m];
@@ -322,17 +305,13 @@ pub(crate) fn make_e0(
                 let d3 = freq[k] + freq[l] - freq[m];
                 let d4 = freq[k] - freq[l] - freq[m];
                 if ifrmchk[(k, l, m)] != 0 {
-                    let delta1 = 1.0 / d1 + 1.0 / d2 + 1.0 / d4;
-                    f3klm -= zval3 * delta1 / 16.0;
+                    f3klm -= zval3 * (1.0 / d1 + 1.0 / d2 + 1.0 / d4) / 16.0;
                 } else if ifrmchk[(l, m, k)] != 0 {
-                    let delta1 = 1.0 / d1 + 1.0 / d2 - 1.0 / d3;
-                    f3klm -= zval3 * delta1 / 16.0;
+                    f3klm -= zval3 * (1.0 / d1 + 1.0 / d2 - 1.0 / d3) / 16.0;
                 } else if ifrmchk[(k, m, l)] != 0 {
-                    let delta1 = 1.0 / d1 - 1.0 / d3 + 1.0 / d4;
-                    f3klm -= zval3 * delta1 / 16.0;
+                    f3klm -= zval3 * (1.0 / d1 - 1.0 / d3 + 1.0 / d4) / 16.0;
                 } else {
-                    let delta2 = d1 * d2 * d3 * d4;
-                    f3klm -= zval3 * xklm / (4.0 * delta2);
+                    f3klm -= zval3 * xklm / (4.0 * d1 * d2 * d3 * d4);
                 }
             }
         }
