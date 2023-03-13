@@ -1048,6 +1048,6 @@ fn make_resin(
         tmp[k] = 1;
         data.insert(tmp);
     }
-    let data: Vec<_> = data.iter().flatten().cloned().collect();
+    let data: Vec<_> = data.into_iter().flatten().collect();
     DMatrix::<usize>::from_row_slice(data.len() / n1dm, n1dm, &data)
 }
