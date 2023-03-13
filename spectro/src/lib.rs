@@ -1,4 +1,4 @@
-#![feature(test, stmt_expr_attributes)]
+#![feature(test)]
 #![allow(clippy::too_many_arguments, clippy::needless_range_loop)]
 
 use std::{
