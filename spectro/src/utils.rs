@@ -393,16 +393,14 @@ pub(crate) fn rsfrm1(
     deg: bool,
 ) {
     let val = if deg {
-        f3qcm[(ivib, ivib, jvib)] / f64::sqrt(8.0)
+        f3qcm[(ivib, ivib, jvib)] / (2.0 * SQRT_2)
     } else {
         0.25 * f3qcm[(ivib, ivib, jvib)]
     };
-    // this is actually a symmetric matrix I think
-    let eres = [eng[ist] - eng[0], val, eng[jst] - eng[0]];
     // TODO left out printed error measures
     let eres = dmatrix![
-    eres[0], val;
-    val, eres[2];
+    eng[ist] - eng[0], val;
+    val, eng[jst] - eng[0];
     ];
     let (eigval, eigvec) = linalg::symm_eigen_decomp(eres, false);
     let a = eigvec[(0, 0)];
