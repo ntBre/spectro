@@ -161,8 +161,7 @@ impl Spectro {
         } else {
             self.alphaa(&freq, &wila, &zmat, &f3qcm, modes, states, coriolis)
         };
-        let nstate = states.len();
-        let mut eng = vec![0.0; nstate];
+        let mut eng = vec![0.0; states.len()];
         self.enrgy(&freq, &xcnst, &gcnst, &restst, &f3qcm, e0, &mut eng);
         // it's not obvious that the states are in this proper order, but by
         // construction that seems to be the case
