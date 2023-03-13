@@ -131,152 +131,103 @@ fn scc(
     }
 
     for ixyz in 1..=3 {
-        let iixyz = ioff(ixyz + 1);
+        let x = ixyz - 1;
+        let s = ioff(ixyz + 1) - 1;
         for jxyz in 1..=3 {
-            if ixyz != jxyz {
-                let jjxyz = ioff(jxyz + 1);
-                let ijxyz = ioff(max(ixyz, jxyz)) + min(ixyz, jxyz);
-
-                let mut vala = 0.0;
-                for kxyz in 1..=3 {
-                    let val1 = tau[(kxyz - 1, jxyz - 1, ixyz - 1, ixyz - 1)]
-                        + 2.0 * tau[(kxyz - 1, ixyz - 1, jxyz - 1, ixyz - 1)];
-                    let val1 = val1 * val1;
-                    let val2 = 2.0
-                        * tau[(kxyz - 1, ixyz - 1, ixyz - 1, ixyz - 1)]
-                        * (tau[(kxyz - 1, ixyz - 1, jxyz - 1, jxyz - 1)]
-                            + 2.0
-                                * tau
-                                    [(kxyz - 1, jxyz - 1, jxyz - 1, ixyz - 1)]);
-                    vala += (val1 + val2) / rotcon[kxyz - 1];
-                }
-
-                vala *= 3.0 / 32.0;
-
-                let mut valb = 0.0;
-                for i in 0..nvib {
-                    let val1 = cc[(i, jxyz - 1, ixyz - 1, ixyz - 1)].powi(2)
-                        + 2.0
-                            * cc[(i, ixyz - 1, ixyz - 1, ixyz - 1)]
-                            * cc[(i, jxyz - 1, jxyz - 1, ixyz - 1)];
-                    valb += freq[i] * val1;
-                }
-
-                let mut valc = 0.0;
-                for i in 0..nvib {
-                    for j in 0..nvib {
-                        let val1 = c[(j, iixyz - 1)] * c[(i, jjxyz - 1)]
-                            + 4.0 * c[(j, ijxyz - 1)] * c[(i, ijxyz - 1)];
-                        for k in 0..nvib {
-                            valc += f3qcm[(i, j, k)] * c[(k, iixyz - 1)] * val1;
-                        }
-                    }
-                }
-                valc /= 4.0;
-
-                let div = 8.0 * (rotcon[ixyz - 1] - rotcon[jxyz - 1]);
-                let mut vald = 0.0;
-                if div.abs() > TOL {
-                    let val1 = 4.0
-                        * tau[(jxyz - 1, jxyz - 1, jxyz - 1, ixyz - 1)]
-                        - 3.0 * tau[(jxyz - 1, ixyz - 1, ixyz - 1, ixyz - 1)];
-                    vald += val1
-                        * tau[(jxyz - 1, ixyz - 1, ixyz - 1, ixyz - 1)]
-                        / div;
-                }
-
-                let mut vale = 0.0;
-                let mut valf = 0.0;
-                for kxyz in 1..=3 {
-                    if kxyz != jxyz && kxyz != ixyz {
-                        let div =
-                            4.0 * (rotcon[ixyz - 1] - rotcon[kxyz - 1]).powi(2);
-                        if div > TOL {
-                            let val1 = (rotcon[ixyz - 1] - rotcon[kxyz - 1])
-                                * (tau
-                                    [(kxyz - 1, ixyz - 1, jxyz - 1, jxyz - 1)]
-                                    + 2.0e0
-                                        * tau[(
-                                            kxyz - 1,
-                                            jxyz - 1,
-                                            jxyz - 1,
-                                            ixyz - 1,
-                                        )]);
-                            let val2 = (rotcon[ixyz - 1] - rotcon[jxyz - 1])
-                                * (tau
-                                    [(kxyz - 1, kxyz - 1, kxyz - 1, ixyz - 1)]
-                                    - tau[(
-                                        kxyz - 1,
-                                        ixyz - 1,
-                                        ixyz - 1,
-                                        ixyz - 1,
-                                    )]);
-                            vale += tau
-                                [(kxyz - 1, ixyz - 1, ixyz - 1, ixyz - 1)]
-                                * (val1 + val2)
-                                / div;
-                        }
-
-                        let div =
-                            8.0 * (rotcon[jxyz - 1] - rotcon[kxyz - 1]).powi(2);
-                        if div > TOL {
-                            let val1 = (rotcon[jxyz - 1] - rotcon[kxyz - 1])
-                                * (tau
-                                    [(kxyz - 1, jxyz - 1, ixyz - 1, ixyz - 1)]
-                                    + 2.0
-                                        * tau[(
-                                            kxyz - 1,
-                                            ixyz - 1,
-                                            jxyz - 1,
-                                            ixyz - 1,
-                                        )]);
-                            let val2 = 2.0
-                                * (rotcon[ixyz - 1] - rotcon[jxyz - 1])
-                                * (tau
-                                    [(kxyz - 1, jxyz - 1, jxyz - 1, jxyz - 1)]
-                                    - tau[(
-                                        kxyz - 1,
-                                        kxyz - 1,
-                                        kxyz - 1,
-                                        jxyz - 1,
-                                    )]);
-                            let val3 = tau
-                                [(kxyz - 1, jxyz - 1, ixyz - 1, ixyz - 1)]
-                                + 2.0
-                                    * tau[(
-                                        kxyz - 1,
-                                        ixyz - 1,
-                                        jxyz - 1,
-                                        ixyz - 1,
-                                    )];
-                            valf += val3 * (val1 + val2) / div;
-                        }
-                    }
-                }
-
-                let value = vala - valb + valc + vald + vale + valf;
-                scc[(jxyz - 1, ixyz - 1, ixyz - 1)] = value;
-                scc[(ixyz - 1, jxyz - 1, ixyz - 1)] = value;
-                scc[(ixyz - 1, ixyz - 1, jxyz - 1)] = value;
+            let y = jxyz - 1;
+            if x == y {
+                continue;
             }
+            let t = ioff(jxyz + 1) - 1;
+            let u = ioff(max(ixyz, jxyz)) + min(ixyz, jxyz) - 1;
+
+            let mut vala = 0.0;
+            for z in 0..3 {
+                let val1 = tau[(z, y, x, x)] + 2.0 * tau[(z, x, y, x)];
+                let val1 = val1 * val1;
+                let val2 = 2.0
+                    * tau[(z, x, x, x)]
+                    * (tau[(z, x, y, y)] + 2.0 * tau[(z, y, y, x)]);
+                vala += (val1 + val2) / rotcon[z];
+            }
+
+            vala *= 3.0 / 32.0;
+
+            let mut valb = 0.0;
+            for i in 0..nvib {
+                let val1 = cc[(i, y, x, x)].powi(2)
+                    + 2.0 * cc[(i, x, x, x)] * cc[(i, y, y, x)];
+                valb += freq[i] * val1;
+            }
+
+            let mut valc = 0.0;
+            for i in 0..nvib {
+                for j in 0..nvib {
+                    let val1 =
+                        c[(j, s)] * c[(i, t)] + 4.0 * c[(j, u)] * c[(i, u)];
+                    for k in 0..nvib {
+                        valc += f3qcm[(i, j, k)] * c[(k, s)] * val1;
+                    }
+                }
+            }
+            valc /= 4.0;
+
+            let div = 8.0 * (rotcon[x] - rotcon[y]);
+            let mut vald = 0.0;
+            if div.abs() > TOL {
+                let val1 = 4.0 * tau[(y, y, y, x)] - 3.0 * tau[(y, x, x, x)];
+                vald += val1 * tau[(y, x, x, x)] / div;
+            }
+
+            let mut vale = 0.0;
+            let mut valf = 0.0;
+            for kxyz in 1..=3 {
+                let z = kxyz - 1;
+                if z == y || z == x {
+                    continue;
+                }
+                let div = 4.0 * (rotcon[x] - rotcon[z]).powi(2);
+                if div > TOL {
+                    let val1 = (rotcon[x] - rotcon[z])
+                        * (tau[(z, x, y, y)] + 2.0e0 * tau[(z, y, y, x)]);
+                    let val2 = (rotcon[x] - rotcon[y])
+                        * (tau[(z, z, z, x)] - tau[(z, x, x, x)]);
+                    vale += tau[(z, x, x, x)] * (val1 + val2) / div;
+                }
+
+                let div = 8.0 * (rotcon[y] - rotcon[z]).powi(2);
+                if div > TOL {
+                    let val1 = (rotcon[y] - rotcon[z])
+                        * (tau[(z, y, x, x)] + 2.0 * tau[(z, x, y, x)]);
+                    let val2 = 2.0
+                        * (rotcon[x] - rotcon[y])
+                        * (tau[(z, y, y, y)] - tau[(z, z, z, y)]);
+                    let val3 = tau[(z, y, x, x)] + 2.0 * tau[(z, x, y, x)];
+                    valf += val3 * (val1 + val2) / div;
+                }
+            }
+
+            let value = vala - valb + valc + vald + vale + valf;
+            scc[(y, x, x)] = value;
+            scc[(x, y, x)] = value;
+            scc[(x, x, y)] = value;
         }
     } // end loop at line 397
 
     let mut vala = 0.0;
-    for ixyz in 1..=3 {
-        let val1 = tau[(ixyz - 1, 0, 1, 2)]
-            + tau[(ixyz - 1, 1, 2, 0)]
-            + tau[(ixyz - 1, 2, 0, 1)];
+    for x in 0..3 {
+        let val1 = tau[(x, 0, 1, 2)] + tau[(x, 1, 2, 0)] + tau[(x, 2, 0, 1)];
         let val1 = 2.0 * val1 * val1;
-        let val2 = (tau[(ixyz - 1, 0, 1, 1)] + 2.0 * tau[(ixyz - 1, 1, 0, 1)])
-            * (tau[(ixyz - 1, 0, 2, 2)] + 2.0 * tau[(ixyz - 1, 2, 0, 2)]);
-        let val3 = (tau[(ixyz - 1, 1, 2, 2)] + 2.0 * tau[(ixyz - 1, 2, 1, 2)])
-            * (tau[(ixyz - 1, 1, 0, 0)] + 2.0 * tau[(ixyz - 1, 0, 1, 0)]);
-        let val4 = (tau[(ixyz - 1, 2, 0, 0)] + 2.0 * tau[(ixyz - 1, 0, 2, 0)])
-            * (tau[(ixyz - 1, 2, 1, 1)] + 2.0 * tau[(ixyz - 1, 1, 2, 1)]);
-        vala += (val1 + val2 + val3 + val4) / rotcon[ixyz - 1];
+        let val2 = (tau[(x, 0, 1, 1)] + 2.0 * tau[(x, 1, 0, 1)])
+            * (tau[(x, 0, 2, 2)] + 2.0 * tau[(x, 2, 0, 2)]);
+        let val3 = (tau[(x, 1, 2, 2)] + 2.0 * tau[(x, 2, 1, 2)])
+            * (tau[(x, 1, 0, 0)] + 2.0 * tau[(x, 0, 1, 0)]);
+        let val4 = (tau[(x, 2, 0, 0)] + 2.0 * tau[(x, 0, 2, 0)])
+            * (tau[(x, 2, 1, 1)] + 2.0 * tau[(x, 1, 2, 1)]);
+        vala += (val1 + val2 + val3 + val4) / rotcon[x];
     }
     vala = 3.0 * vala / 16.0;
+
     let mut valb = 0.0;
     for i in 0..nvib {
         let val1 = 2.0 * cc[(i, 2, 1, 0)].powi(2)
@@ -286,6 +237,7 @@ fn scc(
         valb += freq[i] * val1;
     }
     valb *= 2.0;
+
     let mut valc = 0.0;
     for i in 0..nvib {
         for j in 0..nvib {
@@ -300,6 +252,7 @@ fn scc(
         }
     }
     valc *= 0.5e0;
+
     let mut vald = 0.0;
     let val1 = 3.0 * (tau[(2, 1, 1, 1)] - tau[(2, 2, 2, 1)]);
     let val2 = (rotcon[2] - rotcon[0]) * tau[(2, 1, 1, 1)]
@@ -317,6 +270,7 @@ fn scc(
     if div > TOL {
         vale = val1 * val2 / div;
     }
+
     let mut valf = 0.0;
     let val1 = 3.0 * (tau[(1, 0, 0, 0)] - tau[(1, 1, 1, 0)]);
     let val2 = (rotcon[1] - rotcon[2]) * tau[(1, 0, 0, 0)]
@@ -325,7 +279,9 @@ fn scc(
     if div > TOL {
         valf = val1 * val2 / div;
     }
+
     let value = vala - valb + valc + vald + vale + valf;
+
     scc[(0, 1, 2)] = value;
     scc[(0, 2, 1)] = value;
     scc[(1, 0, 2)] = value;
