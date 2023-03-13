@@ -156,11 +156,6 @@ impl Spectro {
                 make_funds(&freq, self.nvib, &xcnst),
             )
         };
-        let rotnst = if self.rotor.is_sym_top() {
-            self.alphas(&freq, &wila, &zmat, &f3qcm, modes, states, coriolis)
-        } else {
-            self.alphaa(&freq, &wila, &zmat, &f3qcm, modes, states, coriolis)
-        };
         let mut eng = vec![0.0; states.len()];
         self.enrgy(&freq, &xcnst, &gcnst, &restst, &f3qcm, e0, &mut eng);
         // it's not obvious that the states are in this proper order, but by
@@ -171,6 +166,11 @@ impl Spectro {
             corrs.push(eng[i] - eng[0]);
         }
         // print_vib_states(&eng, &states);
+        let rotnst = if self.rotor.is_sym_top() {
+            self.alphas(&freq, &wila, &zmat, &f3qcm, modes, states, coriolis)
+        } else {
+            self.alphaa(&freq, &wila, &zmat, &f3qcm, modes, states, coriolis)
+        };
         let rots = if self.rotor.is_sym_top() {
             if self.rotor.is_spherical_top() {
                 panic!("don't know what to do with a spherical top here");
