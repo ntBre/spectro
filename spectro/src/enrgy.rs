@@ -141,11 +141,6 @@ pub(crate) fn part1(
             val1 += freq[i] * ((i1sts[nst][ii] as f64) + 0.5);
         }
 
-        let mut val2 = 0.0;
-        for (ii, &(i, _)) in i2mode.iter().enumerate() {
-            val2 += freq[i] * (i2sts[nst][ii].0 as f64 + 1.0);
-        }
-
         // this is val2 in the asym top code
         let mut val3 = 0.0;
         for ii in 0..n1dm {
@@ -156,6 +151,12 @@ pub(crate) fn part1(
                     * ((i1sts[nst][ii] as f64) + 0.5)
                     * ((i1sts[nst][jj] as f64) + 0.5);
             }
+        }
+
+        // only entered for symmetric tops
+        let mut val2 = 0.0;
+        for (ii, &(i, _)) in i2mode.iter().enumerate() {
+            val2 += freq[i] * (i2sts[nst][ii].0 as f64 + 1.0);
         }
 
         let mut val4 = 0.0;
