@@ -171,14 +171,14 @@ impl Spectro {
     ) -> Dmat {
         let mut alpha = Dmat::zeros(self.nvib, 3);
         let icorol = make_icorol(coriolis);
-        for ixyz in 0..3 {
+        for x in 0..3 {
             for i in 0..self.nvib {
-                let ii = ioff(ixyz + 2) - 1;
-                let valu0 = 2.0 * self.rotcon[ixyz].powi(2) / freq[i];
+                let ii = ioff(x + 2) - 1;
+                let valu0 = 2.0 * self.rotcon[x].powi(2) / freq[i];
                 let mut valu1 = 0.0;
-                for jxyz in 0..3 {
-                    let ij = ioff(ixyz.max(jxyz) + 1) + ixyz.min(jxyz);
-                    valu1 += wila[(i, ij)].powi(2) / self.primat[jxyz];
+                for y in 0..3 {
+                    let ij = ioff(x.max(y) + 1) + x.min(y);
+                    valu1 += wila[(i, ij)].powi(2) / self.primat[y];
                 }
                 valu1 *= 0.75;
 
@@ -189,13 +189,13 @@ impl Spectro {
                         let wisq = freq[i].powi(2);
                         let wjsq = freq[j].powi(2);
                         let tmp = icorol.get(&(i, j));
-                        if tmp.is_some() && *tmp.unwrap() == ixyz {
+                        if tmp.is_some() && *tmp.unwrap() == x {
                             valu2 -= 0.5
-                                * zmat[(i, j, ixyz)].powi(2)
+                                * zmat[(i, j, x)].powi(2)
                                 * (freq[i] - freq[j]).powi(2)
                                 / (freq[j] * (freq[i] + freq[j]));
                         } else {
-                            valu2 += zmat[(i, j, ixyz)].powi(2)
+                            valu2 += zmat[(i, j, x)].powi(2)
                                 * (3.0 * wisq + wjsq)
                                 / (wisq - wjsq);
                         }
@@ -203,8 +203,7 @@ impl Spectro {
                     let wj32 = freq[j].powf(1.5);
                     valu3 += wila[(j, ii)] * f3qcm[(i, i, j)] * freq[i] / wj32;
                 }
-                alpha[(i, ixyz)] =
-                    valu0 * (valu1 + valu2 + valu3 * ALPHA_CONST);
+                alpha[(i, x)] = valu0 * (valu1 + valu2 + valu3 * ALPHA_CONST);
             }
         }
         alpha
@@ -228,7 +227,7 @@ impl Spectro {
         let (n1dm, _, _) = Mode::count(modes);
         let mut rotnst = Dmat::zeros(nstop, 3);
         for axis in 0..3 {
-            for ist in 0..nstop {
+            for n in 0..nstop {
                 let mut suma = 0.0;
                 for ii in 0..n1dm {
                     let i = match modes[ii] {
@@ -236,7 +235,7 @@ impl Spectro {
                         Mode::I2(_, _) => todo!(),
                         Mode::I3(_, _, _) => todo!(),
                     };
-                    match &states[ist] {
+                    match &states[n] {
                         State::I1st(v) => {
                             suma += alpha[(i, axis)] * (v[ii] as f64 + 0.5);
                         }
@@ -245,8 +244,7 @@ impl Spectro {
                         State::I12st { i1st: _, i2st: _ } => todo!(),
                     }
                 }
-                let bva = self.rotcon[axis] + suma;
-                rotnst[(ist, axis)] = bva;
+                rotnst[(n, axis)] = self.rotcon[axis] + suma;
             }
         }
         rotnst
