@@ -5,7 +5,7 @@ TESTFLAGS = -- --nocapture
 TARGET = x86_64-unknown-linux-gnu
 
 test:
-	cargo test -p spectro ${TESTFLAGS} ${ARGS}
+	cargo test --workspace ${TESTFLAGS} ${ARGS}
 
 bench:
 	cargo bench ${TESTFLAGS} ${ARGS}
