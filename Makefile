@@ -1,6 +1,6 @@
 ARGS =
 
-TESTFLAGS = -- --nocapture --test-threads=1
+TESTFLAGS = -- --nocapture
 
 TARGET = x86_64-unknown-linux-gnu
 
