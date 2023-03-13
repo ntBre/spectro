@@ -82,18 +82,19 @@ fn scc(
     const TOL: f64 = 1e-4;
     let mut scc = Tensor3::zeros(3, 3, 3);
     for ixyz in 1..=maxcor {
+        let x = ixyz - 1;
         let iixyz = ioff(ixyz + 1);
+        let s = iixyz - 1;
 
         let mut val1 = 0.0;
-        for jxyz in 1..=maxcor {
-            val1 += tau[(jxyz - 1, ixyz - 1, ixyz - 1, ixyz - 1)].powi(2)
-                / rotcon[jxyz - 1];
+        for y in 0..maxcor {
+            val1 += tau[(y, x, x, x)].powi(2) / rotcon[y];
         }
         val1 = 3.0 * val1 / 16.0;
 
         let mut val2 = 0.0;
         for i in 0..nvib {
-            val2 += freq[i] * cc[(i, ixyz - 1, ixyz - 1, ixyz - 1)].powi(2);
+            val2 += freq[i] * cc[(i, x, x, x)].powi(2);
         }
         val2 *= 2.0;
 
@@ -101,35 +102,28 @@ fn scc(
         for i in 0..nvib {
             for j in 0..nvib {
                 for k in 0..nvib {
-                    val3 += f3qcm[(i, j, k)]
-                        * c[(i, iixyz - 1)]
-                        * c[(j, iixyz - 1)]
-                        * c[(k, iixyz - 1)];
+                    val3 +=
+                        f3qcm[(i, j, k)] * c[(i, s)] * c[(j, s)] * c[(k, s)];
                 }
             }
         }
         val3 /= 6.0;
 
-        let val4 = if spectro.is_linear() {
-            0.0
-        } else {
-            let mut val4 = 0.0;
-            for jxyz in 1..=3 {
-                if ixyz != jxyz {
-                    let div = rotcon[ixyz - 1] - rotcon[jxyz - 1];
+        let mut val4 = 0.0;
+        if !spectro.rotor.is_linear() {
+            for y in 0..maxcor {
+                if x != y {
+                    let div = rotcon[x] - rotcon[y];
                     if div.abs() > TOL {
-                        val4 += tau[(jxyz - 1, ixyz - 1, ixyz - 1, ixyz - 1)]
-                            .powi(2)
-                            / div;
+                        val4 += tau[(y, x, x, x)].powi(2) / div;
                     }
                 }
             }
-            val4 *= 0.25;
-            val4
         };
+        val4 *= 0.25;
 
         let value = val1 - val2 + val3 + val4;
-        scc[(ixyz - 1, ixyz - 1, ixyz - 1)] = value;
+        scc[(x, x, x)] = value;
     }
 
     if spectro.is_linear() {
@@ -351,67 +345,68 @@ fn cc_tensor(
 ) -> Tensor4 {
     let mut cc = Tensor4::zeros(nvib, 3, 3, 3);
     for i in 0..nvib {
-        for ixyz in 1..=maxcor {
-            let iixyz = ioff(ixyz + 1);
+        for x in 1..=maxcor {
+            let s = ioff(x + 1);
 
             let mut val = 0.0;
             for j in 0..nvib {
                 let val1 = 1.0 / freq[j].powi(2) + 2.0 / freq[i].powi(2);
-                let val2 = c[(j, iixyz - 1)]
-                    * zmat[(j, i, ixyz - 1)]
-                    * rotcon[ixyz - 1]
+                let val2 = c[(j, s - 1)]
+                    * zmat[(j, i, x - 1)]
+                    * rotcon[x - 1]
                     * freq[j].powf(1.5);
-                val += val2 * val1 / freq[i].sqrt();
+                val += val2 * val1;
             }
-            cc[(i, ixyz - 1, ixyz - 1, ixyz - 1)] = val;
+            val /= freq[i].sqrt();
+            cc[(i, x - 1, x - 1, x - 1)] = val;
 
-            for jxyz in 1..=maxcor {
-                if ixyz != jxyz {
-                    let ijxyz = ioff(max(ixyz, jxyz)) + min(ixyz, jxyz);
+            for y in 1..=maxcor {
+                if x == y {
+                    continue;
+                }
+                let t = ioff(max(x, y)) + min(x, y);
+
+                let mut val = 0.0;
+                for j in 0..nvib {
+                    let val1 = 1.0 / freq[j].powi(2) + 2.0 / freq[i].powi(2);
+                    let val2 = freq[j].powf(1.5)
+                        * (c[(j, s - 1)] * zmat[(j, i, y - 1)] * rotcon[y - 1]
+                            + 2.0
+                                * c[(j, t - 1)]
+                                * zmat[(j, i, x - 1)]
+                                * rotcon[x - 1]);
+                    val += val2 * val1;
+                }
+                val /= freq[i].sqrt();
+                cc[(i, y - 1, x - 1, x - 1)] = val;
+                cc[(i, x - 1, y - 1, x - 1)] = val;
+                cc[(i, x - 1, x - 1, y - 1)] = val;
+
+                for z in 1..=maxcor {
+                    if x == z || y == z {
+                        continue;
+                    }
+                    let u = ioff(max(x, z)) + min(x, z);
+                    let v = ioff(max(y, z)) + min(y, z);
 
                     let mut val = 0.0;
                     for j in 0..nvib {
                         let val1 =
                             1.0 / freq[j].powi(2) + 2.0 / freq[i].powi(2);
-
                         let val2 = freq[j].powf(1.5)
-                            * (c[(j, iixyz - 1)]
-                                * zmat[(j, i, jxyz - 1)]
-                                * rotcon[jxyz - 1]
-                                + 2.0
-                                    * c[(j, ijxyz - 1)]
-                                    * zmat[(j, i, ixyz - 1)]
-                                    * rotcon[ixyz - 1]);
-                        val += val2 * val1 / freq[i].sqrt();
+                            * (c[(j, v - 1)]
+                                * zmat[(j, i, x - 1)]
+                                * rotcon[x - 1]
+                                + c[(j, u - 1)]
+                                    * zmat[(j, i, y - 1)]
+                                    * rotcon[y - 1]
+                                + c[(j, t - 1)]
+                                    * zmat[(j, i, z - 1)]
+                                    * rotcon[z - 1]);
+                        val += val2 * val1;
                     }
-                    cc[(i, jxyz - 1, ixyz - 1, ixyz - 1)] = val;
-                    cc[(i, ixyz - 1, jxyz - 1, ixyz - 1)] = val;
-                    cc[(i, ixyz - 1, ixyz - 1, jxyz - 1)] = val;
-
-                    for kxyz in 1..=maxcor {
-                        if kxyz != jxyz && kxyz != ixyz {
-                            let ikxyz = ioff(max(ixyz, kxyz)) + min(ixyz, kxyz);
-                            let jkxyz = ioff(max(jxyz, kxyz)) + min(jxyz, kxyz);
-
-                            let mut val = 0.0;
-                            for j in 0..nvib {
-                                let val1 = 1.0 / freq[j].powi(2)
-                                    + 2.0 / freq[i].powi(2);
-                                let val2 = freq[j].powf(1.5)
-                                    * (c[(j, jkxyz - 1)]
-                                        * zmat[(j, i, ixyz - 1)]
-                                        * rotcon[ixyz - 1]
-                                        + c[(j, ikxyz - 1)]
-                                            * zmat[(j, i, jxyz - 1)]
-                                            * rotcon[jxyz - 1]
-                                        + c[(j, ijxyz - 1)]
-                                            * zmat[(j, i, kxyz - 1)]
-                                            * rotcon[kxyz - 1]);
-                                val += val2 * val1 / freq[i].sqrt();
-                            }
-                            cc[(i, kxyz - 1, jxyz - 1, ixyz - 1)] = val;
-                        }
-                    }
+                    val /= freq[i].sqrt();
+                    cc[(i, z - 1, y - 1, x - 1)] = val;
                 }
             }
         }
@@ -429,11 +424,11 @@ pub(crate) fn c_mat(
     let mut c = Dmat::zeros(nvib, 6);
     for i in 0..nvib {
         let cnst = (SQLAM * SQLAM * freq[i]).powf(1.5);
-        for ixyz in 0..maxcor {
-            for jxyz in 0..=ixyz {
-                let ijxyz = ioff(ixyz + 1) + jxyz;
-                let div = 2.0 * primat[ixyz] * primat[jxyz] * cnst;
-                c[(i, ijxyz)] = wila[(i, ijxyz)] / div;
+        for x in 0..maxcor {
+            for y in 0..=x {
+                let z = ioff(x + 1) + y;
+                let div = 2.0 * primat[x] * primat[y] * cnst;
+                c[(i, z)] = wila[(i, z)] / div;
             }
         }
     }
@@ -456,6 +451,10 @@ impl Sextic {
         let tau = make_tau(maxcor, nvib, freq, &s.primat, wila);
         let taucpm = tau_prime(maxcor, &tau);
         let scc = scc(maxcor, tau, &s.rotcon, nvib, freq, cc, f3qcm, &c, s);
+        if s.rotor.is_linear() {
+            ret.he = scc[(0, 0, 0)];
+            return ret;
+        }
         // says this is the default representation and sets it to 1 if it was
         // originally 0. NOTE my 0 is fortran 1
         let irep = if s.rotor.is_sym_top() { 5 } else { 0 };
@@ -467,48 +466,37 @@ impl Sextic {
             }
         }
         let phi = make_phi(maxcor, ic, scc);
-        if s.rotor.is_linear() {
-            ret.he = phi[(0, 0, 0)];
-            return ret;
-        }
-        let t400 =
-            (3.0 * t[(0, 0)] + 3.0 * t[(2 - 1, 2 - 1)] + 2.0 * t[(0, 2 - 1)])
-                / 8.0;
-        let t220 = t[(0, 3 - 1)] + t[(2 - 1, 3 - 1)] - 2.0 * t400;
-        let t040 = t[(3 - 1, 3 - 1)] - t220 - t400;
-        let t202 = (t[(0, 0)] - t[(2 - 1, 2 - 1)]) / 4.0;
-        let t022 = (t[(0, 3 - 1)] - t[(2 - 1, 3 - 1)]) / 2.0 - t202;
-        let t004 = (t[(0, 0)] + t[(2 - 1, 2 - 1)] - 2.0 * t[(0, 2 - 1)]) / 16.0;
-        let b002 = 0.25e0 * (s.rotcon[id[0]] - s.rotcon[id[2 - 1]]);
-        let phi600 = 5.0 * (phi[(0, 0, 0)] + phi[(2 - 1, 2 - 1, 2 - 1)]) / 16.0
-            + (phi[(0, 0, 2 - 1)] + phi[(2 - 1, 2 - 1, 0)]) / 8.0;
-        let phi420 = 3.0 * (phi[(0, 0, 3 - 1)] + phi[(2 - 1, 2 - 1, 3 - 1)])
-            / 4.0
-            + phi[(0, 2 - 1, 3 - 1)] / 4.0
+        let t400 = (3.0 * t[(0, 0)] + 3.0 * t[(1, 1)] + 2.0 * t[(0, 1)]) / 8.0;
+        let t220 = t[(0, 2)] + t[(1, 2)] - 2.0 * t400;
+        let t040 = t[(2, 2)] - t220 - t400;
+        let t202 = (t[(0, 0)] - t[(1, 1)]) / 4.0;
+        let t022 = (t[(0, 2)] - t[(1, 2)]) / 2.0 - t202;
+        let t004 = (t[(0, 0)] + t[(1, 1)] - 2.0 * t[(0, 1)]) / 16.0;
+        let b002 = 0.25e0 * (s.rotcon[id[0]] - s.rotcon[id[1]]);
+        let phi600 = 5.0 * (phi[(0, 0, 0)] + phi[(1, 1, 1)]) / 16.0
+            + (phi[(0, 0, 1)] + phi[(1, 1, 0)]) / 8.0;
+        let phi420 = 3.0 * (phi[(0, 0, 2)] + phi[(1, 1, 2)]) / 4.0
+            + phi[(0, 1, 2)] / 4.0
             - 3.0 * phi600;
-        let phi240 = phi[(3 - 1, 3 - 1, 0)] + phi[(3 - 1, 3 - 1, 2 - 1)]
-            - 2.0 * phi420
-            - 3.0 * phi600;
-        let phi060 = phi[(3 - 1, 3 - 1, 3 - 1)] - phi240 - phi420 - phi600;
+        let phi240 =
+            phi[(2, 2, 0)] + phi[(2, 2, 1)] - 2.0 * phi420 - 3.0 * phi600;
+        let phi060 = phi[(2, 2, 2)] - phi240 - phi420 - phi600;
         let phi402 = 15.0 * (phi[(0, 0, 0)] - phi[(1, 1, 1)]) / 64.0
             + (phi[(0, 0, 1)] - phi[(1, 1, 0)]) / 32.0;
         let phi222 = (phi[(0, 0, 2)] - phi[(1, 1, 2)]) / 2.0 - 2.0 * phi402;
         let phi042 = (phi[(2, 2, 0)] - phi[(2, 2, 1)]) / 2.0 - phi222 - phi402;
-        let phi204 = 3.0 * (phi[(0, 0, 0)] + phi[(2 - 1, 2 - 1, 2 - 1)]) / 32.0
-            - (phi[(0, 0, 2 - 1)] + phi[(2 - 1, 2 - 1, 0)]) / 16.0;
-        let phi024 = (phi[(0, 0, 3 - 1)] + phi[(2 - 1, 2 - 1, 3 - 1)]
-            - phi[(0, 2 - 1, 3 - 1)])
-            / 8.0
-            - phi204;
-        let phi006 = (phi[(0, 0, 0)] - phi[(2 - 1, 2 - 1, 2 - 1)]) / 64.0
-            - (phi[(0, 0, 2 - 1)] - phi[(2 - 1, 2 - 1, 0)]) / 32.0;
+        let phi204 = 3.0 * (phi[(0, 0, 0)] + phi[(1, 1, 1)]) / 32.0
+            - (phi[(0, 0, 1)] + phi[(1, 1, 0)]) / 16.0;
+        let phi024 =
+            (phi[(0, 0, 2)] + phi[(1, 1, 2)] - phi[(0, 1, 2)]) / 8.0 - phi204;
+        let phi006 = (phi[(0, 0, 0)] - phi[(1, 1, 1)]) / 64.0
+            - (phi[(0, 0, 1)] - phi[(1, 1, 0)]) / 32.0;
 
         let sigma = if !s.rotor.is_sym_top() {
             // asymmetric top
-            let sigma = (2.0 * s.rotcon[id[3 - 1]]
-                - s.rotcon[id[0]]
-                - s.rotcon[id[2 - 1]])
-                / (s.rotcon[id[0]] - s.rotcon[id[2 - 1]]);
+            let sigma =
+                (2.0 * s.rotcon[id[2]] - s.rotcon[id[0]] - s.rotcon[id[1]])
+                    / (s.rotcon[id[0]] - s.rotcon[id[1]]);
             ret.phij = phi600 + 2.0 * phi204;
             ret.phijk = phi420 - 12.0 * phi204
                 + 2.0 * phi024
@@ -583,7 +571,7 @@ impl Sextic {
         ret.h2 = phi204 + lamda / 2.0;
         ret.h3 = phi006 + nu;
 
-        // TODO linear molecule case and spherical top case
+        // TODO spherical top case
 
         ret
     }
