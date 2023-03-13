@@ -106,6 +106,7 @@ fn sort_indices<const N: usize>(mut indices: [usize; N]) -> [usize; N] {
 /// lengths. For example, `find3r(3, 3, 3) = 19` and `find3r(2, 2, 2) = 9`, so
 /// to get the length of the cubic force constant vector for water you have to
 /// do `find3r(2, 2, 2) + 1`, where 2 is `nvib-1`
+#[inline]
 pub(crate) fn find3(i: usize, j: usize, k: usize) -> usize {
     let [i, j, k] = sort_indices([i + 1, j + 1, k + 1]);
     i + (j - 1) * j / 2 + (k - 1) * k * (k + 1) / 6 - 1
@@ -113,6 +114,7 @@ pub(crate) fn find3(i: usize, j: usize, k: usize) -> usize {
 
 /// quartic force constant indexing formula. it relies on the fortran numbering,
 /// so I need to add one initially and then subtract one at the end
+#[inline]
 pub(crate) fn find4(i: usize, j: usize, k: usize, l: usize) -> usize {
     let [i, j, k, l] = sort_indices([i + 1, j + 1, k + 1, l + 1]);
     i + (j - 1) * j / 2
@@ -121,12 +123,9 @@ pub(crate) fn find4(i: usize, j: usize, k: usize, l: usize) -> usize {
         - 1
 }
 
+#[inline]
 pub fn ioff(n: usize) -> usize {
-    let mut sum = 0;
-    for i in 0..n {
-        sum += i;
-    }
-    sum
+    ((n - 1) * n) / 2
 }
 
 /// convert harmonic frequencies to wavenumbers. not sure if this works on
