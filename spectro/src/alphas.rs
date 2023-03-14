@@ -49,19 +49,19 @@ impl Spectro {
             vec![ia, ib]
         };
         let StatePartition { i1sts, i2sts, .. } = State::partition(states);
-        for ax in axes {
-            for ist in 0..nstop {
+        for x in axes {
+            for n in 0..nstop {
                 let mut suma = 0.0;
                 for ii in 0..n1dm {
                     let i = i1mode[ii];
-                    suma += alpha[(i, ax)] * (i1sts[ist][ii] as f64 + 0.5);
+                    suma += alpha[(i, x)] * (i1sts[n][ii] as f64 + 0.5);
                 }
 
                 for ii in 0..n2dm {
                     let i = i2mode[ii].0;
-                    suma += alpha[(i, ax)] * (i2sts[ist][ii].0 as f64 + 1.0);
+                    suma += alpha[(i, x)] * (i2sts[n][ii].0 as f64 + 1.0);
                 }
-                rotnst[(ist, ax)] = self.rotcon[ax] + suma;
+                rotnst[(n, x)] = self.rotcon[x] + suma;
             }
         }
         rotnst
