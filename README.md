@@ -1,3 +1,5 @@
+[![check](https://github.com/ntBre/spectro/actions/workflows/check.yml/badge.svg)](https://github.com/ntBre/spectro/actions/workflows/check.yml)
+[![test](https://github.com/ntBre/spectro/actions/workflows/test.yml/badge.svg)](https://github.com/ntBre/spectro/actions/workflows/test.yml)
 # SPECTRO
 spectro computes spectroscopic data for asymmetric and 
 symmetric tops using rotational and vibrational perturbation theory. These data include
