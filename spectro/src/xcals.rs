@@ -103,17 +103,13 @@ fn make_e3(
                     let d3 = freq[k] + freq[l] - freq[m];
                     let d4 = freq[k] - freq[l] - freq[m];
                     if ifrm2.check((l, k), m) {
-                        let delta6 = 1.0 / d1 + 1.0 / d2 + 1.0 / d4;
-                        f3kst -= zval6 * delta6 / 8.0;
+                        f3kst -= zval6 * (1.0 / d1 + 1.0 / d2 + 1.0 / d4) / 8.0;
                     } else if ifrm2.check((m, l), k) {
-                        let delta6 = 1.0 / d1 + 1.0 / d2 - 1.0 / d3;
-                        f3kst -= zval6 * delta6 / 8.0;
+                        f3kst -= zval6 * (1.0 / d1 + 1.0 / d2 - 1.0 / d3) / 8.0;
                     } else if ifrm2.check((m, k), l) {
-                        let delta6 = 1.0 / d1 - 1.0 / d3 + 1.0 / d4;
-                        f3kst -= zval6 * delta6 / 8.0;
+                        f3kst -= zval6 * (1.0 / d1 - 1.0 / d3 + 1.0 / d4) / 8.0;
                     } else {
-                        let delta6 = d1 * d2 * d3 * d4;
-                        f3kst -= zval6 * xkst / (2.0 * delta6);
+                        f3kst -= zval6 * xkst / (2.0 * (d1 * d2 * d3 * d4));
                     }
                 }
             }
@@ -132,19 +128,16 @@ fn make_e3(
                     let d4 = freq[k] - freq[l] - freq[m];
                     // TODO these should be ifrm2 as well, I think, but we
                     // haven't had any issues here yet
-                    if ifrmchk[(k, l, m)] != 0 {
-                        let delta7 = 1.0 / d1 + 1.0 / d2 + 1.0 / d4;
-                        f3stu -= 2.0 * zval7 * delta7 / 4.0;
-                    } else if ifrmchk[(l, m, k)] != 0 {
-                        let delta7 = 1.0 / d1 + 1.0 / d2 - 1.0 / d3;
-                        f3stu -= 2.0 * zval7 * delta7 / 4.0;
-                    } else if ifrmchk[(k, m, l)] != 0 {
-                        let delta7 = 1.0 / d1 - 1.0 / d3 + 1.0 / d4;
-                        f3stu -= 2.0 * zval7 * delta7 / 4.0;
-                    } else {
-                        let delta7 = d1 * d2 * d3 * d4;
-                        f3stu -= 2.0 * zval7 * xstu / (delta7);
-                    }
+                    f3stu -= zval7
+                        * if ifrmchk[(k, l, m)] != 0 {
+                            (1.0 / d1 + 1.0 / d2 + 1.0 / d4) / 2.0
+                        } else if ifrmchk[(l, m, k)] != 0 {
+                            (1.0 / d1 + 1.0 / d2 - 1.0 / d3) / 2.0
+                        } else if ifrmchk[(k, m, l)] != 0 {
+                            (1.0 / d1 - 1.0 / d3 + 1.0 / d4) / 2.0
+                        } else {
+                            2.0 * xstu / (d1 * d2 * d3 * d4)
+                        }
                 }
             }
         }
@@ -174,7 +167,7 @@ impl Spectro {
         deg_deg1(i2mode, f4qcm, freq, i1mode, f3qcm, ifrm1, xcnst);
 
         for kk in 1..n2dm {
-            let k = i2mode[kk].0;
+            let (k, k2) = i2mode[kk];
             // might be -1
             for ll in 0..kk {
                 let (l, l2) = i2mode[ll];
@@ -252,11 +245,10 @@ impl Spectro {
 
                 let val5 = freq[k] / freq[l];
                 let val6 = freq[l] / freq[k];
-                let val7 = 0.5 * self.rotcon[ia] * (zmat[(k, l2, 2)].powi(2))
-                    + self.rotcon[ib] * (zmat[(k, l, ixyz)].powi(2));
+                let val7 = 0.5 * self.rotcon[ia] * zmat[(k, l2, 2)].powi(2)
+                    + self.rotcon[ib] * zmat[(k, l, ixyz)].powi(2);
                 let val8 = (val5 + val6) * val7;
                 let value = val1 + val2 + valu + valus + val8;
-                let k2 = i2mode[kk].1;
                 xcnst[(k, l)] = value;
                 xcnst[(l, k)] = value;
                 xcnst[(k2, l2)] = value;
@@ -291,7 +283,7 @@ impl Spectro {
         for kk in 1..n2dm {
             let (k, k2) = i2mode[kk];
             for ll in 0..kk {
-                let (l, l222) = i2mode[ll];
+                let (l, l2) = i2mode[ll];
 
                 let valu: f64 = i1mode
                     .iter()
@@ -303,20 +295,18 @@ impl Spectro {
 
                         let klm = (k, l, m);
                         // TODO should more be check_either?
-                        if ifrm2.check_either((l, k), m) {
-                            let delta = 1.0 / d1 + 1.0 / d2 + 1.0 / d4;
-                            -(f3qcm[klm].powi(2)) * delta / 8.0
-                        } else if ifrm2.check((m, l), k) {
-                            let delta = 1.0 / d1 + 1.0 / d2 - 1.0 / d3;
-                            -(f3qcm[klm].powi(2)) * delta / 8.0
-                        } else if ifrm2.check((m, k), l) {
-                            let delta = 1.0 / d1 + 1.0 / d3 + 1.0 / d4;
-                            -(f3qcm[klm].powi(2)) * delta / 8.0
-                        } else {
-                            let delta = -d1 * d2 * d3 * d4;
-                            let val3 = freq[m] * freq[k] * freq[l];
-                            0.5 * (f3qcm[klm].powi(2)) * val3 / delta
-                        }
+
+                        -(f3qcm[klm].powi(2))
+                            * if ifrm2.check_either((l, k), m) {
+                                (1.0 / d1 + 1.0 / d2 + 1.0 / d4) / 8.0
+                            } else if ifrm2.check((m, l), k) {
+                                (1.0 / d1 + 1.0 / d2 - 1.0 / d3) / 8.0
+                            } else if ifrm2.check((m, k), l) {
+                                (1.0 / d1 + 1.0 / d3 + 1.0 / d4) / 8.0
+                            } else {
+                                -0.5 * (freq[m] * freq[k] * freq[l])
+                                    / (-d1 * d2 * d3 * d4)
+                            }
                     })
                     .sum();
 
@@ -329,46 +319,41 @@ impl Spectro {
                         let d4 = -freq[k] + freq[l] + freq[m];
 
                         let klm = (k, l, m);
-                        if ifrm2.check((l, m), k) {
-                            let delta = 8.0 * (2.0 * freq[l] + freq[k]);
-                            -(f3qcm[klm].powi(2)) / delta
-                        } else if ifrm2.check((k, m), l) {
-                            let delta = 8.0 * (2.0 * freq[k] + freq[l]);
-                            -(f3qcm[klm].powi(2)) / delta
-                        } else if ifrm2.check((l, k), m) {
-                            let delta = 1.0 / d1 + 1.0 / d2 + 1.0 / d4;
-                            -(f3qcm[klm].powi(2)) * delta / 8.0
-                        } else if ifrm2.check((m, l), k) {
-                            let delta = 1.0 / d1 + 1.0 / d2 - 1.0 / d3;
-                            -(f3qcm[klm].powi(2)) * delta / 8.0
-                        } else if ifrm2.check((m, k), l) {
-                            let delta = 1.0 / d1 + 1.0 / d3 + 1.0 / d4;
-                            -(f3qcm[klm].powi(2)) * delta / 8.0
-                        } else {
-                            let delta = -d1 * d2 * d3 * d4;
-                            let val3 = freq[m] * freq[k] * freq[l];
-                            -(f3qcm[klm].powi(2)) * val3 / delta
-                        }
+                        -(f3qcm[klm].powi(2))
+                            * if ifrm2.check((l, m), k) {
+                                1.0 / (8.0 * (2.0 * freq[l] + freq[k]))
+                            } else if ifrm2.check((k, m), l) {
+                                1.0 / (8.0 * (2.0 * freq[k] + freq[l]))
+                            } else if ifrm2.check((l, k), m) {
+                                (1.0 / d1 + 1.0 / d2 + 1.0 / d4) / 8.0
+                            } else if ifrm2.check((m, l), k) {
+                                (1.0 / d1 + 1.0 / d2 - 1.0 / d3) / 8.0
+                            } else if ifrm2.check((m, k), l) {
+                                (1.0 / d1 + 1.0 / d3 + 1.0 / d4) / 8.0
+                            } else {
+                                (freq[m] * freq[k] * freq[l])
+                                    / (-d1 * d2 * d3 * d4)
+                            }
                     })
                     .sum();
 
-                let val7 =
-                    -2.0 * self.rotcon[ib] * (zmat[(k, l, ixyz)].powi(2))
-                        + self.rotcon[ia] * (zmat[(k, l222, 2)].powi(2))
-                        + 2.0
-                            * self.rotcon[ia]
-                            * zmat[(k, k2, 2)]
-                            * zmat[(l, l222, 2)];
+                let val7 = -2.0 * self.rotcon[ib] * zmat[(k, l, ixyz)].powi(2)
+                    + self.rotcon[ia] * zmat[(k, l2, 2)].powi(2)
+                    + 2.0
+                        * self.rotcon[ia]
+                        * zmat[(k, k2, 2)]
+                        * zmat[(l, l2, 2)];
                 let value = valu + valus + val7;
                 gcnst[(k, l)] = value;
                 gcnst[(l, k)] = value;
-                gcnst[(k2, l222)] = value;
-                gcnst[(l222, k2)] = value;
+                gcnst[(k2, l2)] = value;
+                gcnst[(l2, k2)] = value;
             }
         }
         gcnst
     }
 
+    /// the diagonal elements of G
     pub(crate) fn gcnst1(
         &self,
         n2dm: usize,
@@ -384,7 +369,6 @@ impl Spectro {
     ) {
         for kk in 0..n2dm {
             let (k, k2) = i2mode[kk];
-            let val1 = -f4qcm[(k, k, k, k)] / 48.0;
             let wk = freq[k].powi(2);
 
             let valu: f64 = i1mode
@@ -405,23 +389,23 @@ impl Spectro {
 
             let valus: f64 = i2mode
                 .iter()
-                .map(|&(l, _)| {
-                    let val2 = f3qcm[(k, k, l)].powi(2);
-                    if ifrm1.check(k, l) {
-                        let val3 = 1.0 / (8.0 * freq[l]);
-                        let val4 = 1.0 / (32.0 * (2.0 * freq[k] + freq[l]));
+                .map(|&(m, _)| {
+                    let val2 = f3qcm[(k, k, m)].powi(2);
+                    if ifrm1.check(k, m) {
+                        let val3 = 1.0 / (8.0 * freq[m]);
+                        let val4 = 1.0 / (32.0 * (2.0 * freq[k] + freq[m]));
                         -val2 * (val3 + val4)
                     } else {
-                        let wl = freq[l] * freq[l];
+                        let wl = freq[m] * freq[m];
                         let val3 = 8.0 * wk - wl;
-                        let val4 = 16.0 * freq[l] * (4.0 * wk - wl);
+                        let val4 = 16.0 * freq[m] * (4.0 * wk - wl);
                         val2 * val3 / val4
                     }
                 })
                 .sum();
 
-            let val7 = self.rotcon[ia] * (zmat[(k, k2, 2)].powi(2));
-            let value = val1 + valu + valus + val7;
+            let val7 = self.rotcon[ia] * zmat[(k, k2, 2)].powi(2);
+            let value = (-f4qcm[(k, k, k, k)] / 48.0) + valu + valus + val7;
             gcnst[(k, k)] = value;
             gcnst[(k2, k2)] = value;
         }
@@ -681,7 +665,7 @@ pub(crate) fn deg_deg1(
     ifrm1: &Ifrm1,
     xcnst: &mut Dmat,
 ) {
-    for (kk, &(k, _)) in i2mode.iter().enumerate() {
+    for &(k, k2) in i2mode {
         let val1 = f4qcm[(k, k, k, k)] / 16.0;
         let wk = freq[k].powi(2);
 
@@ -716,7 +700,6 @@ pub(crate) fn deg_deg1(
         }
 
         let value = val1 + valu + valus;
-        let k2 = i2mode[kk].1;
         xcnst[(k, k)] = value;
         xcnst[(k2, k2)] = value;
     }
