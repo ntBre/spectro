@@ -45,7 +45,7 @@ impl Spectro {
 
         let (_, ifrm1, ifrm2) = self.make_fermi_checks(fermi1, fermi2);
 
-	// shared for symm and asymm tops
+        // shared for symm and asymm tops
         for iii in 0..n1dm {
             let ivib = i1mode[iii];
             if let Some(&jvib) = ifrm1.get(&ivib) {
