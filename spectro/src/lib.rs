@@ -343,9 +343,9 @@ impl Spectro {
             for ib in (0..3 * natom).step_by(3) {
                 // grab 3x3 blocks of FX into A, perform Eg × A × Egᵀ and set
                 // that block in the return matrix
-                let a = fx.fixed_slice::<3, 3>(ia, ib);
+                let a = fx.fixed_view::<3, 3>(ia, ib);
                 let temp2 = self.axes.transpose() * a * self.axes;
-                let mut targ = ret.fixed_slice_mut::<3, 3>(ia, ib);
+                let mut targ = ret.fixed_view_mut::<3, 3>(ia, ib);
                 targ.copy_from(&temp2);
             }
         }
