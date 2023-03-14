@@ -508,10 +508,7 @@ impl Spectro {
         xcnst: &mut Dmat,
     ) {
         for &k in i1mode {
-            let kkkk = (k, k, k, k);
-            let val1 = f4qcm[kkkk] / 16.0;
             let wk = freq[k].powi(2);
-
             let mut valu = 0.0;
             for &l in i1mode {
                 let val2 = f3qcm[(k, k, l)].powi(2);
@@ -526,7 +523,7 @@ impl Spectro {
                     valu -= val2 * val3 / val4;
                 }
             }
-            xcnst[(k, k)] = val1 + valu;
+            xcnst[(k, k)] = (f4qcm[(k, k, k, k)] / 16.0) + valu;
         }
 
         // pretty sure it's safe to ignore this because the next loop should
@@ -550,37 +547,35 @@ impl Spectro {
                         f3qcm[(k, k, m)] * f3qcm[(l, l, m)] / (4.0 * freq[m]);
                 }
 
-                let mut valu = 0.0;
-                for &m in i1mode {
-                    let klm = (k, m, l);
-                    let d1 = freq[k] + freq[l] + freq[m];
-                    let d2 = freq[k] - freq[l] + freq[m];
-                    let d3 = freq[k] + freq[l] - freq[m];
-                    let d4 = -freq[k] + freq[l] + freq[m];
+                let valu = i1mode
+                    .iter()
+                    .map(|&m| {
+                        let klm = (k, m, l);
+                        let d1 = freq[k] + freq[l] + freq[m];
+                        let d2 = freq[k] - freq[l] + freq[m];
+                        let d3 = freq[k] + freq[l] - freq[m];
+                        let d4 = -freq[k] + freq[l] + freq[m];
 
-                    if ifrm2.check((l, m), k) {
-                        let delta = 8.0 * (2.0 * freq[l] + freq[k]);
-                        valu -= (f3qcm[klm].powi(2)) / delta;
-                    } else if ifrm2.check((k, m), l) {
-                        let delta = 8.0 * (2.0 * freq[k] + freq[l]);
-                        valu -= f3qcm[klm].powi(2) / delta;
-                    } else if ifrm2.check((k, l), m) {
-                        let delta = 1.0 / d1 + 1.0 / d2 + 1.0 / d4;
-                        valu -= f3qcm[klm].powi(2) * delta / 8.0;
-                    } else if ifrm2.check((l, m), k) {
-                        let delta = 1.0 / d1 + 1.0 / d2 + 1.0 / d3;
-                        valu -= f3qcm[klm].powi(2) * delta / 8.0;
-                    } else if ifrm2.check((k, m), l) {
-                        let delta = 1.0 / d1 + 1.0 / d3 + 1.0 / d4;
-                        valu -= f3qcm[klm].powi(2) * delta / 8.0;
-                    } else {
-                        let delta = -d1 * d2 * d3 * d4;
-                        let val3 =
-                            freq[m].powi(2) - freq[k].powi(2) - freq[l].powi(2);
-                        valu -=
-                            0.5 * (f3qcm[klm].powi(2)) * freq[m] * val3 / delta;
-                    }
-                }
+                        -f3qcm[klm].powi(2)
+                            * if ifrm2.check((l, m), k) {
+                                1.0 / (8.0 * (2.0 * freq[l] + freq[k]))
+                            } else if ifrm2.check((k, m), l) {
+                                1.0 / (8.0 * (2.0 * freq[k] + freq[l]))
+                            } else if ifrm2.check((k, l), m) {
+                                (1.0 / d1 + 1.0 / d2 + 1.0 / d4) / 8.0
+                            } else if ifrm2.check((l, m), k) {
+                                (1.0 / d1 + 1.0 / d2 + 1.0 / d3) / 8.0
+                            } else if ifrm2.check((k, m), l) {
+                                (1.0 / d1 + 1.0 / d3 + 1.0 / d4) / 8.0
+                            } else {
+                                0.5 * freq[m]
+                                    * (freq[m].powi(2)
+                                        - freq[k].powi(2)
+                                        - freq[l].powi(2))
+                                    / (-d1 * d2 * d3 * d4)
+                            }
+                    })
+                    .sum::<f64>();
 
                 let val5 = freq[k] / freq[l];
                 let val6 = freq[l] / freq[k];
