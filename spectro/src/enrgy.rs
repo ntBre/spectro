@@ -45,75 +45,56 @@ impl Spectro {
 
         let (_, ifrm1, ifrm2) = self.make_fermi_checks(fermi1, fermi2);
 
-        if self.rotor.is_sym_top() {
-            for ii in 0..n1dm {
-                let ivib = i1mode[ii];
-                // type 1 fermi resonance
-                if let Some(&jvib) = ifrm1.get(&ivib) {
-                    let ist = iovrtn[ivib];
-                    let jst = ifunda[jvib];
-                    rsfrm1(ist, jst, ivib, jvib, f3qcm, eng, false);
-                }
-
-                // type 2 fermi resonance
-                for jj in ii + 1..n1dm {
-                    let jvib = i1mode[jj];
-                    if let Some(&kvib) = ifrm2.get_either(&(jvib, ivib)) {
-                        // +1 because that's how I inserted them in restst
-                        let ijvib = ioff(max(ivib, jvib) + 1) + min(ivib, jvib);
-                        let ijst = icombn[ijvib];
-                        let kst = ifunda[kvib];
-                        rsfrm2(ijst, kst, ivib, jvib, kvib, f3qcm, eng);
-                    }
-                }
-
-                for jj in 0..n2dm {
-                    let (jvib, _) = i2mode[jj];
-                    if let Some(&kvib) = ifrm2.get_either(&(jvib, ivib)) {
-                        let ijvib = ioff(max(ivib, jvib) + 1) + min(ivib, jvib);
-                        let ijst = icombn[ijvib];
-                        let kst = ifunda[kvib];
-                        rsfrm2(ijst, kst, ivib, jvib, kvib, f3qcm, eng);
-                    }
+	// shared for symm and asymm tops
+        for iii in 0..n1dm {
+            let ivib = i1mode[iii];
+            if let Some(&jvib) = ifrm1.get(&ivib) {
+                let ist = iovrtn[ivib];
+                let jst = ifunda[jvib];
+                rsfrm1(ist, jst, ivib, jvib, f3qcm, eng, false);
+            }
+            for jjj in iii + 1..n1dm {
+                let jvib = i1mode[jjj];
+                if let Some(&kvib) = ifrm2.get(&(jvib, ivib)) {
+                    let ijvib = ioff(max(ivib, jvib) + 1) + min(ivib, jvib);
+                    let ijst = icombn[ijvib];
+                    let kst = ifunda[kvib];
+                    rsfrm2(ijst, kst, ivib, jvib, kvib, f3qcm, eng);
                 }
             }
+        }
 
-            // type 1 again
-            for ii in 0..n2dm {
-                let (ivib, _) = i2mode[ii];
-                if let Some(&jvib) = ifrm1.get(&ivib) {
-                    let ist = iovrtn[ivib];
-                    let jst = ifunda[jvib];
-                    rsfrm1(ist, jst, ivib, jvib, f3qcm, eng, true);
-                }
-
-                // type 2 again
-                for jj in ii + 1..n2dm {
-                    let (jvib, _) = i2mode[jj];
-                    if let Some(&kvib) = ifrm2.get_either(&(jvib, ivib)) {
-                        let ijvib = ioff(max(ivib, jvib) + 1) + min(ivib, jvib);
-                        let ijst = icombn[ijvib];
-                        let kst = ifunda[kvib];
-                        rsfrm2(ijst, kst, ivib, jvib, kvib, f3qcm, eng);
-                    }
+        // only entered for symmetric tops
+        for ii in 0..n1dm {
+            let ivib = i1mode[ii];
+            for jj in 0..n2dm {
+                let (jvib, _) = i2mode[jj];
+                if let Some(&kvib) = ifrm2.get_either(&(jvib, ivib)) {
+                    let ijvib = ioff(max(ivib, jvib) + 1) + min(ivib, jvib);
+                    let ijst = icombn[ijvib];
+                    let kst = ifunda[kvib];
+                    rsfrm2(ijst, kst, ivib, jvib, kvib, f3qcm, eng);
                 }
             }
-        } else {
-            for iii in 0..n1dm {
-                let ivib = i1mode[iii];
-                if let Some(&jvib) = ifrm1.get(&ivib) {
-                    let ist = iovrtn[ivib];
-                    let jst = ifunda[jvib];
-                    rsfrm1(ist, jst, ivib, jvib, f3qcm, eng, false);
-                }
-                for jjj in iii + 1..n1dm {
-                    let jvib = i1mode[jjj];
-                    if let Some(&kvib) = ifrm2.get(&(jvib, ivib)) {
-                        let ijvib = ioff(max(ivib, jvib) + 1) + min(ivib, jvib);
-                        let ijst = icombn[ijvib];
-                        let kst = ifunda[kvib];
-                        rsfrm2(ijst, kst, ivib, jvib, kvib, f3qcm, eng);
-                    }
+        }
+
+        // type 1 again
+        for ii in 0..n2dm {
+            let (ivib, _) = i2mode[ii];
+            if let Some(&jvib) = ifrm1.get(&ivib) {
+                let ist = iovrtn[ivib];
+                let jst = ifunda[jvib];
+                rsfrm1(ist, jst, ivib, jvib, f3qcm, eng, true);
+            }
+
+            // type 2 again
+            for jj in ii + 1..n2dm {
+                let (jvib, _) = i2mode[jj];
+                if let Some(&kvib) = ifrm2.get_either(&(jvib, ivib)) {
+                    let ijvib = ioff(max(ivib, jvib) + 1) + min(ivib, jvib);
+                    let ijst = icombn[ijvib];
+                    let kst = ifunda[kvib];
+                    rsfrm2(ijst, kst, ivib, jvib, kvib, f3qcm, eng);
                 }
             }
         }
