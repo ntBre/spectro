@@ -442,50 +442,47 @@ impl Spectro {
     ) {
         for &k in i1mode {
             for &(l, l2) in i2mode {
-                let val1 = f4qcm[(k, k, l, l)] / 4.0;
-
                 let mut val2 = 0.0;
                 for &m in i1mode {
                     val2 -=
                         f3qcm[(k, k, m)] * f3qcm[(l, l, m)] / (4. * freq[m]);
                 }
 
-                let mut valu = 0.0;
-                for &(m, _) in i2mode {
-                    let klm = (k, l, m);
-                    let d1 = freq[k] + freq[l] + freq[m];
-                    let d2 = freq[k] - freq[l] + freq[m];
-                    let d3 = freq[k] + freq[l] - freq[m];
-                    let d4 = -freq[k] + freq[l] + freq[m];
+                let valu = i2mode
+                    .iter()
+                    .map(|&(m, _)| {
+                        let klm = (k, l, m);
+                        let d1 = freq[k] + freq[l] + freq[m];
+                        let d2 = freq[k] - freq[l] + freq[m];
+                        let d3 = freq[k] + freq[l] - freq[m];
+                        let d4 = -freq[k] + freq[l] + freq[m];
 
-                    // ifrm2a checks mean both elements of the key are the same,
-                    // really more of an ifrm1 check
-                    if l == m && ifrm2.check((l, m), k) {
-                        let delta = 8.0 * (2.0 * freq[l] + freq[k]);
-                        valu -= (f3qcm[klm].powi(2)) / delta;
-                    } else if ifrm2.check((k, l), m) {
-                        let delta = 1.0 / d1 + 1.0 / d2 + 1.0 / d4;
-                        valu -= (f3qcm[klm].powi(2)) * delta / 8.0;
-                    } else if ifrm2.check((l, m), k) {
-                        let delta = 1.0 / d1 + 1.0 / d2 + 1.0 / d3;
-                        valu -= (f3qcm[klm].powi(2)) * delta / 8.0;
-                    } else if ifrm2.check((k, m), l) {
-                        let delta = 1.0 / d1 + 1.0 / d3 + 1.0 / d4;
-                        valu -= (f3qcm[klm].powi(2)) * delta / 8.0;
-                    } else {
-                        let delta = -d1 * d2 * d3 * d4;
-                        let val3 =
-                            freq[m].powi(2) - freq[k].powi(2) - freq[l].powi(2);
-                        valu -=
-                            0.5 * (f3qcm[klm].powi(2)) * freq[m] * val3 / delta;
-                    }
-                }
+                        // ifrm2a checks mean both elements of the key are the same,
+                        // really more of an ifrm1 check
+                        -f3qcm[klm].powi(2)
+                            * if l == m && ifrm2.check((l, m), k) {
+                                1.0 / (8.0 * (2.0 * freq[l] + freq[k]))
+                            } else if ifrm2.check((k, l), m) {
+                                1.0 * (1.0 / d1 + 1.0 / d2 + 1.0 / d4) / 8.0
+                            } else if ifrm2.check((l, m), k) {
+                                1.0 * (1.0 / d1 + 1.0 / d2 + 1.0 / d3) / 8.0
+                            } else if ifrm2.check((k, m), l) {
+                                1.0 * (1.0 / d1 + 1.0 / d3 + 1.0 / d4) / 8.0
+                            } else {
+                                0.5 * freq[m]
+                                    * (freq[m].powi(2)
+                                        - freq[k].powi(2)
+                                        - freq[l].powi(2))
+                                    / (-d1 * d2 * d3 * d4)
+                            }
+                    })
+                    .sum::<f64>();
                 let val5 = freq[k] / freq[l];
                 let val6 = freq[l] / freq[k];
                 let val7 = self.rotcon[ib]
                     * (zmat[(k, l, 0)].powi(2) + zmat[(k, l, 1)].powi(2));
                 let val8 = (val5 + val6) * val7;
-                let value = val1 + val2 + valu + val8;
+                let value = (f4qcm[(k, k, l, l)] / 4.0) + val2 + valu + val8;
                 xcnst[(k, l)] = value;
                 xcnst[(l, k)] = value;
                 xcnst[(k, l2)] = value;
@@ -532,8 +529,7 @@ impl Spectro {
             todo!("goto funds section. return?")
         }
 
-        let n1dm = i1mode.len();
-        for kk in 1..n1dm {
+        for kk in 1..i1mode.len() {
             let k = i1mode[kk];
             // might be kk-1 not sure
             for ll in 0..kk {
