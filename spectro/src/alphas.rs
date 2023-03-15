@@ -98,22 +98,23 @@ impl Spectro {
             let mut valu3 = 0.0;
             for jj in 0..n1dm {
                 let j = i1mode[jj];
-                if j != k {
-                    let wksq = freq[k].powi(2);
-                    let wjsq = freq[j].powi(2);
-                    let tmp = icorol.get(&(j, k));
-                    if tmp.is_some() && *tmp.unwrap() == ia {
-                        valu2 -= 0.5
-                            * zmat[(j, k, ia)].powi(2)
-                            * (freq[k] - freq[j]).powi(2)
-                            / (freq[j] * (freq[k] + freq[j]));
-                    } else {
-                        valu2 += zmat[(j, k, ia)].powi(2) * (3.0 * wksq + wjsq)
-                            / (wksq - wjsq);
-                    }
-                }
                 let wj32 = freq[j].powf(1.5);
                 valu3 += wila[(j, iaia)] * f3qcm[(j, k, k)] * freq[k] / wj32;
+                if j == k {
+                    continue;
+                }
+                let wksq = freq[k].powi(2);
+                let wjsq = freq[j].powi(2);
+                let tmp = icorol.get(&(j, k));
+                if tmp.is_some() && *tmp.unwrap() == ia {
+                    valu2 -= 0.5
+                        * zmat[(j, k, ia)].powi(2)
+                        * (freq[k] - freq[j]).powi(2)
+                        / (freq[j] * (freq[k] + freq[j]));
+                } else {
+                    valu2 += zmat[(j, k, ia)].powi(2) * (3.0 * wksq + wjsq)
+                        / (wksq - wjsq);
+                }
             }
             alpha[(k, ia)] = valu0 * (valu1 + valu2 + ALPHA_CONST * valu3);
         }
@@ -202,7 +203,7 @@ impl Spectro {
             } else {
                 let valu1 = 0.375
                     * (2.0 * wila[(k, ibib)].powi(2) / self.primat[ib]
-                        + (wila[(k, iaib)].powi(2)) / self.primat[ia]);
+                        + wila[(k, iaib)].powi(2) / self.primat[ia]);
                 let mut valu2 = 0.0;
                 for jj in 0..n2dm {
                     let j = i2mode[jj].0;
