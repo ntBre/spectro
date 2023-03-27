@@ -8,3 +8,12 @@ updates:
     directory: /
     schedule:
       interval: daily
+  - package-ecosystem: cargo
+    directory: /spectro
+    schedule:
+      interval: daily
+  - package-ecosystem: cargo
+    directory: /spectro_bin
+    schedule:
+      interval: daily
+      
