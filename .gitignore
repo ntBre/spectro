@@ -3,5 +3,4 @@
 *.svg
 */flow/*.pdf
 /target/
-/Cargo.lock
 /callgrind.out
