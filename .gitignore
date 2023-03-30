@@ -1,5 +1,4 @@
 */target
-*/Cargo.lock
 */callgrind.out
 *.svg
 */flow/*.pdf
