@@ -13,7 +13,7 @@ use crate::{
 use std::error::Error;
 use std::path::Path;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Debug, Deserialize)]
 pub struct SpectroFinish {
     pub spectro: Spectro,
     pub freq: Dvec,
@@ -56,6 +56,52 @@ impl SpectroFinish {
     pub fn load(filename: &str) -> Result<Self, Box<dyn Error>> {
         let r = std::fs::File::open(filename)?;
         Ok(serde_json::from_reader(r)?)
+    }
+
+    pub fn to_gauss(&self) {
+        let SpectroFinish {
+            freq, f3qcm, f4qcm, ..
+        } = self;
+        let r = freq.len();
+
+        println!("CUBIC FORCE CONSTANTS IN NORMAL MODES");
+        for i in 0..r {
+            for j in 0..=i {
+                for k in 0..=j {
+                    let v = f3qcm[(i, j, k)];
+                    if v.abs() > 1e-6 {
+                        println!(
+                            "{:5}{:5}{:5}{:20.12}",
+                            i + 1,
+                            j + 1,
+                            k + 1,
+                            v,
+                        );
+                    }
+                }
+            }
+        }
+
+        println!("QUARTIC FORCE CONSTANTS IN NORMAL MODES");
+        for i in 0..r {
+            for j in 0..=i {
+                for k in 0..=j {
+                    for l in 0..=k {
+                        let v = f4qcm[(i, j, k, l)];
+                        if v.abs() > 1e-6 {
+                            println!(
+                                "{:5}{:5}{:5}{:5}{:20.12}",
+                                i + 1,
+                                j + 1,
+                                k + 1,
+                                l + 1,
+                                v
+                            );
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

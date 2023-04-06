@@ -17,10 +17,19 @@ struct Args {
     /// finish a run by loading a [SpectroFinish] from a JSON file
     #[arg(short, long, value_parser, default_value_t = false)]
     finish: bool,
+
+    /// convert a [SpectroFinish] to the format used in Gaussian output files
+    #[arg(short, long, value_parser, default_value_t = false)]
+    to_gauss: bool,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
     let cfg = Args::parse();
+    if cfg.to_gauss {
+        let sf = SpectroFinish::load(&cfg.infile)?;
+        sf.to_gauss();
+        return Ok(());
+    }
     let (got, spectro) = if cfg.finish {
         let SpectroFinish {
             spectro,
