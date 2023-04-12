@@ -209,6 +209,8 @@ where
             state = State::Curvil;
         } else if line.contains("DEGMODE") {
             state = State::Degmode;
+        } else if line.contains("CORIOL") {
+            state = State::None;
         } else {
             match state {
                 State::Header => {
