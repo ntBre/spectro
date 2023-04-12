@@ -89,7 +89,7 @@ where
     line.split_whitespace()
         .map(|s| {
             s.parse::<T>()
-                .unwrap_or_else(|_| panic!("failed to parse {s}"))
+                .unwrap_or_else(|_| panic!("failed to parse {line}"))
         })
         .collect::<Vec<_>>()
 }
