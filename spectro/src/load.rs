@@ -294,14 +294,24 @@ where
 
 pub fn load_fc2<P>(infile: P, n3n: usize) -> Dmat
 where
-    P: AsRef<Path>,
+    P: AsRef<Path> + Debug,
 {
-    let data = read_to_string(infile).unwrap();
-    Dmat::from_iterator(
-        n3n,
-        n3n,
-        data.split_whitespace().map(|s| s.parse().unwrap()),
-    )
+    let data = read_to_string(&infile).unwrap();
+    let data: Vec<_> = data
+        .split_whitespace()
+        .map(|s| s.parse().unwrap())
+        .collect();
+    let dl = data.len();
+    if dl == n3n * n3n {
+        Dmat::from_iterator(n3n, n3n, data)
+    } else if dl - 2 == n3n * n3n {
+        Dmat::from_row_slice(n3n, n3n, &data[2..])
+    } else {
+        panic!(
+            "wrong number of elements in {infile:?}. found {dl} expected {}",
+            n3n * n3n
+        );
+    }
 }
 
 /// load a Tensor3 from `file` in SPECTRO format
@@ -318,6 +328,17 @@ where
 pub fn new_fc3(n3n: usize, f33: &[f64]) -> tensor::Tensor3<f64> {
     let mut f3x = Tensor3::zeros(n3n, n3n, n3n);
     let mut labc = 0;
+    let want = n3n * (n3n + 1) * (n3n + 2) / 6;
+    let fl = f33.len();
+    let f33 = if fl == want {
+        f33
+    } else if fl - 2 == want {
+        &f33[2..]
+    } else {
+        panic!(
+            "wrong number of cubic force constants. found {fl} expected {want}",
+        );
+    };
     for iabc in 0..n3n {
         for jabc in 0..=iabc {
             for kabc in 0..=jabc {
@@ -348,6 +369,17 @@ where
 /// constants
 pub fn new_fc4(n3n: usize, f44: &[f64]) -> Tensor4 {
     let mut f4x = Tensor4::zeros(n3n, n3n, n3n, n3n);
+    let want = n3n * (n3n + 1) * (n3n + 2) * (n3n + 3) / 24;
+    let fl = f44.len();
+    let f44 = if fl == want {
+        f44
+    } else if fl - 2 == want {
+        &f44[2..]
+    } else {
+        panic!(
+            "wrong number of quartic force constants. found {fl} expected {want}",
+        );
+    };
     let mut mabc = 0;
     for iabc in 0..n3n {
         for jabc in 0..=iabc {
