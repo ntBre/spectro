@@ -1024,6 +1024,7 @@ fn resona(
         eng[ist] = e - zpe;
     }
 
+    // println!("iirst={:.8}", iirst);
     let idimen = nreson * (nreson + 1) / 2;
     let mut resmat = DMatrix::zeros(idimen, idimen);
     for i in 0..nreson {
@@ -1040,17 +1041,48 @@ fn resona(
     // println!("resmat={:.8}", resmat);
 }
 
-/// computes the general resonance element between states `i` and `j` for an
-/// asymmetric top. `iirst` is a matrix containing the quantum numbers of the
-/// states involved in the resonance polyad
+/// computes the general resonance element between states `istate` and `jstate`
+/// for an asymmetric top. `iirst` is a matrix containing the quantum numbers of
+/// the states involved in the resonance polyad
+#[allow(unused)]
 fn genrsa(
     _zmat: &Tensor3,
     _f3qcm: &F3qcm,
     _f4qcm: &F4qcm,
-    _iirst: &DMatrix<usize>,
-    _i: usize,
-    _j: usize,
+    iirst: &DMatrix<usize>,
+    istate: usize,
+    jstate: usize,
 ) -> f64 {
+    return 0.0;
+    let mut idiff = 0;
+    let mut ndelta = 0;
+    let mut _ndel = 0;
+    let mut nleft = Vec::new();
+    let mut nright = Vec::new();
+    let mut ndiff = Vec::new();
+    let mut nmin = Vec::new();
+    let mut indx = Vec::new();
+    let (n1dm, _) = iirst.shape();
+    for i in 0..n1dm {
+        let nnleft = iirst[(i, istate)];
+        let nnright = iirst[(i, jstate)];
+        let ndiffer = nnright as isize - nnleft as isize;
+        if ndiffer != 0 {
+            ndelta += ndiffer.abs();
+            _ndel += ndiffer;
+            idiff += 1;
+            if idiff > 4 || ndelta > 4 {
+                eprintln!("higher than quartic resonances not yet implemented");
+                eprintln!("setting resonance constant to zero");
+                return 0.0;
+            }
+            nleft.push(nnleft);
+            nright.push(nnright);
+            ndiff.push(ndiffer);
+            nmin.push(nnleft.min(nnright));
+            indx.push(i);
+        }
+    }
     0.0
 }
 
