@@ -978,7 +978,12 @@ fn make_zmat(nvib: usize, natom: usize, lxm: &Dmat) -> tensor::Tensor3<f64> {
     zmat
 }
 
+/// set up resonance polyad matrices for asymmetric tops and compute their
+/// eigenvalues and eigenvectors
 fn resona(
+    zmat: &Tensor3,
+    f3qcm: &F3qcm,
+    f4qcm: &F4qcm,
     e0: f64,
     modes: &[Mode],
     freq: &Dvec,
@@ -989,6 +994,8 @@ fn resona(
 ) {
     let (n1dm, _, _) = Mode::count(modes);
     let (i1mode, _, _) = Mode::partition(modes);
+    let _dnom = init_res_denom(n1dm, freq, fermi1, fermi2);
+
     let mut zpe = e0;
     for ii in 0..n1dm {
         let i = i1mode[ii];
@@ -998,6 +1005,8 @@ fn resona(
             zpe += xcnst[(i, j)] * 0.25;
         }
     }
+    // TODO handle separate resonance blocks. the example in the comments is one
+    // for each symmetry in C2v, ie a1, a2, b1, and b2 symmetries
     let iirst = make_resin(fermi1, n1dm, fermi2);
     let (nreson, _) = iirst.shape();
     for ist in 0..nreson {
@@ -1014,6 +1023,64 @@ fn resona(
         }
         eng[ist] = e - zpe;
     }
+
+    let idimen = nreson * (nreson + 1) / 2;
+    let mut resmat = DMatrix::zeros(idimen, idimen);
+    for i in 0..nreson {
+        for j in 0..=i {
+            if j == i {
+                resmat[(i, j)] = eng[i];
+            } else {
+                resmat[(i, j)] = genrsa(zmat, f3qcm, f4qcm, &iirst, i, j);
+            }
+        }
+    }
+    // construct the resonance matrix, then call symm_eigen_decomp to get the
+    // eigenvalues and eigenvectors
+    // println!("resmat={:.8}", resmat);
+}
+
+/// computes the general resonance element between states `i` and `j` for an
+/// asymmetric top. `iirst` is a matrix containing the quantum numbers of the
+/// states involved in the resonance polyad
+fn genrsa(
+    _zmat: &Tensor3,
+    _f3qcm: &F3qcm,
+    _f4qcm: &F4qcm,
+    _iirst: &DMatrix<usize>,
+    _i: usize,
+    _j: usize,
+) -> f64 {
+    0.0
+}
+
+/// initialize the inverse resonance denominators and zero any elements
+/// corresponding to Fermi resonances deleted in the contact transformation
+fn init_res_denom(
+    n1dm: usize,
+    freq: &Dvec,
+    fermi1: &[Fermi1],
+    fermi2: &[Fermi2],
+) -> Tensor3 {
+    let n = n1dm;
+    let mut dnom = Tensor3::zeros(n, n, n);
+    for i in 0..n {
+        for j in 0..n {
+            for k in 0..n {
+                dnom[(i, j, k)] = 1.0 / (freq[i] - freq[j] - freq[k]);
+            }
+        }
+    }
+
+    for &Fermi1 { i, j } in fermi1 {
+        dnom[(j, i, i)] = 0.0;
+    }
+
+    for &Fermi2 { i, j, k } in fermi2 {
+        dnom[(i, j, k)] = 0.0;
+        dnom[(i, k, j)] = 0.0;
+    }
+    dnom
 }
 
 /// construct the RESIN Fermi polyad matrix. NOTE that the comments in resona.f

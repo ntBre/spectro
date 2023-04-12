@@ -205,7 +205,10 @@ impl Spectro {
         // this is worked on by resona and then enrgy so keep it out here
         let mut eng = vec![0.0; states.len()];
         if !self.rotor.is_sym_top() {
-            resona(e0, modes, &freq, &xcnst, fermi1, fermi2, &mut eng);
+            resona(
+                &zmat, &f3qcm, &f4qcm, e0, modes, &freq, &xcnst, fermi1,
+                fermi2, &mut eng,
+            );
         } else {
             // straight from jan martin himself
             // println!(
