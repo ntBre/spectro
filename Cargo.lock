@@ -486,7 +486,7 @@ dependencies = [
 [[package]]
 name = "spectro"
 version = "0.1.0"
-source = "git+https://github.com/ntBre/spectro#0b0b7e0fa7132b677d8ffc87bd997099c4352977"
+source = "git+https://github.com/ntBre/spectro#183537c4f56ac4087c27917138db1030839061f4"
 dependencies = [
  "nalgebra 0.32.2",
  "serde",
@@ -513,7 +513,7 @@ checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
 [[package]]
 name = "summarize"
 version = "0.1.0"
-source = "git+https://github.com/ntBre/summarize#8cd78a7e335ef3e4eaf68d7d67edf5dd62e70382"
+source = "git+https://github.com/ntBre/summarize#32a728cb797276664fab9543e286fac467b4f8a5"
 dependencies = [
  "lazy_static",
  "nalgebra 0.31.4",
