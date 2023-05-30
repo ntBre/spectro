@@ -1,7 +1,5 @@
 use std::path::Path;
 
-use summarize::{Summary, TO_MHZ};
-
 use crate::{consts::FACT2, sextic::Sextic, *};
 
 use super::*;
@@ -14,36 +12,11 @@ struct Test {
     want: Sextic,
 }
 
-impl From<summarize::phi::Phi> for Sextic {
-    fn from(value: summarize::phi::Phi) -> Self {
-        Self {
-            phij: value.big_phi_j.unwrap_or_default() / TO_MHZ,
-            phik: value.big_phi_k.unwrap_or_default() / TO_MHZ,
-            phijk: value.big_phi_jk.unwrap_or_default() / TO_MHZ,
-            phikj: value.big_phi_kj.unwrap_or_default() / TO_MHZ,
-            sphij: value.phi_j.unwrap_or_default() / TO_MHZ,
-            sphijk: value.phi_jk.unwrap_or_default() / TO_MHZ,
-            sphik: value.phi_k.unwrap_or_default() / TO_MHZ,
-            hj: value.h_j.unwrap_or_default() / TO_MHZ,
-            hk: value.h_k.unwrap_or_default() / TO_MHZ,
-            hjk: value.h_jk.unwrap_or_default() / TO_MHZ,
-            hkj: value.h_kj.unwrap_or_default() / TO_MHZ,
-            h1: value.h1.unwrap_or_default() / TO_MHZ,
-            h2: value.h2.unwrap_or_default() / TO_MHZ,
-            h3: value.h3.unwrap_or_default() / TO_MHZ,
-            he: value.he.unwrap_or_default() / TO_MHZ,
-        }
-    }
-}
-
 impl Test {
     fn new(dir: &'static str) -> Self {
         let start = Path::new("testfiles");
-        let data = Summary::new(
-            start.join(dir).join("spectro2.out").to_str().unwrap(),
-            summarize::Recompute::No,
-        );
-        let want: Sextic = data.phis.into();
+        let w = File::open(start.join(dir).join("phis.json")).unwrap();
+        let want: Sextic = serde_json::from_reader(w).unwrap();
         Self {
             infile: String::from(
                 start.join(dir).join("spectro.in").to_str().unwrap(),
