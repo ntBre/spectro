@@ -17,7 +17,8 @@ use crate::{
     f4qcm::F4qcm,
     ifrm1::Ifrm1,
     mode::Mode,
-    Dmat, Dvec, Spectro, state::State,
+    state::State,
+    Dmat, Dvec, Spectro,
 };
 
 // separate for macro
