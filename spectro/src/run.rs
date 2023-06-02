@@ -223,7 +223,11 @@ impl Spectro {
         for i in 1..n1dm + n2dm + n3dm + 1 {
             corrs.push(eng[i] - eng[0]);
         }
-        // print_vib_states(&eng, &states);
+
+        if self.verbose {
+            crate::utils::print_vib_states(&eng, states);
+        }
+
         let rotnst = if self.rotor.is_sym_top() {
             self.alphas(&freq, &wila, &zmat, &f3qcm, modes, states, coriolis)
         } else {

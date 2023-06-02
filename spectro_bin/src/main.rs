@@ -21,6 +21,11 @@ struct Args {
     /// convert a [SpectroFinish] to the format used in Gaussian output files
     #[arg(short, long, value_parser, default_value_t = false)]
     to_gauss: bool,
+
+    /// print more information. currently this means the full listing of
+    /// vibrational states
+    #[arg(short, long, value_parser, default_value_t = true)]
+    verbose: bool,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -32,7 +37,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
     let (got, spectro) = if cfg.finish {
         let SpectroFinish {
-            spectro,
+            mut spectro,
             freq,
             f3qcm,
             f4qcm,
@@ -40,10 +45,12 @@ fn main() -> Result<(), Box<dyn Error>> {
             lxm,
             lx,
         } = SpectroFinish::load(&cfg.infile)?;
+        spectro.verbose = cfg.verbose;
         let (g, _) = spectro.finish(freq, f3qcm, f4qcm, irreps, lxm, lx);
         (g, spectro)
     } else {
-        let spectro = Spectro::load(&cfg.infile);
+        let mut spectro = Spectro::load(&cfg.infile);
+        spectro.verbose = cfg.verbose;
         let infile = Path::new(&cfg.infile);
         let dir = infile.parent().unwrap_or_else(|| Path::new("."));
         let (g, _) = spectro.run_files(

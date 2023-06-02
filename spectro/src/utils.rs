@@ -17,7 +17,7 @@ use crate::{
     f4qcm::F4qcm,
     ifrm1::Ifrm1,
     mode::Mode,
-    Dmat, Dvec, Spectro,
+    Dmat, Dvec, Spectro, state::State,
 };
 
 // separate for macro
@@ -337,7 +337,7 @@ pub fn make_funds(freq: &Dvec, nvib: usize, xcnst: &Dmat) -> Vec<f64> {
 
 /// take a vec of energy: state pairs and print them in SPECTRO's format
 #[allow(dead_code)]
-pub(crate) fn print_vib_states(reng: &[f64], i1sts: &Vec<Vec<usize>>) {
+pub(crate) fn print_vib_states(reng: &[f64], i1sts: &Vec<State>) {
     println!(
         "{:^10}{:^20}{:^20}{:>21}",
         "STATE NO.", "ENERGY (CM-1)", "ABOVE ZPT", "VIBRATIONAL STATE"
@@ -345,9 +345,7 @@ pub(crate) fn print_vib_states(reng: &[f64], i1sts: &Vec<Vec<usize>>) {
     for (i, (energy, state)) in zip(reng, i1sts).enumerate() {
         print!("{:5}{:20.4}{:20.4}", i + 1, energy, *energy - reng[0]);
         print!("{:>21}", "NON-DEG (Vs) :");
-        for s in state {
-            print!("{s:5}");
-        }
+        print!("{state:5}");
         println!();
     }
 }

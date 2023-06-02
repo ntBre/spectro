@@ -120,7 +120,11 @@ impl Display for State {
                 }
             }
             State::I3st(_) => todo!(),
-            State::I12st { i1st: _, i2st: _ } => todo!(),
+            State::I12st { i1st, i2st } => {
+                for (a, (b, c)) in i1st.iter().zip(i2st) {
+                    write!(f, "({a},{b},{c})")?
+                }
+            }
         }
         Ok(())
     }

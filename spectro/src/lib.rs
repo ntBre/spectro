@@ -139,6 +139,11 @@ pub struct Spectro {
 
     /// the actual Axis with order `axis_order`. symmetric tops only
     pub axis: Axis,
+
+    /// printing option. currently only used to toggle printing of the full
+    /// vibrational states
+    #[serde(default)]
+    pub verbose: bool,
 }
 
 impl Spectro {
