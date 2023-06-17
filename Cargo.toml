@@ -3,3 +3,4 @@ members = [
 "spectro",
 "spectro_bin",
 ]
+resolver = "2"
