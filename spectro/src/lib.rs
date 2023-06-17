@@ -7,6 +7,7 @@ use std::{
     fmt::Debug,
     fs::File,
     io::Result,
+    path::Path,
 };
 
 use consts::ALPHA_CONST;
@@ -706,7 +707,7 @@ impl Spectro {
         }
     }
 
-    pub fn write(&self, filename: &str) -> Result<()> {
+    pub fn write(&self, filename: impl AsRef<Path>) -> Result<()> {
         use std::io::Write;
         let mut f = File::create(filename)?;
         writeln!(f, "{self}")?;
