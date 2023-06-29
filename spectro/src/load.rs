@@ -100,15 +100,31 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
                 })
                 .unwrap()
         }
+
         let iatl = match pg {
-            C3v { axis, plane } => helper(ret, axis, plane, 3),
+            C3v { axis, plane } => {
+                ret.axis = axis;
+                helper(ret, axis, plane, 3)
+            }
             // for C5v, the axis is definitely not in the plane, so pick one of
             // the plane ones to pass into helper so the xor works
-            C5v { plane, .. } => helper(ret, plane.0, plane, 5),
-            C6h { sh, .. } => helper(ret, sh.0, sh, 6),
+            C5v { plane, axis } => {
+                ret.axis = axis;
+                helper(ret, plane.0, plane, 5)
+            }
+            C6h { c6, sh } => {
+                ret.axis = c6;
+                helper(ret, sh.0, sh, 6)
+            }
             // assume that these are in the right order
-            D3h { c3, sv, .. } => helper(ret, c3, sv, 3),
-            D5h { c5, sv, .. } => helper(ret, c5, sv, 5),
+            D3h { c3, sv, .. } => {
+                ret.axis = c3;
+                helper(ret, c3, sv, 3)
+            }
+            D5h { c5, sv, .. } => {
+                ret.axis = c5;
+                helper(ret, c5, sv, 5)
+            }
             _ => panic!("todo! implement iatl for {pg}"),
         };
 
@@ -136,21 +152,6 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
         let btemp = egr.transpose() * ret.axes.transpose();
         ret.axes = btemp.transpose();
         ret.iatom = iatl;
-
-        // detect point group and store the principal (C₃) axis for later use
-        // with iatl. have to do this again after the geometry is rotated
-        ret.axis = match ret.geom.point_group_approx(TOL) {
-            C1 => todo!(),
-            C2 { axis: _ } => todo!(),
-            Cs { plane: _ } => todo!(),
-            C2v { axis: _, planes: _ } => todo!(),
-            C3v { axis, .. } | C5v { axis, .. } => axis,
-            D2h { axes: _, planes: _ } => todo!(),
-            D3h { c3, .. } => c3,
-            D5h { c5, .. } => c5,
-            C2h { .. } => todo!(),
-            C6h { c6, .. } => c6,
-        };
     }
     // linear molecules should have the unique moi in the Z position. in case x
     // and y got swapped (since their mois are equal), swap them back to keep
