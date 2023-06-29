@@ -104,7 +104,7 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
         let mut loop_pg = pg;
         let iatl = loop {
             match loop_pg {
-                C2h { axis, plane } => break helper(ret, axis, plane, 2),
+                C2h { plane, .. } => break helper(ret, plane.0, plane, 2),
                 C3v { axis, plane } => break helper(ret, axis, plane, 3),
                 // for C5v, the axis is definitely not in the plane, so pick one
                 // of the plane ones to pass into helper so the xor works
