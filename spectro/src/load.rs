@@ -102,9 +102,13 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
                 .unwrap()
         }
         let mut loop_pg = pg;
+        let mut c2h_axis = None;
         let iatl = loop {
             match loop_pg {
-                C2h { plane, .. } => break helper(ret, plane.0, plane, 2),
+                C2h { axis, plane } => {
+                    c2h_axis = Some(axis);
+                    break helper(ret, plane.0, plane, 2);
+                }
                 C3v { axis, plane } => break helper(ret, axis, plane, 3),
                 // for C5v, the axis is definitely not in the plane, so pick one
                 // of the plane ones to pass into helper so the xor works
@@ -152,15 +156,22 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
         // detect point group and store the principal (C₃) axis for later use
         // with iatl. have to do this again after the geometry is rotated
         ret.axis = match ret.geom.point_group_approx(ret.symm_tol) {
-            C1 => todo!(),
-            C2 { axis: _ } => todo!(),
-            Cs { plane: _ } => todo!(),
-            C2v { axis: _, planes: _ } => todo!(),
+            C1 | Cs { .. } => unreachable!("symmetric top in C1 or Cs"),
+            C2 { axis } => axis,
+            C2v { axis, .. } => axis,
             C3v { axis, .. } | C5v { axis, .. } => axis,
-            D2h { axes: _, planes: _ } => todo!(),
+            D2h { axes, .. } => {
+                // this looks insane, but it's needed if the symmetry increases
+                // after the rotation as I've seen for benzene in mopac
+                if let Some(axis) = c2h_axis {
+                    axis
+                } else {
+                    axes[0]
+                }
+            }
             D3h { c3, .. } => c3,
             D5h { c5, .. } => c5,
-            C2h { .. } => todo!(),
+            C2h { axis, .. } => axis,
         };
     }
     // linear molecules should have the unique moi in the Z position. in case x
