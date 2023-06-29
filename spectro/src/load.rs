@@ -76,7 +76,7 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
         use symm::PointGroup::*;
 
         /// find the first atom in `ret.geom` in the plane of the molecule and
-        /// extending along an axis other than the principle axis, but not
+        /// extending along an axis other than the principal axis, but not
         /// necessarily directly along this axis, just with a non-zero
         /// component. also set `ret.axis_order` to order
         fn helper(
