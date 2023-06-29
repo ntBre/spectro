@@ -105,6 +105,7 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
             // for C5v, the axis is definitely not in the plane, so pick one of
             // the plane ones to pass into helper so the xor works
             C5v { plane, .. } => helper(ret, plane.0, plane, 5),
+            C6h { sh, .. } => helper(ret, sh.0, sh, 6),
             // assume that these are in the right order
             D3h { c3, sv, .. } => helper(ret, c3, sv, 3),
             D5h { c5, sv, .. } => helper(ret, c5, sv, 5),
@@ -148,6 +149,7 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
             D3h { c3, .. } => c3,
             D5h { c5, .. } => c5,
             C2h { .. } => todo!(),
+            C6h { c6, .. } => c6,
         };
     }
     // linear molecules should have the unique moi in the Z position. in case x
