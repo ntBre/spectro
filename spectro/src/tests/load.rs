@@ -71,7 +71,6 @@ H     -1.55759065  0.94685790  0.00000000
         axis_order: 0,
         axis: Axis::Z,
         verbose: false,
-        symm_tol: 1e-6,
     };
     assert_eq!(got.header, want.header);
     assert_eq!(got.geom, want.geom);
@@ -178,7 +177,6 @@ He    0.00000000  0.00000000   1.76798207
         axis_order: 0,
         axis: Axis::Z,
         verbose: false,
-        symm_tol: 1e-6,
     };
     assert_eq!(got.header, want.header);
     assert_eq!(got.geom, want.geom);
