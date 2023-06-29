@@ -123,14 +123,15 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
                 }
             }
         };
-        let mut egr = nalgebra::Matrix3::zeros();
+
         let x = ret.geom.atoms[iatl].x;
         let y = ret.geom.atoms[iatl].y;
-        egr[(0, 0)] = x / (f64::sqrt(x * x + y * y));
-        egr[(1, 0)] = y / (f64::sqrt(x * x + y * y));
-        egr[(0, 1)] = -y / (f64::sqrt(x * x + y * y));
-        egr[(1, 1)] = x / (f64::sqrt(x * x + y * y));
-        egr[(2, 2)] = 1.0;
+        let c = f64::sqrt(x * x + y * y);
+        let egr = nalgebra::matrix![
+            x/c, -y/c, 0.0;
+            y/c, x/c, 0.0;
+            0.0, 0.0, 1.0
+        ];
 
         for i in 0..ret.natoms() {
             let crot1 = ret.geom.atoms[i].x;
