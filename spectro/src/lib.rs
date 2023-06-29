@@ -32,6 +32,7 @@ pub use run::{compute_irreps, compute_irreps_in, SpectroFinish};
 
 mod alphas;
 pub mod consts;
+mod default;
 mod dummy;
 mod enrgy;
 mod f3qcm;
@@ -111,7 +112,7 @@ impl Derivative {
 /// degmodes: Vec<Vec<usize>>: degenerate modes
 /// dummies: Vec<Dummy>: dummy atoms
 /// ```
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Spectro {
     pub header: Vec<usize>,
     pub geom: Molecule,
@@ -145,6 +146,10 @@ pub struct Spectro {
     /// vibrational states
     #[serde(default)]
     pub verbose: bool,
+
+    /// symmetry tolerance to use. defaults to 1e-6 but may be raised when
+    /// processing the initial geometry
+    pub symm_tol: f64,
 }
 
 impl Spectro {
@@ -608,7 +613,8 @@ impl Spectro {
                         // the minus sign is Papousek's definition of the
                         // symmetry operation Cn (??!)
                         let other = self.geom.rotate(-360.0 / nabs, &self.axis);
-                        let buddies = self.geom.detect_buddies(&other, 1e-6);
+                        let buddies =
+                            self.geom.detect_buddies(&other, self.symm_tol);
 
                         // might be the wrong axis or wrong point group
                         let iatom2 = buddies[self.iatom].unwrap_or_else(|| {

@@ -71,8 +71,8 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
     // rotate H1 to the X axis, but it's already there
     if ret.rotor.is_sym_top() && !ret.rotor.is_linear() {
         // NOTE smallest eps for which this works for the current test cases
-        const TOL: f64 = 1e-6;
-        let pg = ret.geom.point_group_approx(TOL);
+        ret.symm_tol = 1e-6;
+        let pg = ret.geom.point_group_approx(ret.symm_tol);
         use symm::PointGroup::*;
 
         /// find the first atom in `ret.geom` in the plane of the molecule and
@@ -96,19 +96,31 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
                 .iter()
                 .position(|a| {
                     let v = [a.x, a.y, a.z];
-                    v[p as usize].abs() < TOL && v[o as usize].abs() > TOL
+                    v[p as usize].abs() < ret.symm_tol
+                        && v[o as usize].abs() > ret.symm_tol
                 })
                 .unwrap()
         }
-        let iatl = match pg {
-            C3v { axis, plane } => helper(ret, axis, plane, 3),
-            // for C5v, the axis is definitely not in the plane, so pick one of
-            // the plane ones to pass into helper so the xor works
-            C5v { plane, .. } => helper(ret, plane.0, plane, 5),
-            // assume that these are in the right order
-            D3h { c3, sv, .. } => helper(ret, c3, sv, 3),
-            D5h { c5, sv, .. } => helper(ret, c5, sv, 5),
-            _ => panic!("todo! implement iatl for {pg}"),
+        let mut loop_pg = pg;
+        let iatl = loop {
+            match loop_pg {
+                C3v { axis, plane } => break helper(ret, axis, plane, 3),
+                // for C5v, the axis is definitely not in the plane, so pick one
+                // of the plane ones to pass into helper so the xor works
+                C5v { plane, .. } => break helper(ret, plane.0, plane, 5),
+                // assume that these are in the right order
+                D3h { c3, sv, .. } => break helper(ret, c3, sv, 3),
+                D5h { c5, sv, .. } => break helper(ret, c5, sv, 5),
+                _ => {
+                    eprintln!("warning: symmetric top with point group = {pg}");
+                    eprintln!("\traising symm. tolerance and trying again");
+                    if ret.symm_tol >= 1e-4 {
+                        panic!("todo! implement iatl for {pg}")
+                    }
+                    ret.symm_tol *= 10.0;
+                    loop_pg = ret.geom.point_group_approx(ret.symm_tol);
+                }
+            }
         };
         let mut egr = nalgebra::Matrix3::zeros();
         let x = ret.geom.atoms[iatl].x;
@@ -137,7 +149,7 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
 
         // detect point group and store the principal (C₃) axis for later use
         // with iatl. have to do this again after the geometry is rotated
-        ret.axis = match ret.geom.point_group_approx(TOL) {
+        ret.axis = match ret.geom.point_group_approx(ret.symm_tol) {
             C1 => todo!(),
             C2 { axis: _ } => todo!(),
             Cs { plane: _ } => todo!(),
