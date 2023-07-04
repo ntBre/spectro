@@ -147,8 +147,8 @@ impl Spectro {
         }
 
         let Derivative::Quartic(_, f3x, f4x) = deriv else {
-	    panic!("can't handle cubics yet");
-	};
+            panic!("can't handle cubics yet");
+        };
 
         // start of cubic analysis
         let f3x = self.rot3rd(f3x);
