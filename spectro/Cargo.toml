@@ -9,7 +9,7 @@ edition = "2021"
 nalgebra = { version = "0.32.2", features = ["serde-serialize"] }
 symm = { git = "https://github.com/ntBre/symm" }
 tensor = { git = "https://github.com/ntBre/tensor" }
-serde = { version = "1.0.166", features = ["derive"] }
+serde = { version = "1.0.167", features = ["derive"] }
 serde_json = "1.0.100"
 
 [dev-dependencies]
