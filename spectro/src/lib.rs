@@ -573,9 +573,19 @@ impl Spectro {
                                 -1.0 * lxm[(ncomp3, imode1)]
                                     / lxm[(ncomp3, imode2)],
                             )
-                        } else if lxm[(ncomp3, imode1)] > TOLER {
+                        } else if lxm[(ncomp3, imode1)].abs() > TOLER {
                             0.5 * PI
                         } else {
+                            eprintln!(
+                                "lxm[(ncomp3, imode2)] = {}",
+                                lxm[(ncomp3, imode2)]
+                            );
+                            eprintln!(
+                                "lxm[(ncomp3, imode1)] = {}",
+                                lxm[(ncomp3, imode1)]
+                            );
+                            eprintln!("TOLER = {TOLER}");
+                            eprintln!("{self:#?}");
                             panic!("cannot determine mode alignment")
                         }
                     };
