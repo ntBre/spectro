@@ -596,7 +596,13 @@ impl Spectro {
             } else if iyz > 0 {
                 0
             } else {
-                panic!("big problem in xcals");
+                eprintln!(
+                    "warning: potential problem in xcals {}:{}:{}",
+                    file!(),
+                    line!(),
+                    column!()
+                );
+                1
             }
         } else {
             1
