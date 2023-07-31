@@ -218,6 +218,7 @@ fn asym() {
         Test::new("hosh", false),
         Test::new("hssh", false),
         Test::new("nosym_tdrane", false),
+        Test::new("h2sc", false),
     ];
     inner!(&tests);
 }
