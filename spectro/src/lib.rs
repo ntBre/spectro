@@ -113,7 +113,7 @@ impl Derivative {
 /// ```
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct Spectro {
-    pub header: Vec<usize>,
+    pub header: Vec<isize>,
     pub geom: Molecule,
     pub weights: Vec<(usize, f64)>,
     pub curvils: Vec<Curvil>,

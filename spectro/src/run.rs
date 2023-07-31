@@ -106,6 +106,16 @@ impl SpectroFinish {
 }
 
 impl Spectro {
+    fn weights(&self) -> Vec<f64> {
+        let mut w = self.geom.weights();
+        if self.header[1] == -1 {
+            for (i, m) in &self.weights {
+                w[*i - 1] = *m;
+            }
+        }
+        w
+    }
+
     pub fn run(&self, deriv: Derivative) -> (Output, Restst) {
         let fc2 = deriv.fc2();
         // rotate the harmonic force constants to the new axes, and convert them
@@ -115,7 +125,7 @@ impl Spectro {
 
         // form the secular equations and decompose them to get harmonic
         // frequencies and the LXM matrix
-        let w = self.geom.weights();
+        let w = self.weights();
         let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
         let fxm = self.form_sec(fc2, &sqm);
         let (harms, mut lxm) = symm_eigen_decomp(fxm, true);
@@ -171,7 +181,7 @@ impl Spectro {
         lxm: Dmat,
         lx: Dmat,
     ) -> (Output, Restst) {
-        let w = self.geom.weights();
+        let w = self.weights();
 
         let (zmat, wila) = self.zeta(&lxm, &w);
         let quartic = Quartic::new(self, &freq, &wila);

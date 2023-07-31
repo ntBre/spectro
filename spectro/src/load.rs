@@ -219,7 +219,7 @@ where
             match state {
                 State::Header => {
                     ret.header.extend(line.split_whitespace().map(|s| {
-                        s.parse::<usize>().unwrap_or_else(|e| {
+                        s.parse::<isize>().unwrap_or_else(|e| {
                             panic!("failed to parse {s} with {e}")
                         })
                     }));
