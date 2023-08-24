@@ -116,6 +116,19 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
                 ret.axis = c6;
                 helper(ret, sh.0, sh, 6)
             }
+            // NOTE: this assumes something about the ordering of the axes and
+            // planes, but I'm not even sure what exactly the assumption is
+            D2h { axes, planes } => {
+                eprintln!("warning: untested D2h atom alignment");
+                eprintln!("geometry = {:.8}", ret.geom);
+                eprintln!("setting principal axis to {}", axes[0]);
+                eprintln!(
+                    "aligning with axis = {}, plane = {}, and order = 2",
+                    planes[0].0, planes[0]
+                );
+                ret.axis = axes[0];
+                helper(ret, planes[0].0, planes[0], 2)
+            }
             // assume that these are in the right order
             D3h { c3, sv, .. } => {
                 ret.axis = c3;
