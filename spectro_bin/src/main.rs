@@ -24,7 +24,13 @@ struct Args {
 
     /// print more information. currently this means the full listing of
     /// vibrational states
-    #[arg(short, long, value_parser, default_value_t = true)]
+    #[arg(
+        short,
+        long,
+        value_parser,
+        default_value_t = false,
+        conflicts_with = "json"
+    )]
     verbose: bool,
 }
 
