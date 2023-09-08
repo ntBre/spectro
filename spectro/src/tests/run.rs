@@ -178,8 +178,7 @@ macro_rules! inner {
             let infile = test.infile.to_str().unwrap();
 
             let spectro = Spectro::load(infile);
-            let (got, _) =
-                spectro.run_files(test.fort15, test.fort30, test.fort40);
+            let got = spectro.run_files(test.fort15, test.fort30, test.fort40);
 
             check!(got.harms, test.want.harms, "harms", infile);
             check!(got.funds, test.want.funds, "funds", infile);

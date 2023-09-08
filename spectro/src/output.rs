@@ -3,7 +3,7 @@ use std::fmt::Display;
 use serde::{Deserialize, Serialize};
 use symm::{Irrep, Molecule};
 
-use crate::{quartic::Quartic, rot::Rot, sextic::Sextic};
+use crate::{quartic::Quartic, resonance::Restst, rot::Rot, sextic::Sextic};
 
 /// contains all of the output data from running Spectro
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
@@ -42,6 +42,8 @@ pub struct Output {
     pub lx: Vec<Vec<f64>>,
 
     pub linear: bool,
+
+    pub resonances: Restst,
 }
 
 impl Display for Output {

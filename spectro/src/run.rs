@@ -116,7 +116,7 @@ impl Spectro {
         w
     }
 
-    pub fn run(&self, deriv: Derivative) -> (Output, Restst) {
+    pub fn run(&self, deriv: Derivative) -> Output {
         let fc2 = deriv.fc2();
         // rotate the harmonic force constants to the new axes, and convert them
         // to the proper units
@@ -141,19 +141,16 @@ impl Spectro {
         let irreps = compute_irreps(&self.geom, &lxm, self.nvib, 1e-4);
 
         if deriv.is_harmonic() {
-            return (
-                Output {
-                    harms: freq.as_slice()[..self.nvib].to_vec(),
-                    irreps,
-                    rot_equil: self.rotcon.clone(),
-                    geom: self.geom.clone(),
-                    lxm: to_vec(lxm),
-                    lx: to_vec(lx),
-                    linear: self.rotor.is_linear(),
-                    ..Default::default()
-                },
-                Restst::default(),
-            );
+            return Output {
+                harms: freq.as_slice()[..self.nvib].to_vec(),
+                irreps,
+                rot_equil: self.rotcon.clone(),
+                geom: self.geom.clone(),
+                lxm: to_vec(lxm),
+                lx: to_vec(lx),
+                linear: self.rotor.is_linear(),
+                ..Default::default()
+            };
         }
 
         let Derivative::Quartic(_, f3x, f4x) = deriv else {
@@ -180,7 +177,7 @@ impl Spectro {
         irreps: Vec<symm::Irrep>,
         lxm: Dmat,
         lx: Dmat,
-    ) -> (Output, Restst) {
+    ) -> Output {
         let w = self.weights();
 
         let (zmat, wila) = self.zeta(&lxm, &w);
@@ -252,32 +249,25 @@ impl Spectro {
             self.rota(&rotnst, states, &quartic)
         };
         let sextic = Sextic::new(self, &wila, &zmat, &freq, &f3qcm);
-        (
-            Output {
-                harms,
-                funds,
-                corrs,
-                rots,
-                irreps,
-                quartic,
-                sextic,
-                rot_equil: self.rotcon.clone(),
-                zpt: eng[0],
-                geom: self.geom.clone(),
-                lxm: to_vec(lxm),
-                lx: to_vec(lx),
-                linear: self.rotor.is_linear(),
-            },
-            restst,
-        )
+        Output {
+            harms,
+            funds,
+            corrs,
+            rots,
+            irreps,
+            quartic,
+            sextic,
+            rot_equil: self.rotcon.clone(),
+            zpt: eng[0],
+            geom: self.geom.clone(),
+            lxm: to_vec(lxm),
+            lx: to_vec(lx),
+            linear: self.rotor.is_linear(),
+            resonances: restst,
+        }
     }
 
-    pub fn run_files<P>(
-        &self,
-        fort15: P,
-        fort30: P,
-        fort40: P,
-    ) -> (Output, Restst)
+    pub fn run_files<P>(&self, fort15: P, fort30: P, fort40: P) -> Output
     where
         P: AsRef<Path> + std::fmt::Debug,
     {

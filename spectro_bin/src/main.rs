@@ -46,14 +46,14 @@ fn main() -> Result<(), Box<dyn Error>> {
             lx,
         } = SpectroFinish::load(&cfg.infile)?;
         spectro.verbose = cfg.verbose;
-        let (g, _) = spectro.finish(freq, f3qcm, f4qcm, irreps, lxm, lx);
+        let g = spectro.finish(freq, f3qcm, f4qcm, irreps, lxm, lx);
         (g, spectro)
     } else {
         let mut spectro = Spectro::load(&cfg.infile);
         spectro.verbose = cfg.verbose;
         let infile = Path::new(&cfg.infile);
         let dir = infile.parent().unwrap_or_else(|| Path::new("."));
-        let (g, _) = spectro.run_files(
+        let g = spectro.run_files(
             dir.join("fort.15"),
             dir.join("fort.30"),
             dir.join("fort.40"),
