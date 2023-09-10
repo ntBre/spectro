@@ -25,6 +25,20 @@ pub enum Axis {
     C = 2,
 }
 
+impl Display for Axis {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Axis::A => "A",
+                Axis::B => "B",
+                Axis::C => "C",
+            }
+        )
+    }
+}
+
 /// coriolis resonance wᵢ = wⱼ
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Coriolis {
