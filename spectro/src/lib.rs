@@ -19,7 +19,7 @@ use ifrm2::Ifrm2;
 use nalgebra::DMatrix;
 pub use output::*;
 use quartic::Quartic;
-use resonance::{Coriolis, Fermi1, Fermi2};
+pub use resonance::{Coriolis, Fermi1, Fermi2};
 use rot::Rot;
 use rotor::Rotor;
 use serde::{Deserialize, Serialize};
