@@ -27,15 +27,11 @@ pub enum Axis {
 
 impl Display for Axis {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Axis::A => "A",
-                Axis::B => "B",
-                Axis::C => "C",
-            }
-        )
+        f.pad(match self {
+            Axis::A => "A",
+            Axis::B => "B",
+            Axis::C => "C",
+        })
     }
 }
 
