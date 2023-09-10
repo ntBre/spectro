@@ -126,7 +126,7 @@ impl Display for Output {
 
         writeln!(f, "\nCoriolis Resonances:")?;
         for Coriolis { i, j, axis } in coriolis {
-            writeln!(f, "{i:5}{j:5}{axis:5}")?;
+            writeln!(f, "{i:5}{j:5}{axis:>5}")?;
         }
 
         writeln!(f, "\nType 1 Fermi Resonances:")?;
