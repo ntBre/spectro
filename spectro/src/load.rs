@@ -122,12 +122,13 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
                 eprintln!("warning: untested D2h atom alignment");
                 eprintln!("geometry = {:.8}", ret.geom);
                 eprintln!("setting principal axis to {}", axes[0]);
+                let axis = planes[0].0;
+                let plane = planes[1];
                 eprintln!(
-                    "aligning with axis = {}, plane = {}, and order = 2",
-                    planes[0].0, planes[0]
+                    "aligning with axis = {axis}, plane = {plane}, order = 2",
                 );
-                ret.axis = axes[0];
-                helper(ret, planes[0].0, planes[0], 2)
+                ret.axis = axis;
+                helper(ret, axis, plane, 2)
             }
             // assume that these are in the right order
             D3h { c3, sv, .. } => {
