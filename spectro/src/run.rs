@@ -107,13 +107,7 @@ impl SpectroFinish {
 
 impl Spectro {
     fn weights(&self) -> Vec<f64> {
-        let mut w = self.geom.weights();
-        if self.header[1] == -1 {
-            for (i, m) in &self.weights {
-                w[*i - 1] = *m;
-            }
-        }
-        w
+        self.geom.weights()
     }
 
     pub fn run(&self, deriv: Derivative) -> Output {

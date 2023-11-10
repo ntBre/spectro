@@ -279,6 +279,7 @@ where
                                 x: fields[0].parse().unwrap(),
                                 y: fields[1].parse().unwrap(),
                                 z: fields[2].parse().unwrap(),
+                                weight: None,
                             });
                         }
                     }
@@ -315,6 +316,13 @@ where
             }
         }
     }
+
+    if ret.header[1] == -1 {
+        for &(i, w) in &ret.weights {
+            ret.geom.atoms[i - 1].weight = Some(w);
+        }
+    }
+
     ret
 }
 
