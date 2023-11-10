@@ -2,7 +2,7 @@ use spectro::Spectro;
 
 fn main() -> Result<(), std::io::Error> {
     let spectro = Spectro::load("spectro/testfiles/c3h2/spectro.in");
-    let (got, _) = spectro.run_files(
+    let got = spectro.run_files(
         "spectro/testfiles/c3h2/fort.15",
         "spectro/testfiles/c3h2/fort.30",
         "spectro/testfiles/c3h2/fort.40",

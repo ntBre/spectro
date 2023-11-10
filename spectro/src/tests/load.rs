@@ -8,6 +8,7 @@ use crate::*;
 use approx::assert_abs_diff_eq;
 use na::matrix;
 use nalgebra as na;
+use symm::{Plane, PointGroup};
 
 #[test]
 fn load() {
@@ -344,4 +345,37 @@ H    -0.5932829     -1.0275961      0.6975731
         check_eigen!(&s.axes, &test.want_axes, 1e-8, &test.label, &test.label);
         assert_abs_diff_eq!(s.geom, test.want_geom, epsilon = 1e-6);
     }
+}
+
+#[test]
+fn test_make_iatl() {
+    let mut s = Spectro {
+        geom: Molecule::from_str(
+            "
+C      1.20584904 -0.69619727  0.00000000
+C      0.00000000 -1.39239454  0.00000000
+C     -1.20584904 -0.69619727  0.00000000
+C     -1.20584904  0.69619727  0.00000000
+C      0.00000000  1.39239454  0.00000000
+C      1.20584904  0.69619727  0.00000000
+H      0.00000000 -2.47385363  0.00000000
+H     -2.14242009 -1.23692681  0.00000000
+H     -2.14242009  1.23692681  0.00000000
+H      0.00000000  2.47385363  0.00000000
+H      2.14242009  1.23692681  0.00000000
+H      2.14242009 -1.23692681  0.00000000
+",
+        )
+        .unwrap(),
+        ..Spectro::default()
+    };
+
+    s.make_iatl(PointGroup::D2h {
+        axes: [Axis::Y, Axis::X, Axis::Z],
+        planes: [
+            Plane(Axis::X, Axis::Z),
+            Plane(Axis::Y, Axis::Z),
+            Plane(Axis::X, Axis::Y),
+        ],
+    });
 }

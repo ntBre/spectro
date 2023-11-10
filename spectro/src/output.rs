@@ -3,7 +3,12 @@ use std::fmt::Display;
 use serde::{Deserialize, Serialize};
 use symm::{Irrep, Molecule};
 
-use crate::{quartic::Quartic, rot::Rot, sextic::Sextic};
+use crate::{
+    quartic::Quartic,
+    resonance::{Coriolis, Fermi1, Fermi2, Restst},
+    rot::Rot,
+    sextic::Sextic,
+};
 
 /// contains all of the output data from running Spectro
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
@@ -42,60 +47,97 @@ pub struct Output {
     pub lx: Vec<Vec<f64>>,
 
     pub linear: bool,
+
+    pub resonances: Restst,
 }
 
 impl Display for Output {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "Geometry: {:.8}", self.geom)?;
+        let Output {
+            harms,
+            funds,
+            corrs,
+            rots,
+            rot_equil,
+            irreps,
+            quartic,
+            sextic,
+            zpt,
+            geom,
+            lxm: _,
+            lx: _,
+            linear,
+            resonances:
+                Restst {
+                    coriolis,
+                    fermi1,
+                    fermi2,
+                    darling: _,
+                    states: _,
+                    modes: _,
+                    ifunda: _,
+                    iovrtn: _,
+                    icombn: _,
+                },
+        } = self;
+        writeln!(f, "Geometry: {:.8}", geom)?;
         writeln!(
             f,
             "Vibrational Frequencies (cm-1):\n{:>5}{:>8}{:>8}{:>8}{:>8}",
             "Mode", "Symm", "Harm", "Fund", "Corr"
         )?;
-        for i in 0..self.harms.len() {
+        for i in 0..harms.len() {
             writeln!(
                 f,
                 "{:5}{:>8}{:8.1}{:8.1}{:8.1}",
                 i + 1,
-                self.irreps[i],
-                self.harms[i],
-                self.funds[i],
-                self.corrs[i]
+                irreps[i],
+                harms[i],
+                funds[i],
+                corrs[i]
             )?;
         }
 
+        writeln!(f, "\nZPT = {zpt:8.1}")?;
+
         writeln!(f, "\nRotational Constants (cm-1):")?;
-        if !self.rots.is_empty() {
-            let width = 5 * self.rots[0].state.len();
-            if !self.linear {
+        if !rots.is_empty() {
+            let width = 5 * rots[0].state.len();
+            if !linear {
                 writeln!(
                     f,
                     "{:^width$}{:^12}{:^12}{:^12}",
                     "State", "A", "B", "C"
                 )?;
-                for rot in &self.rots {
+                for rot in rots {
                     writeln!(f, "{rot}")?;
                 }
             } else {
                 writeln!(f, "{:^width$}{:^12}", "State", "B")?;
-                for rot in &self.rots {
-                    writeln!(
-                        f,
-                        "{}{:12.7}",
-                        rot.state,
-                        rot.b + self.rot_equil[1]
-                    )?;
+                for rot in rots {
+                    writeln!(f, "{}{:12.7}", rot.state, rot.b + rot_equil[1])?;
                 }
             }
         }
 
-        writeln!(
-            f,
-            "\nQuartic Distortion Constants (cm-1):\n{}",
-            self.quartic
-        )?;
+        writeln!(f, "\nQuartic Distortion Constants (cm-1):\n{}", quartic)?;
 
-        writeln!(f, "Sextic Distortion Constants (cm-1):\n{}", self.sextic)?;
+        writeln!(f, "Sextic Distortion Constants (cm-1):\n{}", sextic)?;
+
+        writeln!(f, "\nCoriolis Resonances:")?;
+        for Coriolis { i, j, axis } in coriolis {
+            writeln!(f, "{i:5}{j:5}{axis:>5}")?;
+        }
+
+        writeln!(f, "\nType 1 Fermi Resonances:")?;
+        for Fermi1 { i, j } in fermi1 {
+            writeln!(f, "{i:5}{j:5}")?;
+        }
+
+        writeln!(f, "\nType 2 Fermi Resonances:")?;
+        for Fermi2 { i, j, k } in fermi2 {
+            writeln!(f, "{i:5}{j:5}{k:5}")?;
+        }
 
         Ok(())
     }

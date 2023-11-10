@@ -24,6 +24,79 @@ impl Spectro {
         process_geom(&mut ret);
         ret
     }
+
+    pub(crate) fn make_iatl(&mut self, pg: symm::PointGroup) -> usize {
+        /// find the first atom in `ret.geom` in the plane of the molecule and
+        /// extending along an axis other than the principal axis, but not
+        /// necessarily directly along this axis, just with a non-zero
+        /// component. also set `ret.axis_order` to order
+        fn helper(
+            ret: &mut Spectro,
+            axis: Axis,
+            plane: Plane,
+            order: usize,
+        ) -> usize {
+            // axis perpendicular to plane
+            let p = plane.perp();
+            // axis in plane but not principal axis
+            let o = plane ^ axis;
+
+            ret.axis_order = order;
+            ret.geom
+                .atoms
+                .iter()
+                .position(|a| {
+                    let v = [a.x, a.y, a.z];
+                    v[p as usize].abs() < TOL && v[o as usize].abs() > TOL
+                })
+                .unwrap()
+        }
+
+        use symm::PointGroup::*;
+        match pg {
+            C3v { axis, plane } => {
+                self.axis = axis;
+                helper(self, axis, plane, 3)
+            }
+            // for C5v, the axis is definitely not in the plane, so pick one of
+            // the plane ones to pass into helper so the xor works
+            C5v { plane, axis } => {
+                self.axis = axis;
+                helper(self, plane.0, plane, 5)
+            }
+            C6h { c6, sh } => {
+                self.axis = c6;
+                helper(self, sh.0, sh, 6)
+            }
+            // NOTE: this assumes something about the ordering of the axes and
+            // planes, but I'm not even sure what exactly the assumption is
+            D2h { axes, planes } => {
+                let axis = axes[2];
+                let plane = planes[1];
+                #[cfg(not(test))]
+                {
+                    eprintln!("warning: untested D2h atom alignment");
+                    eprintln!("geometry = {:.8}", self.geom);
+                    eprintln!("setting principal axis to {axis}");
+                    eprintln!(
+                    "aligning with axis = {axis}, plane = {plane}, order = 2",
+                );
+                }
+                self.axis = axis;
+                helper(self, axis, plane, 2)
+            }
+            // assume that these are in the right order
+            D3h { c3, sv, .. } => {
+                self.axis = c3;
+                helper(self, c3, sv, 3)
+            }
+            D5h { c5, sv, .. } => {
+                self.axis = c5;
+                helper(self, c5, sv, 5)
+            }
+            _ => panic!("todo! implement iatl for {pg}"),
+        }
+    }
 }
 
 impl From<Molecule> for Spectro {
@@ -36,6 +109,8 @@ impl From<Molecule> for Spectro {
         ret
     }
 }
+
+const TOL: f64 = 1e-6;
 
 /// perform the geometry manipulations from dist.f on ret.geom and set the
 /// corresponding fields in `ret`. assumes the input geometry is in bohr and
@@ -71,62 +146,9 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
     // rotate H1 to the X axis, but it's already there
     if ret.rotor.is_sym_top() && !ret.rotor.is_linear() {
         // NOTE smallest eps for which this works for the current test cases
-        const TOL: f64 = 1e-6;
         let pg = ret.geom.point_group_approx(TOL);
-        use symm::PointGroup::*;
 
-        /// find the first atom in `ret.geom` in the plane of the molecule and
-        /// extending along an axis other than the principal axis, but not
-        /// necessarily directly along this axis, just with a non-zero
-        /// component. also set `ret.axis_order` to order
-        fn helper(
-            ret: &mut Spectro,
-            axis: Axis,
-            plane: Plane,
-            order: usize,
-        ) -> usize {
-            // axis perpendicular to plane
-            let p = plane.perp();
-            // axis in plane but not principal axis
-            let o = plane ^ axis;
-
-            ret.axis_order = order;
-            ret.geom
-                .atoms
-                .iter()
-                .position(|a| {
-                    let v = [a.x, a.y, a.z];
-                    v[p as usize].abs() < TOL && v[o as usize].abs() > TOL
-                })
-                .unwrap()
-        }
-
-        let iatl = match pg {
-            C3v { axis, plane } => {
-                ret.axis = axis;
-                helper(ret, axis, plane, 3)
-            }
-            // for C5v, the axis is definitely not in the plane, so pick one of
-            // the plane ones to pass into helper so the xor works
-            C5v { plane, axis } => {
-                ret.axis = axis;
-                helper(ret, plane.0, plane, 5)
-            }
-            C6h { c6, sh } => {
-                ret.axis = c6;
-                helper(ret, sh.0, sh, 6)
-            }
-            // assume that these are in the right order
-            D3h { c3, sv, .. } => {
-                ret.axis = c3;
-                helper(ret, c3, sv, 3)
-            }
-            D5h { c5, sv, .. } => {
-                ret.axis = c5;
-                helper(ret, c5, sv, 5)
-            }
-            _ => panic!("todo! implement iatl for {pg}"),
-        };
+        let iatl = ret.make_iatl(pg);
 
         let x = ret.geom.atoms[iatl].x;
         let y = ret.geom.atoms[iatl].y;
