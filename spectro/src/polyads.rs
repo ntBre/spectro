@@ -5,6 +5,7 @@ use crate::f3qcm::F3qcm;
 use crate::f4qcm::F4qcm;
 use crate::resonance::Fermi1;
 use crate::resonance::Fermi2;
+use crate::utils::find4;
 use crate::Mode;
 use nalgebra::DMatrix;
 use std::collections::HashSet;
@@ -25,7 +26,7 @@ pub(crate) fn resona(
 ) {
     let (n1dm, _, _) = Mode::count(modes);
     let (i1mode, _, _) = Mode::partition(modes);
-    let _dnom = init_res_denom(n1dm, freq, fermi1, fermi2);
+    let dnm = init_res_denom(n1dm, freq, fermi1, fermi2);
 
     let mut zpe = e0;
     for ii in 0..n1dm {
@@ -39,18 +40,38 @@ pub(crate) fn resona(
 
     // TODO handle separate resonance blocks. the example in the comments is one
     // for each symmetry in C2v, ie a1, a2, b1, and b2 symmetries
-    let iirst = make_resin(fermi1, n1dm, fermi2);
+    // let iirst = make_resin(fermi1, n1dm, fermi2);
+
+    // TODO generate this! this is only for debugging to match the order from
+    // spectro2.in for c2h4 in old-spectro
+    let iirst = nalgebra::dmatrix![
+        0,    0,    1,    0,    0,    0,    0,    0,    0,    0,    0,    0;
+        0,    0,    0,    0,    1,    0,    0,    0,    0,    0,    0,    0;
+        0,    0,    0,    1,    0,    0,    0,    0,    0,    0,    0,    0;
+        0,    0,    0,    0,    1,    1,    0,    0,    0,    0,    0,    0;
+        0,    0,    0,    0,    1,    0,    1,    0,    0,    0,    0,    0;
+        0,    0,    0,    0,    2,    0,    0,    0,    0,    0,    0,    0;
+        0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    2;
+        0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0;
+        0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0;
+        0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0;
+        0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0;
+        0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0;
+    ];
+    // transpose to match fortran indexing
+    let iirst = iirst.transpose();
+
     let (nreson, _) = iirst.shape();
     for ist in 0..nreson {
         let mut e = e0;
         for ii in 0..n1dm {
             let i = i1mode[ii];
-            e += freq[i] * (iirst[(ist, ii)] as f64 + 0.5);
+            e += freq[i] * (iirst[(ii, ist)] as f64 + 0.5);
             for jj in 0..=ii {
                 let j = i1mode[jj];
                 e += xcnst[(i, j)]
-                    * (iirst[(ist, ii)] as f64 + 0.5)
-                    * (iirst[(ist, jj)] as f64 + 0.5);
+                    * (iirst[(ii, ist)] as f64 + 0.5)
+                    * (iirst[(jj, ist)] as f64 + 0.5);
             }
         }
         eng[ist] = e - zpe;
@@ -60,7 +81,7 @@ pub(crate) fn resona(
         // the resonances at some point.
     }
 
-    // println!("iirst={:.8}", iirst);
+    println!("iirst={:.8}", iirst);
     // let idimen = nreson * (nreson + 1) / 2;
     let mut resmat = DMatrix::zeros(nreson, nreson);
     for i in 0..nreson {
@@ -68,7 +89,9 @@ pub(crate) fn resona(
             if j == i {
                 resmat[(i, j)] = eng[i];
             } else {
-                resmat[(i, j)] = genrsa(zmat, f3qcm, f4qcm, &iirst, i, j);
+                resmat[(i, j)] = genrsa(
+                    n1dm, zmat, f3qcm, f4qcm, &iirst, i, j, &i1mode, freq, &dnm,
+                );
             }
         }
     }
@@ -81,14 +104,17 @@ pub(crate) fn resona(
 /// for an asymmetric top. `iirst` is a matrix containing the quantum numbers of
 /// the states involved in the resonance polyad
 pub(crate) fn genrsa(
-    _zmat: &Tensor3,
-    _f3qcm: &F3qcm,
-    _f4qcm: &F4qcm,
+    n1dm: usize,
+    zmat: &Tensor3,
+    f3qcm: &F3qcm,
+    f4qcm: &F4qcm,
     iirst: &DMatrix<usize>,
     istate: usize,
     jstate: usize,
+    i1mode: &[usize],
+    freq: &Dvec,
+    dnm: &Tensor3,
 ) -> f64 {
-    dbg!(istate, jstate);
     let mut idiff = 0;
     let mut ndelta = 0;
     let mut ndel = 0;
@@ -97,7 +123,6 @@ pub(crate) fn genrsa(
     let mut ndiff = Vec::new();
     let mut nmin = Vec::new();
     let mut indx = Vec::new();
-    let (n1dm, _) = iirst.shape();
     for i in 0..n1dm {
         let nnleft = iirst[(i, istate)];
         let nnright = iirst[(i, jstate)];
@@ -119,45 +144,164 @@ pub(crate) fn genrsa(
         }
     }
 
-    if idiff == 4 {
-        if ndel == 0 {
-            // this is in a fortran equivalence block, which should tie each of
-            // these variables permanently I think, so I'll probably have to
-            // write this everywhere I need these indices
-            let ii = indx[0];
-            let jj = indx[1];
-            let kk = indx[2];
-            let ll = indx[3];
+    match idiff {
+        4 => {
+            if ndel == 0 {
+                // this is in a fortran equivalence block, which should tie each of
+                // these variables permanently I think, so I'll probably have to
+                // write this everywhere I need these indices
+                let ii = indx[0];
+                let jj = indx[1];
+                let kk = indx[2];
+                let ll = indx[3];
 
-            let na = nmin[0];
-            let nb = nmin[1];
-            let nc = nmin[2];
-            let nd = nmin[3];
-            // case 1a: Kabcd
-            return res2a(_zmat, _f3qcm, _f4qcm, ii, jj, kk, ll)
-                * (((na + 1) * (nb + 1) * (nc + 1) * (nd + 1)) as f64 / 16.)
-                    .sqrt();
-            // TODO this might not return yet, but it does set the function name
-        } else {
-            // case 1b: Ka,bcd resonance
-            // sort indices in required order first
-            eprintln!("todo case 1b: Ka,bcd");
-            return 0.0;
+                let na = nmin[0];
+                let nb = nmin[1];
+                let nc = nmin[2];
+                let nd = nmin[3];
+                // case 1a: Kabcd
+                res2a(zmat, f3qcm, f4qcm, i1mode, freq, dnm, ii, jj, kk, ll)
+                    * (((na + 1) * (nb + 1) * (nc + 1) * (nd + 1)) as f64 / 16.)
+                        .sqrt()
+            } else {
+                // case 1b: Ka,bcd resonance
+                // sort indices in required order first
+                todo!("case 1b: Ka,bcd");
+            }
         }
+        3 => todo!(),
+        2 => match ndelta {
+            4 => todo!(),
+            3 => todo!(),
+            2 => {
+                // case 4: Lehmann's "1-1" resonance
+                let ii = indx[0];
+                let jj = indx[1];
+                let na = nmin[0];
+                let nb = nmin[1];
+                let val1 =
+                    res2a(
+                        zmat, f3qcm, f4qcm, i1mode, freq, dnm, ii, ii, ii, jj,
+                    ) * f64::sqrt(((na + 1).pow(3) * (nb + 1)) as f64 / 16.0);
+                let val2 =
+                    res2a(
+                        zmat, f3qcm, f4qcm, i1mode, freq, dnm, jj, jj, jj, ii,
+                    ) * f64::sqrt(((nb + 1).pow(3) * (na + 1)) as f64 / 16.0);
+                let mut val3 = 0.0;
+                for k in 0..n1dm {
+                    if k != ii && k != jj {
+                        let nk1 = iirst[(k, istate)];
+                        let nk2 = iirst[(k, jstate)];
+                        if nk1 != nk2 {
+                            panic!("!!!Internal error in genrsa!!! nk1={nk1} nk2={nk2}");
+                        }
+                        val3 +=
+                            2. * res2a(
+                                zmat, f3qcm, f4qcm, &i1mode, freq, dnm, ii, k,
+                                jj, k,
+                            ) * f64::sqrt(
+                                dble((na + 1) * (nb + 1))
+                                    * (dble(nk1) + 0.5).powi(2)
+                                    / 16.,
+                            );
+                    }
+                }
+                val1 + val2 + val3
+            }
+            _ => 0.0,
+        },
+        _ => 0.0,
     }
-    0.0
+}
+
+#[inline]
+const fn dble(n: usize) -> f64 {
+    n as f64
 }
 
 pub(crate) fn res2a(
-    _zmat: &tensor::Tensor3<f64>,
-    _f3qcm: &F3qcm,
-    _f4qcm: &F4qcm,
+    zmat: &tensor::Tensor3<f64>,
+    f3qcm: &F3qcm,
+    f4qcm: &F4qcm,
+    i1mode: &[usize],
+    freq: &Dvec,
+    dnm: &Tensor3,
     ii: usize,
     jj: usize,
     kk: usize,
     ll: usize,
 ) -> f64 {
-    todo!()
+    let d = Denom { freq, dnm };
+    // I sure hope this isn't the same indx from outside
+    let indx = [ii, jj, kk, ll];
+    let n1dm = i1mode.len();
+    let mut case = "????";
+    if ii == jj && kk == ll {
+        todo!()
+    } else if ii == jj && ii == kk {
+        case = "aaab";
+        let i = i1mode[ii];
+        let j = i1mode[ll];
+        let val1 = f4qcm[(i, i, i, j)] / 2.0;
+        let mut val2 = 0.0;
+        let mut val3 = 0.0;
+        let mut val4 = 0.0;
+        for mm in 0..n1dm {
+            let k = i1mode[mm];
+            let iik = f3qcm[(i, i, k)];
+            let ijk = f3qcm[(i, j, k)];
+            let (i, j, k) = (i as isize, j as isize, k as isize);
+            let temp = -0.5
+                * (-4.0 / freq[k as usize]
+                    + d.denom(i, i, -k)
+                    + d.denom(-i, -i, -k));
+            val3 -= 0.25 * iik * ijk * temp;
+            let temp = -0.5
+                * (2.0 * (d.denom(i, -j, -k) + d.denom(-i, j, -k))
+                    + d.denom(i, j, -k)
+                    + d.denom(-i, -j, -k));
+            val4 -= 0.25 * iik * ijk * temp;
+        }
+        println!("{ii} {jj} {kk} {ll}");
+        dbg!(val1 + val2 + val3 + val4)
+        // ii, jj, kk, ll, xkval should be 3, 3, 3, 5, -5.529 (or -1 from
+        // indices)
+    } else {
+        todo!()
+    }
+}
+
+struct Denom<'a> {
+    freq: &'a Dvec,
+    dnm: &'a Tensor3,
+}
+
+impl Denom<'_> {
+    fn denom(&self, is: isize, js: isize, ks: isize) -> f64 {
+        let i = is.abs() as usize;
+        let j = js.abs() as usize;
+        let k = ks.abs() as usize;
+        // these are computed in fortran as is/i so signum should be fine. if any of
+        // them were zero, the division would obviously be disastrous so they must
+        // be non-zero
+        let isign = is.signum();
+        let jsign = js.signum();
+        let ksign = ks.signum();
+        let iglobsgn = isign * jsign * ksign;
+        let inneg = (3 - isign - jsign - ksign) / 2;
+        let isign = isign * iglobsgn;
+        let jsign = jsign * iglobsgn;
+        let ksign = ksign * iglobsgn;
+        if inneg == 0 || inneg == 3 {
+            1. / (self.freq[i] + self.freq[j] + self.freq[k]) * iglobsgn as f64
+        } else if isign > 0 {
+            self.dnm[(i, j, k)] * iglobsgn as f64
+        } else if jsign > 0 {
+            self.dnm[(j, i, k)] * iglobsgn as f64
+        } else {
+            self.dnm[(k, i, j)] * iglobsgn as f64
+        }
+    }
 }
 
 /// initialize the inverse resonance denominators and zero any elements
