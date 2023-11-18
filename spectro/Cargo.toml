@@ -17,3 +17,6 @@ approx = "0.5.1"
 
 [[bin]]
 name = "prof"
+
+[features]
+polyad = []

@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use symm::Irrep;
 
-use super::{make_sym_funds, resona, Output, Spectro};
+use super::{make_sym_funds, Output, Spectro};
 use crate::sextic::Sextic;
 use crate::utils::{
     force3, force4, linalg::symm_eigen_decomp, make_funds, to_wavenumbers,
@@ -205,8 +205,10 @@ impl Spectro {
         };
         // this is worked on by resona and then enrgy so keep it out here
         let mut eng = vec![0.0; states.len()];
+
+        #[cfg(feature = "polyad")]
         if !self.rotor.is_sym_top() {
-            resona(
+            crate::polyads::resona(
                 &zmat, &f3qcm, &f4qcm, e0, modes, &freq, &xcnst, fermi1,
                 fermi2, &mut eng,
             );
