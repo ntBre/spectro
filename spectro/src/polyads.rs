@@ -262,7 +262,11 @@ pub(crate) fn res2a(
                     + d.denom(-i, -j, -k));
             val4 -= 0.25 * iik * ijk * temp;
         }
+        // NOTE something wrong here, probably denom
         println!("{ii} {jj} {kk} {ll}");
+        println!("{val1} {val2} {val3} {val4}");
+        // signs of val1 and val3 are wrong, val2 is right (0), and val4 is
+        // completely wrong 9.1 vs -11.0 expected
         dbg!(val1 + val2 + val3 + val4)
         // ii, jj, kk, ll, xkval should be 3, 3, 3, 5, -5.529 (or -1 from
         // indices)
