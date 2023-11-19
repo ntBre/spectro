@@ -282,16 +282,12 @@ pub(crate) fn genrsa(
                     } else {
                         0.0
                     }
+                } else if dnm[(ii, jj, jj)] == 0. {
+                    // goto 993
+                    0.5 * f3qcm[(ii, jj, jj)]
+                        * f64::sqrt(dble((nb + 1) * (nb + 2) * (na + 1)) / 8.)
                 } else {
-                    if dnm[(ii, jj, jj)] == 0. {
-                        // goto 993
-                        0.5 * f3qcm[(ii, jj, jj)]
-                            * f64::sqrt(
-                                dble((nb + 1) * (nb + 2) * (na + 1)) / 8.,
-                            )
-                    } else {
-                        0.0
-                    }
+                    0.0
                 }
             }
             2 => {
