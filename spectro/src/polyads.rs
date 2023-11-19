@@ -291,7 +291,15 @@ pub(crate) fn res2a(
             + rotcon[2] * zmat[(i, k, 2)] * zmat[(j, k, 2)];
         let val2 = 2. * val2 * (freq[i] * freq[j] + freq[k].powi(2))
             / (freq[k] * f64::sqrt(freq[i] * freq[j]));
-        dbg!(val2);
+        let mut val3 = 0.0;
+        for mm in 0..n1dm {
+            let l = i1mode[mm];
+            let temp = 1.0 / freq[l]
+                - 0.5
+                    * (d.denom(Plus(i), Minus(j), Minus(l))
+                        + d.denom(Minus(i), Plus(j), Minus(l)));
+            val3 -= 0.25 * f3qcm[(i, j, l)] * f3qcm[(k, k, l)] * temp;
+        }
         todo!()
     } else if ii == jj && ii != kk && kk != ll {
         // case 4
