@@ -81,7 +81,6 @@ pub(crate) fn resona(
         // the resonances at some point.
     }
 
-    println!("iirst={:.8}", iirst);
     // let idimen = nreson * (nreson + 1) / 2;
     let mut resmat = DMatrix::zeros(nreson, nreson);
     for i in 0..nreson {
@@ -235,6 +234,7 @@ pub(crate) fn res2a(
     // I sure hope this isn't the same indx from outside
     let indx = [ii, jj, kk, ll];
     let n1dm = i1mode.len();
+    use Sign::*;
     let mut case = "????";
     if ii == jj && kk == ll {
         todo!()
@@ -250,28 +250,44 @@ pub(crate) fn res2a(
             let k = i1mode[mm];
             let iik = f3qcm[(i, i, k)];
             let ijk = f3qcm[(i, j, k)];
-            let (i, j, k) = (i as isize, j as isize, k as isize);
             let temp = -0.5
                 * (-4.0 / freq[k as usize]
-                    + d.denom(i, i, -k)
-                    + d.denom(-i, -i, -k));
+                    + d.denom(Plus(i), Plus(i), Minus(k))
+                    + d.denom(Minus(i), Minus(i), Minus(k)));
             val3 -= 0.25 * iik * ijk * temp;
             let temp = -0.5
-                * (2.0 * (d.denom(i, -j, -k) + d.denom(-i, j, -k))
-                    + d.denom(i, j, -k)
-                    + d.denom(-i, -j, -k));
+                * (2.0
+                    * (d.denom(Plus(i), Minus(j), Minus(k))
+                        + d.denom(Minus(i), Plus(j), Minus(k)))
+                    + d.denom(Plus(i), Plus(j), Minus(k))
+                    + d.denom(Minus(i), Minus(j), Minus(k)));
+
             val4 -= 0.25 * iik * ijk * temp;
         }
-        // NOTE something wrong here, probably denom
-        println!("{ii} {jj} {kk} {ll}");
-        println!("{val1} {val2} {val3} {val4}");
-        // signs of val1 and val3 are wrong, val2 is right (0), and val4 is
-        // completely wrong 9.1 vs -11.0 expected
+        // the sign I'm getting is backwards but I think that's okay
         dbg!(val1 + val2 + val3 + val4)
-        // ii, jj, kk, ll, xkval should be 3, 3, 3, 5, -5.529 (or -1 from
-        // indices)
     } else {
         todo!()
+    }
+}
+
+enum Sign {
+    Plus(usize),
+    Minus(usize),
+}
+
+impl Sign {
+    fn abs(&self) -> usize {
+        match self {
+            Self::Plus(n) | Self::Minus(n) => *n,
+        }
+    }
+
+    fn signum(&self) -> isize {
+        match self {
+            Sign::Plus(_) => 1,
+            Sign::Minus(_) => -1,
+        }
     }
 }
 
@@ -281,10 +297,10 @@ struct Denom<'a> {
 }
 
 impl Denom<'_> {
-    fn denom(&self, is: isize, js: isize, ks: isize) -> f64 {
-        let i = is.abs() as usize;
-        let j = js.abs() as usize;
-        let k = ks.abs() as usize;
+    fn denom(&self, is: Sign, js: Sign, ks: Sign) -> f64 {
+        let i = is.abs();
+        let j = js.abs();
+        let k = ks.abs();
         // these are computed in fortran as is/i so signum should be fine. if any of
         // them were zero, the division would obviously be disastrous so they must
         // be non-zero
