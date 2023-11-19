@@ -19,6 +19,7 @@ pub(crate) fn resona(
     e0: f64,
     modes: &[Mode],
     freq: &Dvec,
+    rotcon: &[f64],
     xcnst: &Dmat,
     fermi1: &Vec<Fermi1>,
     fermi2: &Vec<Fermi2>,
@@ -89,7 +90,8 @@ pub(crate) fn resona(
                 resmat[(i, j)] = eng[i];
             } else {
                 resmat[(i, j)] = genrsa(
-                    n1dm, zmat, f3qcm, f4qcm, &iirst, i, j, &i1mode, freq, &dnm,
+                    n1dm, zmat, f3qcm, f4qcm, &iirst, i, j, &i1mode, freq,
+                    rotcon, &dnm,
                 );
             }
         }
@@ -112,6 +114,7 @@ pub(crate) fn genrsa(
     jstate: usize,
     i1mode: &[usize],
     freq: &Dvec,
+    rotcon: &[f64],
     dnm: &Tensor3,
 ) -> f64 {
     let mut idiff = 0;
@@ -159,9 +162,11 @@ pub(crate) fn genrsa(
                 let nc = nmin[2];
                 let nd = nmin[3];
                 // case 1a: Kabcd
-                res2a(zmat, f3qcm, f4qcm, i1mode, freq, dnm, ii, jj, kk, ll)
-                    * (((na + 1) * (nb + 1) * (nc + 1) * (nd + 1)) as f64 / 16.)
-                        .sqrt()
+                res2a(
+                    zmat, f3qcm, f4qcm, i1mode, freq, rotcon, dnm, ii, jj, kk,
+                    ll,
+                ) * (((na + 1) * (nb + 1) * (nc + 1) * (nd + 1)) as f64 / 16.)
+                    .sqrt()
             } else {
                 // case 1b: Ka,bcd resonance
                 // sort indices in required order first
@@ -180,11 +185,13 @@ pub(crate) fn genrsa(
                 let nb = nmin[1];
                 let val1 =
                     res2a(
-                        zmat, f3qcm, f4qcm, i1mode, freq, dnm, ii, ii, ii, jj,
+                        zmat, f3qcm, f4qcm, i1mode, freq, rotcon, dnm, ii, ii,
+                        ii, jj,
                     ) * f64::sqrt(((na + 1).pow(3) * (nb + 1)) as f64 / 16.0);
                 let val2 =
                     res2a(
-                        zmat, f3qcm, f4qcm, i1mode, freq, dnm, jj, jj, jj, ii,
+                        zmat, f3qcm, f4qcm, i1mode, freq, rotcon, dnm, jj, jj,
+                        jj, ii,
                     ) * f64::sqrt(((nb + 1).pow(3) * (na + 1)) as f64 / 16.0);
                 let mut val3 = 0.0;
                 for k in 0..n1dm {
@@ -196,8 +203,8 @@ pub(crate) fn genrsa(
                         }
                         val3 +=
                             2. * res2a(
-                                zmat, f3qcm, f4qcm, &i1mode, freq, dnm, ii, k,
-                                jj, k,
+                                zmat, f3qcm, f4qcm, &i1mode, freq, rotcon, dnm,
+                                ii, k, jj, k,
                             ) * f64::sqrt(
                                 dble((na + 1) * (nb + 1))
                                     * (dble(nk1) + 0.5).powi(2)
@@ -224,6 +231,7 @@ pub(crate) fn res2a(
     f4qcm: &F4qcm,
     i1mode: &[usize],
     freq: &Dvec,
+    rotcon: &[f64],
     dnm: &Tensor3,
     ii: usize,
     jj: usize,
@@ -237,8 +245,11 @@ pub(crate) fn res2a(
     use Sign::*;
     let mut case = "????";
     if ii == jj && kk == ll {
+        // case 1
+        case = "aabb";
         todo!()
     } else if ii == jj && ii == kk {
+        // case 2
         case = "aaab";
         let i = i1mode[ii];
         let j = i1mode[ll];
@@ -266,7 +277,29 @@ pub(crate) fn res2a(
         }
         // the sign I'm getting is backwards but I think that's okay
         dbg!(val1 + val2 + val3 + val4)
+    } else if jj == ll && ii != kk && ii != jj {
+        // case 3
+        case = "acbc";
+        let i = i1mode[ii];
+        let k = i1mode[jj];
+        let j = i1mode[kk];
+        // variable is called ijkk but the find4 call is i, j, j, k. both
+        // actually seem to give the same answer, probably from symmetry
+        let val1 = f4qcm[(i, k, j, k)] / 2.;
+        let val2 = rotcon[0] * zmat[(i, k, 0)] * zmat[(j, k, 0)]
+            + rotcon[1] * zmat[(i, k, 1)] * zmat[(j, k, 1)]
+            + rotcon[2] * zmat[(i, k, 2)] * zmat[(j, k, 2)];
+        let val2 = 2. * val2 * (freq[i] * freq[j] + freq[k].powi(2))
+            / (freq[k] * f64::sqrt(freq[i] * freq[j]));
+        dbg!(val2);
+        todo!()
+    } else if ii == jj && ii != kk && kk != ll {
+        // case 4
+        case = "aabc";
+        todo!()
     } else {
+        // case 5
+        case = "abcd";
         todo!()
     }
 }

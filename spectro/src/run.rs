@@ -209,8 +209,17 @@ impl Spectro {
         #[cfg(feature = "polyad")]
         if !self.rotor.is_sym_top() {
             crate::polyads::resona(
-                &zmat, &f3qcm, &f4qcm, e0, modes, &freq, &xcnst, fermi1,
-                fermi2, &mut eng,
+                &zmat,
+                &f3qcm,
+                &f4qcm,
+                e0,
+                modes,
+                &freq,
+                &self.rotcon,
+                &xcnst,
+                fermi1,
+                fermi2,
+                &mut eng,
             );
         } else {
             // straight from jan martin himself
