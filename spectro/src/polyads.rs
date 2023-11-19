@@ -26,7 +26,7 @@ pub(crate) fn resona(
     fermi1: &[Fermi1],
     fermi2: &[Fermi2],
     eng: &mut [f64],
-) {
+) -> Dmat {
     let (n1dm, _, _) = Mode::count(modes);
     let (i1mode, _, _) = Mode::partition(modes);
     let dnm = init_res_denom(n1dm, freq, fermi1, fermi2);
@@ -101,10 +101,12 @@ pub(crate) fn resona(
     // eigenvalues and eigenvectors
     println!("\nResonance matrix:{:.3}", resmat);
 
-    let (vals, vecs) = symm_eigen_decomp(resmat, false);
+    let (vals, vecs) = symm_eigen_decomp(resmat.clone(), false);
 
     println!("Eigenvalues:{:.2}", vals.transpose());
     println!("Eigenvectors:{:.7}", vecs);
+
+    resmat
 }
 
 /// computes the general resonance element between states `istate` and `jstate`

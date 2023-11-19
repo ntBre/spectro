@@ -21,6 +21,7 @@ mod force3;
 mod force4;
 mod load;
 mod lxm;
+mod polyads;
 mod quartic;
 mod restst;
 mod rot2nd;
