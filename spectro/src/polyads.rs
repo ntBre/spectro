@@ -21,8 +21,8 @@ pub(crate) fn resona(
     freq: &Dvec,
     rotcon: &[f64],
     xcnst: &Dmat,
-    fermi1: &Vec<Fermi1>,
-    fermi2: &Vec<Fermi2>,
+    fermi1: &[Fermi1],
+    fermi2: &[Fermi2],
     eng: &mut [f64],
 ) {
     let (n1dm, _, _) = Mode::count(modes);
@@ -286,7 +286,7 @@ pub(crate) fn genrsa(
                         }
                         val3 +=
                             2. * res2a(
-                                zmat, f3qcm, f4qcm, &i1mode, freq, rotcon, dnm,
+                                zmat, f3qcm, f4qcm, i1mode, freq, rotcon, dnm,
                                 ii, k, jj, k,
                             ) * f64::sqrt(
                                 dble((na + 1) * (nb + 1))
@@ -345,7 +345,7 @@ pub(crate) fn res2a(
             let iik = f3qcm[(i, i, k)];
             let ijk = f3qcm[(i, j, k)];
             let temp = -0.5
-                * (-4.0 / freq[k as usize]
+                * (-4.0 / freq[k]
                     + d.denom(Plus(i), Plus(i), Minus(k))
                     + d.denom(Minus(i), Minus(i), Minus(k)));
             val3 -= 0.25 * iik * ijk * temp;
