@@ -173,10 +173,62 @@ pub(crate) fn genrsa(
                 todo!("case 1b: Ka,bcd");
             }
         }
-        3 => todo!(),
+        3 => match ndelta {
+            4 => todo!(),
+            3 => {
+                let ii = indx[0];
+                let jj = indx[1];
+                let kk = indx[2];
+
+                let na = nmin[0];
+                let nb = nmin[1];
+                let nc = nmin[2];
+                // case 2c: Fermi type 2 resonance
+                if dnm[(ii, jj, kk)] == 0.
+                    || dnm[(jj, kk, ii)] == 0.
+                    || dnm[(kk, ii, jj)] == 0.
+                {
+                    // goto 991
+                    f3qcm[(ii, jj, kk)]
+                        * f64::sqrt(dble((na + 1) * (nb + 1) * (nc + 1)) / 8.)
+                } else {
+                    // interaction already included in perturbation theory
+                    0.0
+                }
+            }
+            n => todo!("handle ndelta = {n}"),
+        },
         2 => match ndelta {
             4 => todo!(),
-            3 => todo!(),
+            3 => {
+                let ii = indx[0];
+                let jj = indx[1];
+
+                let na = nmin[0];
+                let nb = nmin[1];
+                // case 3c: Fermi type 1 resonance
+                if ndiff[0].abs() == 2 {
+                    if dnm[(jj, ii, ii)] == 0. {
+                        // goto 992
+                        0.5 * f3qcm[(ii, ii, jj)]
+                            * f64::sqrt(
+                                dble((na + 1) * (na + 2) * (nb + 1)) / 8.,
+                            )
+                    } else {
+                        0.0
+                    }
+                } else {
+                    if dnm[(ii, jj, jj)] == 0. {
+                        // goto 993
+                        0.5 * f3qcm[(ii, jj, jj)]
+                            * f64::sqrt(
+                                dble((nb + 1) * (nb + 2) * (na + 1)) / 8.,
+                            )
+                    } else {
+                        0.0
+                    }
+                }
+            }
             2 => {
                 // case 4: Lehmann's "1-1" resonance
                 let ii = indx[0];
