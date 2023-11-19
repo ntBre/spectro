@@ -53,16 +53,11 @@ pub(crate) fn resona(
         0,    0,    0,    0,    1,    0,    1,    0,    0,    0,    0,    0;
         0,    0,    0,    0,    2,    0,    0,    0,    0,    0,    0,    0;
         0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    2;
-        0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0;
-        0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0;
-        0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0;
-        0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0;
-        0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0;
     ];
     // transpose to match fortran indexing
     let iirst = iirst.transpose();
 
-    let (nreson, _) = iirst.shape();
+    let (_, nreson) = iirst.shape();
     for ist in 0..nreson {
         let mut e = e0;
         for ii in 0..n1dm {
