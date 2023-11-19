@@ -359,7 +359,7 @@ pub(crate) fn res2a(
             val4 -= 0.25 * iik * ijk * temp;
         }
         // the sign I'm getting is backwards but I think that's okay
-        dbg!(val1 + val2 + val3 + val4)
+        val1 + val2 + val3 + val4
     } else if jj == ll && ii != kk && ii != jj {
         // case 3
         case = "acbc";
@@ -397,11 +397,44 @@ pub(crate) fn res2a(
                         + d.denom(Minus(j), Minus(k), Minus(l))));
             val4 -= 0.5 * f3qcm[(i, k, l)] * f3qcm[(j, k, l)] * temp;
         }
-        dbg!(val1 + val2 + val3 + val4)
+        val1 + val2 + val3 + val4
     } else if ii == jj && ii != kk && kk != ll {
         // case 4
         case = "aabc";
-        todo!()
+        let i = i1mode[ii];
+        let j = i1mode[kk];
+        let k = i1mode[ll];
+        let val1 = 0.5 * f4qcm[(i, i, j, k)];
+        let val2 = rotcon[0] * zmat[(i, j, 0)] * zmat[(i, k, 0)]
+            + rotcon[1] * zmat[(i, j, 1)] * zmat[(i, k, 1)]
+            + rotcon[2] * zmat[(i, j, 2)] * zmat[(i, k, 2)];
+        let val2 = -2. * val2 * (freq[i] + freq[j]) * (freq[i] + freq[k])
+            / (freq[i] * f64::sqrt(freq[j] * freq[k]));
+
+        let mut val3 = 0.0;
+        for mm in 0..n1dm {
+            let l = i1mode[mm];
+            let temp1 = -0.5
+                * (d.denom(Plus(j), Plus(k), Minus(l))
+                    + d.denom(Minus(j), Minus(k), Minus(l)));
+            let temp2 = -0.5
+                * (d.denom(Plus(i), Plus(i), Minus(l))
+                    + d.denom(Minus(i), Minus(i), Minus(l)));
+            val3 -=
+                f3qcm[(i, i, l)] * f3qcm[(j, k, l)] * (temp1 + temp2) * 0.25;
+        }
+
+        let mut val4 = 0.0;
+        for mm in 0..n1dm {
+            let l = i1mode[mm];
+            let temp = -0.5
+                * ((d.denom(Plus(i), Minus(k), Minus(l))
+                    + d.denom(Minus(i), Plus(k), Minus(l)))
+                    + (d.denom(Plus(i), Minus(j), Minus(l))
+                        + d.denom(Minus(i), Plus(j), Minus(l))));
+            val4 -= 0.5 * f3qcm[(i, j, l)] * f3qcm[(i, k, l)] * temp;
+        }
+        val1 + val2 + val3 + val4
     } else {
         // case 5
         case = "abcd";
