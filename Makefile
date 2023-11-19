@@ -39,6 +39,9 @@ build_local:
 install: build_local
 	sudo ln -s $(realpath target/release/spectro_bin) /usr/bin/rspectro
 
+poly.test:
+	cargo run --features polyad -p spectro_bin spectro/testfiles/c2h4/spectro.in
+
 #############
 # PROFILING #
 #############
