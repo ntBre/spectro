@@ -6,8 +6,10 @@ use crate::f4qcm::F4qcm;
 use crate::resonance::Fermi1;
 use crate::resonance::Fermi2;
 use crate::utils::find4;
+use crate::utils::linalg::symm_eigen_decomp;
 use crate::Mode;
 use nalgebra::DMatrix;
+use nalgebra::SymmetricEigen;
 use std::collections::HashSet;
 
 /// set up resonance polyad matrices for asymmetric tops and compute their
@@ -57,6 +59,8 @@ pub(crate) fn resona(
     // transpose to match fortran indexing
     let iirst = iirst.transpose();
 
+    println!("\nEnergies of deperturbed states:");
+
     let (_, nreson) = iirst.shape();
     for ist in 0..nreson {
         let mut e = e0;
@@ -71,7 +75,8 @@ pub(crate) fn resona(
             }
         }
         eng[ist] = e - zpe;
-        eprintln!("E* of state {ist} = {}", eng[ist]);
+
+        println!("E* of state {ist} = {}", eng[ist]);
         // NOTE I have all the right numbers, but the order is different and
         // differs each time. I may need to revisit the usage of a HashMap for
         // the resonances at some point.
@@ -91,9 +96,15 @@ pub(crate) fn resona(
             }
         }
     }
+
     // construct the resonance matrix, then call symm_eigen_decomp to get the
     // eigenvalues and eigenvectors
-    println!("resmat={:.8}", resmat);
+    println!("\nResonance matrix:{:.3}", resmat);
+
+    let (vals, vecs) = symm_eigen_decomp(resmat, false);
+
+    println!("Eigenvalues:{:.2}", vals.transpose());
+    println!("Eigenvectors:{:.7}", vecs);
 }
 
 /// computes the general resonance element between states `istate` and `jstate`
