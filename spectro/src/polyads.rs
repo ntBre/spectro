@@ -230,7 +230,33 @@ pub(crate) fn genrsa(
             n => todo!("handle ndelta = {n}"),
         },
         2 => match ndelta {
-            4 => todo!(),
+            4 => {
+                if ndel == 0 {
+                    // case 3a: Darling-Dennison resonance Kaabb
+                    let ii = indx[0];
+                    let jj = indx[1];
+
+                    let na = nmin[0];
+                    let nb = nmin[1];
+                    res2a(
+                        zmat, f3qcm, f4qcm, i1mode, freq, rotcon, dnm, ii, ii,
+                        jj, jj,
+                    ) * f64::sqrt(
+                        dble((na + 1) * (na + 2) * (nb + 1) * (nb + 2)) / 16.,
+                    )
+                } else {
+                    // ndel +/- 3, case 3b: Kaaa,b resonance
+
+                    // i appears to be n1dm from the end of the loop way above.
+                    // not sure how this could work
+                    if true {
+                        //ndiff[i].abs() == 3 {
+                        todo!("res3a");
+                    } else {
+                        todo!("res3a");
+                    }
+                }
+            }
             3 => {
                 let ii = indx[0];
                 let jj = indx[1];
@@ -330,7 +356,39 @@ pub(crate) fn res2a(
     if ii == jj && kk == ll {
         // case 1
         case = "aabb";
-        todo!()
+        let i = i1mode[ii];
+        let j = i1mode[kk];
+        let val1 = f4qcm[(i, i, j, j)] / 4.;
+        let val2 = rotcon[0] * zmat[(i, j, 0)] * zmat[(i, j, 0)]
+            + rotcon[1] * zmat[(i, j, 1)] * zmat[(i, j, 1)]
+            + rotcon[2] * zmat[(i, j, 2)] * zmat[(i, j, 2)];
+        let val2 = -val2 * (freq[i] + freq[j]).powi(2) / (freq[i] * freq[j]);
+
+        let mut val3 = 0.0;
+        for mm in 0..n1dm {
+            let k = i1mode[mm];
+            let temp = f3qcm[(i, i, k)]
+                * f3qcm[(j, j, k)]
+                * 0.125
+                * (d.denom(Minus(i), Minus(i), Minus(k))
+                    + d.denom(Plus(i), Plus(i), Minus(k))
+                    + d.denom(Minus(j), Minus(j), Minus(k))
+                    + d.denom(Plus(j), Plus(j), Minus(k)))
+                * 0.5;
+            val3 += temp;
+        }
+
+        let mut val4 = 0.0;
+        for mm in 0..n1dm {
+            let k = i1mode[mm];
+            let temp = -0.5
+                * f3qcm[(i, j, k)].powi(2)
+                * (d.denom(Plus(i), Minus(j), Minus(k))
+                    + d.denom(Minus(i), Plus(j), Minus(k)))
+                * -0.5;
+            val4 += temp;
+        }
+        val1 + val2 + val3 + val4
     } else if ii == jj && ii == kk {
         // case 2
         case = "aaab";
