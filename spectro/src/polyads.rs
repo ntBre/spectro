@@ -300,7 +300,21 @@ pub(crate) fn res2a(
                         + d.denom(Minus(i), Plus(j), Minus(l)));
             val3 -= 0.25 * f3qcm[(i, j, l)] * f3qcm[(k, k, l)] * temp;
         }
-        todo!()
+        let mut val4 = 0.0;
+        for mm in 0..n1dm {
+            let l = i1mode[mm];
+            let temp = -0.25
+                * ((d.denom(Plus(i), Plus(k), Minus(l))
+                    + d.denom(Plus(i), Minus(k), Minus(l))
+                    + d.denom(Minus(i), Plus(k), Minus(l))
+                    + d.denom(Minus(i), Minus(k), Minus(l)))
+                    + (d.denom(Plus(j), Plus(k), Minus(l))
+                        + d.denom(Plus(j), Minus(k), Minus(l))
+                        + d.denom(Minus(j), Plus(k), Minus(l))
+                        + d.denom(Minus(j), Minus(k), Minus(l))));
+            val4 -= 0.5 * f3qcm[(i, k, l)] * f3qcm[(j, k, l)] * temp;
+        }
+        dbg!(val1 + val2 + val3 + val4)
     } else if ii == jj && ii != kk && kk != ll {
         // case 4
         case = "aabc";
