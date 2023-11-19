@@ -174,7 +174,38 @@ pub(crate) fn genrsa(
             }
         }
         3 => match ndelta {
-            4 => todo!(),
+            4 => {
+                if ndel == 0 {
+                    // case 2a: Kaabc
+                    // sort indices in required order first
+                    for i in 0..3 {
+                        if ndiff[i].abs() == 2 {
+                            let iswp1 = nmin[0];
+                            let iswp2 = indx[0];
+                            nmin[0] = nmin[i];
+                            indx[0] = indx[i];
+                            nmin[i] = iswp1;
+                            indx[i] = iswp2;
+                        }
+                    }
+                    let ii = indx[0];
+                    let jj = indx[1];
+                    let kk = indx[2];
+
+                    let na = nmin[0];
+                    let nb = nmin[1];
+                    let nc = nmin[2];
+                    res2a(
+                        zmat, f3qcm, f4qcm, i1mode, freq, rotcon, dnm, ii, ii,
+                        jj, kk,
+                    ) * f64::sqrt(
+                        dble((na + 1) * (na + 2) * (nb + 1) * (nc + 1)) / 16.,
+                    )
+                } else {
+                    // ndel = +/-2 means case 2b: the ka,bbc resonance
+                    todo!()
+                }
+            }
             3 => {
                 let ii = indx[0];
                 let jj = indx[1];
