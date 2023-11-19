@@ -330,7 +330,7 @@ pub(crate) fn init_res_denom(
         dnom[(j, i, i)] = 0.0;
     }
 
-    for &Fermi2 { i, j, k } in fermi2 {
+    for &Fermi2 { i: j, j: k, k: i } in fermi2 {
         dnom[(i, j, k)] = 0.0;
         dnom[(i, k, j)] = 0.0;
     }
