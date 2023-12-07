@@ -87,6 +87,7 @@ impl approx::AbsDiffEq for Quartic {
             && self.djw.abs_diff_eq(&other.djw, epsilon)
             && self.djkw.abs_diff_eq(&other.djkw, epsilon)
             && self.dkw.abs_diff_eq(&other.dkw, epsilon)
+            && self.de.abs_diff_eq(&other.de, epsilon)
     }
 }
 
@@ -130,6 +131,7 @@ impl Sub for Quartic {
 #[cfg(test)]
 impl Display for Quartic {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "de: {:20.12}", self.de)?;
         writeln!(f, "sigma: {:20.12}", self.sigma)?;
         writeln!(f, "rkappa: {:20.12}", self.rkappa)?;
         writeln!(f, "delj: {:20.12}", self.delj)?;
@@ -222,7 +224,11 @@ impl Quartic {
 
         let mut ret = Quartic::default();
 
-        if s.is_linear() {
+        if s.rotor.is_diatomic() {
+            // primat/rotcon reversal issue again
+            ret.de = -t[(1, 1)];
+            return ret;
+        } else if s.is_linear() {
             ret.de = -t[(0, 0)];
             return ret;
         }

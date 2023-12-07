@@ -75,10 +75,10 @@ fn asym() {
 #[test]
 fn sym() {
     let tests = [
-        //
         Test::new("nh3"),
         Test::new("ph3"),
         Test::new("bipy"),
+        Test::new("alh"),
     ];
     for test in Vec::from(&tests[..]) {
         let s = Spectro::load(&test.infile);
