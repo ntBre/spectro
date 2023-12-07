@@ -106,6 +106,8 @@ fn sym() {
         Test::new("bipy"),
         // linear
         Test::new("c2h-"),
+        // diatomic
+        Test::new("alh"),
     ];
     for test in Vec::from(&tests[..]) {
         let s = Spectro::load(&test.infile);
