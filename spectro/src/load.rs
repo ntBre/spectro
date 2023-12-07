@@ -220,7 +220,7 @@ where
     let mut state = State::None;
     let mut skip = 0;
     let mut ret = Spectro::default();
-    for line in reader.lines().flatten() {
+    for line in reader.lines().map_while(Result::ok) {
         if skip > 0 {
             skip -= 1;
         } else if line.contains("SPECTRO") {

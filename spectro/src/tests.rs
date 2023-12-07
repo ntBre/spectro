@@ -53,7 +53,7 @@ fn load_lower_triangle(filename: &str, size: usize) -> Dmat {
     let f = std::fs::File::open(filename).unwrap();
     let lines = BufReader::new(f).lines();
     let mut ret = Dmat::zeros(size, size);
-    for (i, line) in lines.flatten().enumerate() {
+    for (i, line) in lines.map_while(Result::ok).enumerate() {
         let sp = line.split_whitespace().map(|s| s.parse::<f64>().unwrap());
         for (j, v) in sp.enumerate() {
             ret[(i, j)] = v;
