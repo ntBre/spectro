@@ -189,6 +189,15 @@ macro_rules! inner {
 }
 
 #[test]
+fn diatomic() {
+    let tests = [
+        //
+        Test::new("alh", false),
+    ];
+    inner!(&tests);
+}
+
+#[test]
 fn asym() {
     let tests = [
         Test::new("h2o", false),
