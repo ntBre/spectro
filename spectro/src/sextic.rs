@@ -81,6 +81,11 @@ fn scc(
     // some kind of tolerance for messing with certain values
     const TOL: f64 = 1e-4;
     let mut scc = Tensor3::zeros(3, 3, 3);
+    let mut rotcon = rotcon.to_vec();
+    if freq.len() == 6 {
+        // proxy for is_diatomic
+        rotcon.reverse();
+    }
     for ixyz in 1..=maxcor {
         let x = ixyz - 1;
         let iixyz = ioff(ixyz + 1);
@@ -402,12 +407,23 @@ impl Sextic {
         let mut ret = Self::default();
         let nvib = s.nvib;
         let maxcor = if s.is_linear() { 2 } else { 3 };
-        let c = c_mat(maxcor, nvib, freq, &s.primat, wila);
+        let primat = if s.rotor.is_diatomic() {
+            let mut p = s.primat.clone();
+            p.reverse();
+            p
+        } else {
+            s.primat.clone()
+        };
+        let c = c_mat(maxcor, nvib, freq, &primat, wila);
         let cc = cc_tensor(nvib, maxcor, freq, &c, zmat, &s.rotcon);
-        let tau = make_tau(maxcor, nvib, freq, &s.primat, wila);
+        let tau = make_tau(maxcor, nvib, freq, &primat, wila);
         let taucpm = tau_prime(maxcor, &tau);
         let scc = scc(maxcor, tau, &s.rotcon, nvib, freq, cc, f3qcm, &c, s);
-        if s.rotor.is_linear() {
+
+        if s.rotor.is_diatomic() {
+            ret.he = scc[(1, 1, 1)];
+            return ret;
+        } else if s.rotor.is_linear() {
             ret.he = scc[(0, 0, 0)];
             return ret;
         }
