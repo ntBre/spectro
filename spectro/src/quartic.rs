@@ -202,7 +202,7 @@ impl Quartic {
         let tau = make_tau(maxcor, s.nvib, freq, &s.primat, wila);
         let taupcm = tau_prime(maxcor, &tau);
         let mut irep = match s.rotor {
-            Rotor::Diatomic => todo!(),
+            Rotor::Diatomic => 2,
             Rotor::Linear => 2,
             Rotor::SphericalTop => todo!(),
             Rotor::OblateSymmTop => 5,

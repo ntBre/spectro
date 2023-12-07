@@ -272,7 +272,7 @@ impl Spectro {
     }
 
     pub fn is_linear(&self) -> bool {
-        self.rotor == Rotor::Linear
+        matches!(self.rotor, Rotor::Linear | Rotor::Diatomic)
     }
 
     /// Note that `ifrm1` and `ifrm2` are deduplicated because of the Hash, but
@@ -842,13 +842,16 @@ impl Spectro {
         // block and possibly set accidentally in a different section before
         // this is called. but for my only prolate test case, it is 2, while for
         // the oblate cases 5 works.
-        let (ia, ib, irep) = if self.rotor.is_prolate() {
-            (2, 1, 2)
+        //
         // NOTE spectro checks prolateness wrong. by its own setup, the
         // unique rotational constant should be in ROTCON(3), but it
         // checks ROTCON(1)-ROTCON(2) to decide if it's prolate, so for
         // any symmetric top it will not be "prolate" by this test
         // (0, 1, 3)
+        let (ia, ib, irep) = if self.rotor.is_prolate() {
+            (2, 1, 2)
+        } else if self.rotor.is_diatomic() {
+            (0, 1, 2) // unique coordinate is in 2 rather than 0 for some reason
         } else {
             (2, 1, 5)
         };

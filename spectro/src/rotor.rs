@@ -36,7 +36,7 @@ pub fn coriolis(
     let (i1mode, i2mode, _) = Mode::partition(modes);
     let mut ret = Vec::new();
     match rotor {
-        Diatomic => todo!(),
+        Diatomic => return ret,
         // I think linear and spherical tops are handled with the other symm
         // tops, but make myself think about it again when I cross that
         // bridge
@@ -149,7 +149,7 @@ pub fn darling(rotor: &Rotor, modes: &[Mode], freq: &Dvec) -> Vec<Darling> {
     let (i1mode, i2mode, _) = Mode::partition(modes);
     let mut ret = Vec::new();
     match rotor {
-        Rotor::Diatomic => todo!(),
+        Rotor::Diatomic => return ret,
         Rotor::SphericalTop => todo!(),
         Rotor::OblateSymmTop | Rotor::ProlateSymmTop | Rotor::Linear => {
             for ii in 1..n1dm {
@@ -197,7 +197,7 @@ pub fn fermi1(
     use Rotor::*;
     let (i1mode, i2mode, _) = Mode::partition(modes);
     match rotor {
-        Diatomic => todo!(),
+        Diatomic => return ret,
         SphericalTop => todo!(),
         OblateSymmTop | ProlateSymmTop | Linear => {
             for i in &i1mode {
@@ -238,7 +238,7 @@ pub fn fermi2(
     let (i1mode, i2mode, _) = Mode::partition(modes);
     let mut ret = Vec::new();
     match rotor {
-        Rotor::Diatomic => todo!(),
+        Rotor::Diatomic => return ret,
         Rotor::SphericalTop => todo!(),
         Rotor::OblateSymmTop | Rotor::ProlateSymmTop | Rotor::Linear => {
             for ii in 1..n1dm {

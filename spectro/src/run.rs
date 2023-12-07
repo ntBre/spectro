@@ -240,12 +240,14 @@ impl Spectro {
             crate::utils::print_vib_states(&eng, states);
         }
 
-        let rotnst = if self.rotor.is_sym_top() {
+        let rotnst = if self.rotor.is_sym_top() || self.rotor.is_diatomic() {
             self.alphas(&freq, &wila, &zmat, &f3qcm, modes, states, coriolis)
         } else {
             self.alphaa(&freq, &wila, &zmat, &f3qcm, modes, states, coriolis)
         };
-        let rots = if self.rotor.is_sym_top() {
+        let rots = if self.rotor.is_sym_top()
+            || matches!(self.rotor, symm::rotor::Rotor::Diatomic)
+        {
             if self.rotor.is_spherical_top() {
                 panic!("don't know what to do with a spherical top here");
             }
