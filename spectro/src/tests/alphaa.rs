@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use approx::{abs_diff_ne, assert_abs_diff_eq};
 use nalgebra::dmatrix;

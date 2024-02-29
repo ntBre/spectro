@@ -1,6 +1,4 @@
-use std::path::Path;
-
-use crate::{consts::FACT2, sextic::Sextic, *};
+use crate::{sextic::Sextic, *};
 
 use super::*;
 

@@ -1,7 +1,6 @@
 use std::str::FromStr;
 
 use crate::dummy::DummyVal;
-use crate::load::process_geom;
 use crate::Curvil::*;
 use crate::*;
 

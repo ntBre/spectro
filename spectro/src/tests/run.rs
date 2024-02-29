@@ -1,7 +1,4 @@
-use std::{
-    fs::read_to_string,
-    path::{Path, PathBuf},
-};
+use std::{fs::read_to_string, path::PathBuf};
 
 use approx::abs_diff_eq;
 use serde::Deserialize;

@@ -1,6 +1,5 @@
 use super::load_dmat;
 use crate::*;
-use std::path::Path;
 
 #[derive(Clone)]
 struct Test {

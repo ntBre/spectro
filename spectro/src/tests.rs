@@ -11,7 +11,6 @@ use nalgebra as na;
 use std::fs::read_to_string;
 use std::io::{BufRead, BufReader};
 use std::ops::Sub;
-use std::path::Path;
 
 mod alphaa;
 mod alphas;
