@@ -130,12 +130,7 @@ macro_rules! check_tens {
     };
 }
 
-pub(crate) fn check_mat<
-    'a,
-    R: nalgebra::Dim,
-    C: nalgebra::Dim,
-    S: nalgebra::RawStorage<f64, R, C>,
->(
+pub(crate) fn check_mat<'a, R: nalgebra::Dim, C: nalgebra::Dim, S>(
     got: &'a Matrix<f64, R, C, S>,
     want: &'a Matrix<f64, R, C, S>,
     eps: f64,

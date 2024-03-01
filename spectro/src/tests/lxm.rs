@@ -57,12 +57,7 @@ macro_rules! check_eigen {
 /// allowing the sign of whole columns to differ in line with non-unique
 /// eigendecompositions. Really, columns could be allowed to differ by any
 /// factor, not just -1, but I haven't encountered that situation yet.
-pub(crate) fn check_eigen<
-    'a,
-    R: nalgebra::Dim,
-    C: nalgebra::Dim,
-    S: nalgebra::RawStorage<f64, R, C>,
->(
+pub(crate) fn check_eigen<'a, S, R: nalgebra::Dim, C: nalgebra::Dim>(
     got: &'a Matrix<f64, R, C, S>,
     want: &'a Matrix<f64, R, C, S>,
     eps: f64,
