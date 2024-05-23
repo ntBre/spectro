@@ -2,16 +2,16 @@
 //! test case:
 //!
 //! 1. test `Spectro::load` to make sure the right geometry and principal axes
-//! are being loaded since those will affect everything else.
+//!    are being loaded since those will affect everything else.
 //!
 //! 2. test `load_fc2` to make sure the correct harmonic force constants are
-//! loaded from fort.15
+//!    loaded from fort.15
 //!
 //! 3. test `rot_2nd` to make sure the loaded harmonic force constants are
-//! rotated to the new axes correctly
+//!    rotated to the new axes correctly
 //!
 //! 4. test `form_sec` to make sure these rotated force constants are converted
-//! to the correct secular equations
+//!    to the correct secular equations
 
 use crate::{
     check_mat, consts::FACT2, load_fc2, tests::load_dmat, Dmat, Mat3, Spectro,
