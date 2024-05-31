@@ -168,6 +168,16 @@ impl Spectro {
         Ok(())
     }
 
+    pub fn to_json(&self) -> std::result::Result<String, serde_json::Error> {
+        serde_json::to_string(&self)
+    }
+
+    pub fn to_json_pretty(
+        &self,
+    ) -> std::result::Result<String, serde_json::Error> {
+        serde_json::to_string_pretty(&self)
+    }
+
     /// helper method for alpha matrix in `alphaa`
     fn alpha(
         &self,
