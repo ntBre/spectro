@@ -12,6 +12,7 @@ use crate::{
     dummy::{Dummy, DummyVal},
 };
 use crate::{utils::*, Dmat, Tensor3};
+use nalgebra::vector;
 use symm::{Atom, Axis, Molecule, Plane};
 use tensor::Tensor4;
 
@@ -175,12 +176,20 @@ pub(crate) fn process_geom(ret: &mut Spectro) {
         ret.axes = btemp.transpose();
         ret.iatom = iatl;
     }
-    // linear molecules should have the unique moi in the Z position. in case x
-    // and y got swapped (since their mois are equal), swap them back to keep
-    // the original order
-    if ret.rotor.is_linear() {
-        ret.axes.set_column(0, &nalgebra::vector![1.0, 0.0, 0.0]);
-        ret.axes.set_column(1, &nalgebra::vector![0.0, 1.0, 0.0]);
+    // HACK: linear molecules should have the unique moi in the Z position. in
+    // case x and y got swapped (since their mois are equal), swap them back to
+    // keep the original order. I think the fortran version handles this with
+    // some kind of different geometry processing earlier on. removing these
+    // lines causes very small changes to the final test frequencies for linear
+    // molecules, so it's probably fairly safe to skip this entirely, but larger
+    // differences arise in some of the xcals tests. adding the check on the
+    // third column is necessary to avoid a disaster I was seeing with a
+    // diatomic, where the third column was NOT <0,0,1>, leading to a duplicate
+    // column and very bad results
+    if ret.rotor.is_linear() && ret.axes.column(2).abs() == vector![0., 0., 1.]
+    {
+        ret.axes.set_column(0, &vector![1.0, 0.0, 0.0]);
+        ret.axes.set_column(1, &vector![0.0, 1.0, 0.0]);
     }
     ret.natom = ret.natoms();
     let n3n = 3 * ret.natoms();
