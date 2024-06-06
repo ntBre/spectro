@@ -326,7 +326,7 @@ checksum = "5ee073c9e4cd00e28217186dbe12796d692868f432bf2e97ee73bed0c56dfa01"
 [[package]]
 name = "symm"
 version = "0.1.0"
-source = "git+https://github.com/ntBre/symm#bf37e0f92b3f388b69b5eeefb6d86c0d9f36286b"
+source = "git+https://github.com/ntBre/symm#63553fbcdf941e7cd6c0c45ca06837d633d5f900"
 dependencies = [
  "approx",
  "nalgebra",
