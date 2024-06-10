@@ -12,6 +12,7 @@ use crate::{
     dummy::{Dummy, DummyVal},
 };
 use crate::{utils::*, Dmat, Tensor3};
+use log::debug;
 use nalgebra::vector;
 use symm::{Atom, Axis, Molecule, Plane};
 use tensor::Tensor4;
@@ -42,6 +43,8 @@ impl Spectro {
             // axis in plane but not principal axis
             let o = plane ^ axis;
 
+            debug!("⟂ axis = {p}, other axis = {o}, for {}", ret.geom);
+
             ret.axis_order = order;
             ret.geom
                 .atoms
@@ -57,6 +60,7 @@ impl Spectro {
         match pg {
             C3 { axis } => {
                 let plane = axis.planes()[0];
+                debug!("c3 iatl with axis = {axis} and plane = {plane}");
                 helper(self, axis, plane, 3)
             }
             C3v { axis, plane } => {
