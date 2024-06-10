@@ -55,6 +55,10 @@ impl Spectro {
 
         use symm::PointGroup::*;
         match pg {
+            C3 { axis } => {
+                let plane = axis.planes()[0];
+                helper(self, axis, plane, 3)
+            }
             C3v { axis, plane } => {
                 self.axis = axis;
                 helper(self, axis, plane, 3)
