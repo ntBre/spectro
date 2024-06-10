@@ -59,9 +59,23 @@ impl Spectro {
         use symm::PointGroup::*;
         match pg {
             C3 { axis } => {
-                let plane = axis.planes()[0];
-                debug!("c3 iatl with axis = {axis} and plane = {plane}");
-                helper(self, axis, plane, 3)
+                // c3 doesn't have a plane, so we can't really call helper, at
+                // least not reliably. just find an atom that's not on the
+                // principal axis, ie has at least one non-zero component in
+                // another direction
+                let axes = axis.not();
+                self.axis_order = 3;
+                match self.geom.atoms.iter().position(|a| {
+                    let v = [a.x, a.y, a.z];
+                    v[axes.0 as usize].abs() > TOL
+                        || v[axes.1 as usize].abs() > TOL
+                }) {
+                    Some(idx) => idx,
+                    None => {
+                        eprintln!("geom = {}", self.geom);
+                        panic!("failed to compute iatl for pg = {pg}");
+                    }
+                }
             }
             C3v { axis, plane } => {
                 self.axis = axis;
