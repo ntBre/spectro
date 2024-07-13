@@ -1,10 +1,15 @@
 use std::f64::consts::PI;
 
+/// attojoules per Hartree
 pub(crate) const _HE: f64 = 4.359813653;
 
 pub(crate) const _A0: f64 = 0.52917706;
 
-/// HE / (AO * AO) from fortran. something about hartrees and AO is bohr radius
+/// HE / (AO * AO) from fortran. These factors convert the force constants from
+/// their initial atomic units of Hₜ/bohr to mdyne/Å. As the spectro manual
+/// says, the base energy unit is mdyne·Å, which is equal to an attojoule. A
+/// first derivative would be in units mdyne·Å/Å or mdyne, so a second
+/// derivative is mdyne/Å, and so on.
 pub(crate) const FACT2: f64 = 4.359813653 / (0.52917706 * 0.52917706);
 
 pub(crate) const FUNIT3: f64 =
