@@ -142,6 +142,11 @@ pub struct Spectro {
     /// vibrational states
     #[serde(default)]
     pub verbose: bool,
+
+    /// printing option. currently only used to toggle printing of the full
+    /// normal coordinate force constants
+    #[serde(default)]
+    pub dump_fcs: bool,
 }
 
 impl Spectro {

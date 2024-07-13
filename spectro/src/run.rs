@@ -105,6 +105,40 @@ impl SpectroFinish {
     }
 }
 
+/// Write the normal coordinate FCs to stdout
+fn dump_fcs(r: usize, fc2: &Dmat, f3qcm: &F3qcm, f4qcm: &F4qcm) {
+    for i in 0..r {
+        for j in 0..=i {
+            println!("{i:5}{j:5}{:20.12}", fc2[(i, j)]);
+        }
+    }
+    for i in 0..r {
+        for j in 0..=i {
+            for k in 0..=j {
+                let v = f3qcm[(i, j, k)];
+                println!("{:5}{:5}{:5}{:20.12}", i + 1, j + 1, k + 1, v,);
+            }
+        }
+    }
+    for i in 0..r {
+        for j in 0..=i {
+            for k in 0..=j {
+                for l in 0..=k {
+                    let v = f4qcm[(i, j, k, l)];
+                    println!(
+                        "{:5}{:5}{:5}{:5}{:20.12}",
+                        i + 1,
+                        j + 1,
+                        k + 1,
+                        l + 1,
+                        v
+                    );
+                }
+            }
+        }
+    }
+}
+
 impl Spectro {
     fn weights(&self) -> Vec<f64> {
         self.geom.weights()
@@ -121,7 +155,7 @@ impl Spectro {
         // frequencies and the LXM matrix
         let w = self.weights();
         let sqm: Vec<_> = w.iter().map(|w| 1.0 / w.sqrt()).collect();
-        let fxm = self.form_sec(fc2, &sqm);
+        let fxm = self.form_sec(fc2.clone(), &sqm);
         let (harms, mut lxm) = symm_eigen_decomp(fxm, true);
         let freq = to_wavenumbers(&harms);
 
@@ -158,6 +192,10 @@ impl Spectro {
         // start of quartic analysis
         let f4x = self.rot4th(f4x);
         let f4qcm = force4(self.n3n, &f4x, &lx, self.nvib, &freq);
+
+        if self.dump_fcs {
+            dump_fcs(self.nvib, &fc2, &f3qcm, &f4qcm);
+        }
 
         self.finish(freq, f3qcm, f4qcm, irreps, lxm, lx)
     }

@@ -32,6 +32,10 @@ struct Args {
         conflicts_with = "json"
     )]
     verbose: bool,
+
+    /// Dump normal coordinate FCs to stdout
+    #[arg(short, long, value_parser, default_value_t = false)]
+    dump_fcs: bool,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -57,6 +61,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     } else {
         let mut spectro = Spectro::load(&cfg.infile);
         spectro.verbose = cfg.verbose;
+        spectro.dump_fcs = cfg.dump_fcs;
         let infile = Path::new(&cfg.infile);
         let dir = infile.parent().unwrap_or_else(|| Path::new("."));
         let g = spectro.run_files(
