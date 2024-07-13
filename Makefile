@@ -13,6 +13,9 @@ bench:
 clippy:
 	cargo clippy --workspace --tests
 
+clean:
+	cargo clean
+
 %.pdf : %.gv
 	dot -Tpdf $< -o $@
 
@@ -32,12 +35,9 @@ eland: build
 	scp -C ${BASE}/target/$(TARGET)/release/spectro_bin \
                 'eland:bin/rspectro'
 
-build_local:
-	cargo build --release --bin spectro_bin
-
 .PHONY: install
-install: build_local
-	sudo ln -s $(realpath target/release/spectro_bin) /usr/bin/rspectro
+install:
+	cargo install --path spectro_bin
 
 poly.test:
 	cargo run --features polyad -p spectro_bin spectro/testfiles/c2h4/spectro.in
