@@ -106,20 +106,50 @@ impl SpectroFinish {
 }
 
 /// Write the normal coordinate FCs to stdout
-fn dump_fcs(r: usize, fc2: &Dmat, f3qcm: &F3qcm, f4qcm: &F4qcm) {
-    for i in 0..r {
+fn dump_fcs(r: usize, fc2: &Dmat, lxm: &Dmat, f3qcm: &F3qcm, f4qcm: &F4qcm) {
+    println!("Cartesian Hessian (mdyne/Å)");
+    let (r2, c2) = fc2.shape();
+    assert_eq!(r2, c2);
+    assert!(r2 > r); // there should be strictly more cartesians than normals
+    for i in 0..r2 {
         for j in 0..=i {
-            println!("{i:5}{j:5}{:20.12}", fc2[(i, j)]);
+            println!(
+                "{:5}{:5}{:5}{:5}{:20.12}",
+                i + 1,
+                j + 1,
+                0,
+                0,
+                fc2[(i, j)]
+            );
         }
     }
+
+    println!("\nNormal coordinates");
+    let (a, b) = lxm.shape();
+    for i in 0..a {
+        for j in 0..b {
+            println!(
+                "{:5}{:5}{:5}{:5}{:20.12}",
+                i + 1,
+                j + 1,
+                0,
+                0,
+                lxm[(i, j)]
+            );
+        }
+    }
+
+    println!("\nNormal coordinate cubic force constants (mdyne/Å²)");
     for i in 0..r {
         for j in 0..=i {
             for k in 0..=j {
                 let v = f3qcm[(i, j, k)];
-                println!("{:5}{:5}{:5}{:20.12}", i + 1, j + 1, k + 1, v,);
+                println!("{:5}{:5}{:5}{:5}{:20.12}", i + 1, j + 1, k + 1, 0, v);
             }
         }
     }
+
+    println!("\nNormal coordinate quartic force constants (mdyne/Å³)");
     for i in 0..r {
         for j in 0..=i {
             for k in 0..=j {
@@ -194,7 +224,7 @@ impl Spectro {
         let f4qcm = force4(self.n3n, &f4x, &lx, self.nvib, &freq);
 
         if self.dump_fcs {
-            dump_fcs(self.nvib, &fc2, &f3qcm, &f4qcm);
+            dump_fcs(self.nvib, &fc2, &lxm, &f3qcm, &f4qcm);
         }
 
         self.finish(freq, f3qcm, f4qcm, irreps, lxm, lx)
