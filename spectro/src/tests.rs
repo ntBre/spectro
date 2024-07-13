@@ -138,7 +138,7 @@ pub(crate) fn check_mat<'a, R: nalgebra::Dim, C: nalgebra::Dim, S>(
 ) where
     &'a Matrix<f64, R, C, S>: Sub<Output = Matrix<f64, R, C, S>>,
     S: Storage<f64, R, C>,
-    DefaultAllocator: Allocator<f64, R, C>,
+    DefaultAllocator: Allocator<R, C>,
 {
     if abs_diff_ne!(got, want, epsilon = eps) {
         println!("got\n{got:.8}");

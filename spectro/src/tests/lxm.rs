@@ -66,8 +66,8 @@ pub(crate) fn check_eigen<'a, S, R: nalgebra::Dim, C: nalgebra::Dim>(
 ) where
     &'a Matrix<f64, R, C, S>: Sub<Output = Matrix<f64, R, C, S>>,
     S: Storage<f64, R, C>,
-    DefaultAllocator: Allocator<f64, R, C>,
-    DefaultAllocator: nalgebra::allocator::Allocator<f64, R>,
+    DefaultAllocator: Allocator<R, C>,
+    DefaultAllocator: nalgebra::allocator::Allocator<R>,
 {
     assert_eq!(got.shape(), want.shape());
     let (_, cols) = got.shape();
