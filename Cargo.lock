@@ -354,7 +354,7 @@ dependencies = [
 [[package]]
 name = "tensor"
 version = "0.1.0"
-source = "git+https://github.com/ntBre/tensor#c58afe5b120636db285bfc41787123d4cfef0130"
+source = "git+https://github.com/ntBre/tensor#fa7d3b8f84d6cf5d2b89728de25dc5d8ebe43d12"
 dependencies = [
  "approx",
 ]
