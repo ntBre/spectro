@@ -2,8 +2,8 @@
 #![allow(clippy::too_many_arguments, clippy::needless_range_loop)]
 
 use std::{
-    collections::HashMap, f64::consts::PI, fmt::Debug, fs::File, io::Result,
-    path::Path,
+    collections::HashMap, f64::consts::FRAC_PI_2, f64::consts::PI, fmt::Debug,
+    fs::File, io::Result, path::Path,
 };
 
 use consts::ALPHA_CONST;
@@ -566,14 +566,14 @@ impl Spectro {
                                 lxm[(ncomp1, imode2)] / lxm[(ncomp1, imode1)],
                             )
                         } else if iz2x == 0 {
-                            0.5 * PI
+                            FRAC_PI_2
                         } else if iz2y == 0 {
                             f64::atan(
                                 -1.0 * lxm[(ncomp2, imode1)]
                                     / lxm[(ncomp1, imode2)],
                             )
                         } else {
-                            0.5 * PI
+                            FRAC_PI_2
                         }
                     } else {
                         if self.rotor.is_linear() {
@@ -586,7 +586,7 @@ impl Spectro {
                                     / lxm[(ncomp3, imode2)],
                             )
                         } else if lxm[(ncomp3, imode1)].abs() > TOLER {
-                            0.5 * PI
+                            FRAC_PI_2
                         } else {
                             eprintln!(
                                 "lxm[(ncomp3, imode2)] = {}",
