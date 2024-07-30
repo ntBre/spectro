@@ -58,9 +58,20 @@ impl Spectro {
 
         use symm::PointGroup::*;
         match pg {
-            C2h { axis, plane } => {
-                self.axis = axis;
-                helper(self, axis, plane, 2)
+            C2h { axis, .. } => {
+                let axes = axis.not();
+                self.axis_order = 2;
+                match self.geom.atoms.iter().position(|a| {
+                    let v = [a.x, a.y, a.z];
+                    v[axes.0 as usize].abs() > TOL
+                        || v[axes.1 as usize].abs() > TOL
+                }) {
+                    Some(idx) => idx,
+                    None => {
+                        eprintln!("geom = {}", self.geom);
+                        panic!("failed to compute iatl for pg = {pg}");
+                    }
+                }
             }
             C3 { axis } => {
                 // c3 doesn't have a plane, so we can't really call helper, at
