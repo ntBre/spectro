@@ -58,6 +58,10 @@ impl Spectro {
 
         use symm::PointGroup::*;
         match pg {
+            C2h { axis, plane } => {
+                self.axis = axis;
+                helper(self, axis, plane, 2)
+            }
             C3 { axis } => {
                 // c3 doesn't have a plane, so we can't really call helper, at
                 // least not reliably. just find an atom that's not on the
