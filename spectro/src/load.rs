@@ -12,7 +12,7 @@ use crate::{
     dummy::{Dummy, DummyVal},
 };
 use crate::{utils::*, Dmat, Tensor3};
-use log::debug;
+use log::{debug, warn};
 use nalgebra::vector;
 use symm::{Atom, Axis, Molecule, Plane};
 use tensor::Tensor4;
@@ -91,6 +91,11 @@ impl Spectro {
                         panic!("failed to compute iatl for pg = {pg}");
                     }
                 }
+            }
+            C2v { axis, planes } => {
+                warn!("untested c2v iatl");
+                self.axis = axis;
+                helper(self, axis, planes[0], 2)
             }
             C3v { axis, plane } => {
                 self.axis = axis;
