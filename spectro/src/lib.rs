@@ -876,7 +876,7 @@ impl Spectro {
         let mut ret = Vec::new();
         for nst in 0..nstop {
             match &states[nst] {
-                State::I1st(v) => {
+                State::I1st(v) | State::I3st(v) => {
                     // accept all zeros=ground state or a single 1=fund
                     if v.iter().sum::<usize>() > 1 {
                         continue;
@@ -887,7 +887,6 @@ impl Spectro {
                         continue;
                     }
                 }
-                State::I3st(_) => todo!(),
                 State::I12st { i1st: _, i2st: _ } => continue,
             }
             let vib1 = rotnst[(nst, ia)] - self.rotcon[ia];
