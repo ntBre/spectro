@@ -10,7 +10,7 @@ pub(crate) const _A0: f64 = 0.52917706;
 /// says, the base energy unit is mdyne·Å, which is equal to an attojoule. A
 /// first derivative would be in units mdyne·Å/Å or mdyne, so a second
 /// derivative is mdyne/Å, and so on.
-pub(crate) const FACT2: f64 = 4.359813653 / (0.52917706 * 0.52917706);
+pub const FACT2: f64 = 4.359813653 / (0.52917706 * 0.52917706);
 
 pub(crate) const FUNIT3: f64 =
     4.359813653 / (0.52917706 * 0.52917706 * 0.52917706);
@@ -31,7 +31,6 @@ pub(crate) const ALAM: f64 = 4.0e-2 * (PI * PI * CL) / (PH * AVN);
 pub(crate) const CONST: f64 = 1.0e+02 * (PH * AVN) / (8.0e+00 * PI * PI * CL);
 
 /// planck's constant in atomic units?
-
 pub(crate) const PH: f64 = 6.626176;
 
 /// pre-computed sqrt of ALAM
