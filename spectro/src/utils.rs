@@ -341,7 +341,6 @@ pub fn make_funds(freq: &Dvec, nvib: usize, xcnst: &Dmat) -> Vec<f64> {
 }
 
 /// take a vec of energy: state pairs and print them in SPECTRO's format
-#[allow(dead_code)]
 pub(crate) fn print_vib_states(reng: &[f64], i1sts: &Vec<State>) {
     println!(
         "{:^10}{:^20}{:^20}{:>21}",
