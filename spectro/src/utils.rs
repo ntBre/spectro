@@ -144,7 +144,11 @@ pub fn to_wavenumbers(freqs: &Dvec) -> Dvec {
     )
 }
 
-pub(crate) fn load_vec<P>(infile: P) -> Vec<f64>
+/// Load a whitespace-separated vector from `infile`.
+///
+/// Panics if there is an error reading the file or parsing any of the entries
+/// as `f64`.
+pub fn load_vec<P>(infile: P) -> Vec<f64>
 where
     P: AsRef<Path> + std::fmt::Debug,
 {
@@ -337,7 +341,6 @@ pub fn make_funds(freq: &Dvec, nvib: usize, xcnst: &Dmat) -> Vec<f64> {
 }
 
 /// take a vec of energy: state pairs and print them in SPECTRO's format
-#[allow(dead_code)]
 pub(crate) fn print_vib_states(reng: &[f64], i1sts: &Vec<State>) {
     println!(
         "{:^10}{:^20}{:^20}{:>21}",

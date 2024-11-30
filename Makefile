@@ -8,7 +8,7 @@ test:
 	cargo test --workspace ${TESTFLAGS} ${ARGS}
 
 bench:
-	cargo bench ${TESTFLAGS} ${ARGS}
+	cargo +nightly bench ${TESTFLAGS} ${ARGS}
 
 clippy:
 	cargo clippy --workspace --tests
