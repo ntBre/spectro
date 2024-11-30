@@ -144,7 +144,11 @@ pub fn to_wavenumbers(freqs: &Dvec) -> Dvec {
     )
 }
 
-pub(crate) fn load_vec<P>(infile: P) -> Vec<f64>
+/// Load a whitespace-separated vector from `infile`.
+///
+/// Panics if there is an error reading the file or parsing any of the entries
+/// as `f64`.
+pub fn load_vec<P>(infile: P) -> Vec<f64>
 where
     P: AsRef<Path> + std::fmt::Debug,
 {

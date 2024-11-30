@@ -14,7 +14,6 @@ use std::ops::Sub;
 
 mod alphaa;
 mod alphas;
-mod bench;
 mod enrgy;
 mod force3;
 mod force4;

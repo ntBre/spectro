@@ -1,4 +1,6 @@
-use super::*;
+#![feature(test)]
+
+use spectro::utils::load_vec;
 
 extern crate test;
 
