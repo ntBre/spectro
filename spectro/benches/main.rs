@@ -1,6 +1,11 @@
 #![feature(test)]
 
-use spectro::utils::load_vec;
+use spectro::{
+    consts::FACT2,
+    load_fc2, load_fc3, load_fc4,
+    utils::{self, force3, force4, load_vec, to_wavenumbers},
+    Spectro,
+};
 
 extern crate test;
 
